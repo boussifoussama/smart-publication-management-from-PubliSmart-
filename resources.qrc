@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>ressouces/equipement icon.png</file>
+        <file>ressouces/imagetouse.png.png</file>
+        <file>ressouces/publication icon.png</file>
+        <file>ressouces/reviewer icon.png</file>
+    </qresource>
+</RCC>
