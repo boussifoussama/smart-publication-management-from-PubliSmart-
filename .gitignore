@@ -1,0 +1,28 @@
+# Qt/C++ build artifacts
+build/
+debug/
+release/
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Qt Creator / Qt .pro user files
+*.pro.user
+*.pro.user.*
+*.qmake.stash
+
+# Generated UI headers
+ui_*.h
+
+# IDE files
+.idea/
+*.vcxproj*
+*.sln
+
+# Misc
+*.log
+__pycache__/
+.DS_Store
