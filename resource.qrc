@@ -1,0 +1,12 @@
+<RCC>
+    <qresource prefix="/new/prefix1">
+        <file>Screenshot 2026-02-06 035149.png</file>
+        <file>imagetouse.png.png</file>
+        <file>imagetouse.png-removebg-preview.png</file>
+    </qresource>
+    <qresource prefix="/">
+        <file>imagetouse.png.png</file>
+        <file>imagetouse.png-removebg-preview.png</file>
+    </qresource>
+    <qresource lang="francais" prefix="/imagetouse.png"/>
+</RCC>

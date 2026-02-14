@@ -1,10 +1,12 @@
 #include "smartmarket.h"
 #include "ui_smartmarket.h"
+#include "ui_oussama.h"
 
 #include <QHeaderView>
 #include <QStandardItem>
 #include <QVBoxLayout>
 #include <QMessageBox>
+#include <QPushButton>
 
 // Qt Charts
 #include <QtCharts/QChartView>
@@ -20,8 +22,10 @@ SmartMarket::SmartMarket(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::SmartMarket)
     , publicationModel(new QStandardItemModel(this))
+    , conferencePageIndex(-1)
 {
     ui->setupUi(this);
+    setupConferencePage();
     
     // Masquer le mot de passe
     ui->lineEdit_10->setEchoMode(QLineEdit::Password);
@@ -161,6 +165,40 @@ void SmartMarket::createCharts()
     barLayout->addWidget(barChartView);
 }
 
+void SmartMarket::setupConferencePage()
+{
+    conferenceUi = std::make_unique<Ui::MainWindow>();
+    auto tempWindow = new QMainWindow();
+    conferenceUi->setupUi(tempWindow);
+
+    QWidget *central = tempWindow->centralWidget();
+    if (!central)
+    {
+        delete tempWindow;
+        return;
+    }
+
+    central->setParent(nullptr);
+    tempWindow->setCentralWidget(nullptr);
+
+    QWidget *container = new QWidget(this);
+    auto layout = new QVBoxLayout(container);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->addWidget(central);
+
+    conferencePageIndex = ui->stackedWidgetMain->addWidget(container);
+
+    delete tempWindow;
+
+    // Relier le bouton pushButton_13 de la page conférences pour revenir aux publications
+    if (auto btnConfBack = container->findChild<QPushButton*>("pushButton_13"))
+    {
+        connect(btnConfBack, &QPushButton::clicked, this, [this]() {
+            ui->stackedWidgetMain->setCurrentIndex(1);
+        });
+    }
+}
+
 // ============================================================
 // NAVIGATION - MODULE LOGIN
 // ============================================================
@@ -170,8 +208,8 @@ void SmartMarket::on_pushButton_15_clicked()
     QString email = ui->lineEdit_8->text().trimmed();
     QString password = ui->lineEdit_10->text().trimmed();
 
-    if(email.compare("Selim.ASCHI@esprit.tn", Qt::CaseInsensitive) == 0
-        && password == "selim")
+    if(email.compare("oussama", Qt::CaseInsensitive) == 0
+        && password == "oussama")
     {
         QMessageBox::information(this, "Succès", "Connexion réussie ! Bienvenue dans SmartMarket.");
         
@@ -198,13 +236,16 @@ void SmartMarket::on_pushButton_13_clicked()
         "Un email de réinitialisation a été envoyé à : " + email);
     
     ui->lineEdit_11->clear();
+
+    // Naviguer vers la page Publications
+    ui->stackedWidgetMain->setCurrentIndex(1);
 }
 
 // ============================================================
 // MODULE PUBLICATION - CRUD
 // ============================================================
 
-void SmartMarket::on_pushButton_17_clicked()
+void SmartMarket::on_pushButton_19_clicked()
 {
     QString titre = ui->lineEdit_16->text().trimmed();
     QString source = ui->lineEdit_17->text().trimmed();
@@ -239,7 +280,7 @@ void SmartMarket::on_pushButton_17_clicked()
     }
 }
 
-void SmartMarket::on_pushButton_18_clicked()
+void SmartMarket::on_pushButton_20_clicked()
 {
     QString titre = ui->lineEdit_16->text().trimmed();
     QString source = ui->lineEdit_17->text().trimmed();
@@ -278,7 +319,7 @@ void SmartMarket::on_pushButton_18_clicked()
 
 void SmartMarket::on_pushButton_8_clicked()
 {
-    QString idSupprimer = ui->lineEdit_8->text().trimmed();
+    QString idSupprimer = ui->lineEdit_9->text().trimmed();
     
     if(idSupprimer.isEmpty())
     {
@@ -292,7 +333,7 @@ void SmartMarket::on_pushButton_8_clicked()
     {
         publicationModel->removeRow(rowToDelete);
         QMessageBox::information(this, "Succès", "Publication supprimée avec succès !");
-        ui->lineEdit_8->clear();
+        ui->lineEdit_9->clear();
     }
     else
     {
@@ -328,7 +369,7 @@ void SmartMarket::on_pushButton_5_clicked()
     QMessageBox::information(this, "Réinitialisation", "Critères de recherche réinitialisés.");
 }
 
-void SmartMarket::on_pushButton_19_clicked()
+void SmartMarket::on_pushButton_21_clicked()
 {
     bool toutes = ui->radioButton_5->isChecked();
     bool pdf = ui->radioButton_7->isChecked();
@@ -390,24 +431,31 @@ void SmartMarket::on_pushButton_7_clicked()
 // SIDEBAR - NAVIGATION ENTRE MODULES
 // ============================================================
 
-void SmartMarket::on_pushButton_13_sidebar_clicked()
+void SmartMarket::on_pushButton_14_clicked()
 {
     ui->stackedWidgetMain->setCurrentIndex(1);
 }
 
-void SmartMarket::on_pushButton_14_clicked()
+void SmartMarket::on_pushButton_16_clicked()
 {
     QMessageBox::information(this, "Module Reviewers", 
         "Le module Reviewers sera intégré prochainement.");
 }
 
-void SmartMarket::on_pushButton_15_sidebar_clicked()
+void SmartMarket::on_pushButton_17_clicked()
 {
-    QMessageBox::information(this, "Module Conférences", 
-        "Le module Conférences sera intégré prochainement.");
+    if (conferencePageIndex >= 0)
+    {
+        ui->stackedWidgetMain->setCurrentIndex(conferencePageIndex);
+    }
+    else
+    {
+        QMessageBox::warning(this, "Module Conférences", 
+            "Le module Conférences n'est pas disponible (chargement de l'interface oussama.ui échoué).");
+    }
 }
 
-void SmartMarket::on_pushButton_16_clicked()
+void SmartMarket::on_pushButton_18_clicked()
 {
     QMessageBox::information(this, "Module Équipements", 
         "Le module Équipements sera intégré prochainement.");

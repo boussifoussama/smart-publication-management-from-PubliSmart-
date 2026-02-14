@@ -8,21 +8,56 @@ release/
 *.dll
 *.so
 *.dylib
+*.slo
+*.lo
+*.gch
+*.pch
+*.ilk
+*.lai
+*.la
+*.a
+*.lib
+*.out
+*.app
 
 # Qt Creator / Qt .pro user files
 *.pro.user
 *.pro.user.*
 *.qmake.stash
+*.user
+*.user.*
+*.qbs.user*
+*.autosave
+*.ui.user*
+
+# Qt Creator settings/cache
+.idea/
+.qtcreator/
+CMakeLists.txt.user
 
 # Generated UI headers
 ui_*.h
+qrc_*.cpp
+moc_*.cpp
 
-# IDE files
-.idea/
+# Qt Quick / QML
+*.qmlc
+*.jsc
+
+# IDE / editor files
 *.vcxproj*
 *.sln
-
-# Misc
-*.log
-__pycache__/
+*.swp
+*.swo
 .DS_Store
+Thumbs.db
+
+# Prerequisites
+*.d
+
+# Debug / linker / executable
+*.pdb
+*.dwo
+
+# Python cache
+__pycache__/
