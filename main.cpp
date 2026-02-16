@@ -1,4 +1,4 @@
-#include "mainwindow.h"
+#include "smartmarket.h"
 
 #include <QApplication>
 #include <QLocale>
@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
             break;
         }
     }
-    MainWindow w;
+    SmartMarket w;
     w.show();
     return a.exec();
 }

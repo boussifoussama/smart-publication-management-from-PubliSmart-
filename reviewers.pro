@@ -10,13 +10,19 @@ CONFIG += c++17
 
 SOURCES += \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    oussama.cpp \
+    smartmarket.cpp
 
 HEADERS += \
-    mainwindow.h
+    mainwindow.h \
+    oussama.h \
+    smartmarket.h
 
 FORMS += \
-    mainwindow.ui
+    mainwindow.ui \
+    oussama.ui \
+    smartmarket.ui
 
 TRANSLATIONS += \
     reviewers_en_US.ts

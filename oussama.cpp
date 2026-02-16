@@ -6,9 +6,9 @@
 #include <QPen>
 #include <QBrush>
 
-MainWindow::MainWindow(QWidget *parent)
+OussamaWindow::OussamaWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+    , ui(new Ui::OussamaWindow)
 {
     ui->setupUi(this);
 
@@ -111,7 +111,7 @@ MainWindow::MainWindow(QWidget *parent)
         ->setPos(150, 0);
 }
 
-MainWindow::~MainWindow()
+OussamaWindow::~OussamaWindow()
 {
     delete ui;
 }

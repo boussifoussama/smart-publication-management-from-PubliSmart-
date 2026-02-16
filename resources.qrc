@@ -1,8 +1,12 @@
 <RCC>
     <qresource prefix="/">
+        <file>ressouces/conference icon.png</file>
         <file>ressouces/equipement icon.png</file>
+        <file>ressouces/imagetouse.png-removebg-preview (1).png</file>
         <file>ressouces/imagetouse.png.png</file>
         <file>ressouces/publication icon.png</file>
         <file>ressouces/reviewer icon.png</file>
+        <file alias="conference icon.png">ressouces/conference icon.png</file>
+        <file alias="imagetouse.png-removebg-preview.png">ressouces/imagetouse.png-removebg-preview (1).png</file>
     </qresource>
 </RCC>

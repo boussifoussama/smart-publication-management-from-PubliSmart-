@@ -6,7 +6,7 @@
 #include <memory>
 
 QT_BEGIN_NAMESPACE
-namespace Ui { class SmartMarket; class MainWindow; }
+namespace Ui { class SmartMarket; }
 QT_END_NAMESPACE
 
 class SmartMarket : public QMainWindow
@@ -43,12 +43,16 @@ private slots:
 private:
     Ui::SmartMarket *ui;
     QStandardItemModel *publicationModel;
-    std::unique_ptr<Ui::MainWindow> conferenceUi;
+    std::unique_ptr<class OussamaWindow> conferenceWindow;
+    std::unique_ptr<class MainWindow> reviewersWindow;
     int conferencePageIndex;
+    int reviewersPageIndex;
     
     void initPublicationTable();
     void createCharts();
     void setupConferencePage();
+    void setupReviewersPage();
+    int addEmbeddedWindow(QMainWindow *window);
 };
 
 #endif // SMARTMARKET_H

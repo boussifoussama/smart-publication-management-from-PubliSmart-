@@ -1,6 +1,7 @@
 #include "smartmarket.h"
 #include "ui_smartmarket.h"
-#include "ui_oussama.h"
+#include "oussama.h"
+#include "mainwindow.h"
 
 #include <QHeaderView>
 #include <QStandardItem>
@@ -23,9 +24,11 @@ SmartMarket::SmartMarket(QWidget *parent)
     , ui(new Ui::SmartMarket)
     , publicationModel(new QStandardItemModel(this))
     , conferencePageIndex(-1)
+    , reviewersPageIndex(-1)
 {
     ui->setupUi(this);
     setupConferencePage();
+    setupReviewersPage();
     
     // Masquer le mot de passe
     ui->lineEdit_10->setEchoMode(QLineEdit::Password);
@@ -167,28 +170,13 @@ void SmartMarket::createCharts()
 
 void SmartMarket::setupConferencePage()
 {
-    conferenceUi = std::make_unique<Ui::MainWindow>();
-    auto tempWindow = new QMainWindow();
-    conferenceUi->setupUi(tempWindow);
+    conferenceWindow = std::make_unique<OussamaWindow>(this);
+    conferencePageIndex = addEmbeddedWindow(conferenceWindow.get());
 
-    QWidget *central = tempWindow->centralWidget();
-    if (!central)
-    {
-        delete tempWindow;
+    if (conferencePageIndex < 0)
         return;
-    }
 
-    central->setParent(nullptr);
-    tempWindow->setCentralWidget(nullptr);
-
-    QWidget *container = new QWidget(this);
-    auto layout = new QVBoxLayout(container);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(central);
-
-    conferencePageIndex = ui->stackedWidgetMain->addWidget(container);
-
-    delete tempWindow;
+    auto container = ui->stackedWidgetMain->widget(conferencePageIndex);
 
     // Relier le bouton pushButton_13 de la page conférences pour revenir aux publications
     if (auto btnConfBack = container->findChild<QPushButton*>("pushButton_13"))
@@ -197,6 +185,68 @@ void SmartMarket::setupConferencePage()
             ui->stackedWidgetMain->setCurrentIndex(1);
         });
     }
+}
+
+void SmartMarket::setupReviewersPage()
+{
+    reviewersWindow = std::make_unique<MainWindow>(this);
+    reviewersPageIndex = addEmbeddedWindow(reviewersWindow.get());
+
+    if (reviewersPageIndex < 0)
+        return;
+
+    auto container = ui->stackedWidgetMain->widget(reviewersPageIndex);
+
+    if (auto btnPublications = container->findChild<QPushButton*>("btnPublications"))
+    {
+        connect(btnPublications, &QPushButton::clicked, this, [this]() {
+            ui->stackedWidgetMain->setCurrentIndex(1);
+        });
+    }
+
+    if (auto btnReviewers = container->findChild<QPushButton*>("btnReviewers"))
+    {
+        connect(btnReviewers, &QPushButton::clicked, this, [this]() {
+            ui->stackedWidgetMain->setCurrentIndex(reviewersPageIndex);
+        });
+    }
+
+    if (auto btnConferences = container->findChild<QPushButton*>("btnConferences"))
+    {
+        connect(btnConferences, &QPushButton::clicked, this, [this]() {
+            if (conferencePageIndex >= 0)
+                ui->stackedWidgetMain->setCurrentIndex(conferencePageIndex);
+            else
+                QMessageBox::warning(this, "Module Conferences", "Le module Conferences n'est pas disponible.");
+        });
+    }
+
+    if (auto btnEquipments = container->findChild<QPushButton*>("btnEquipments"))
+    {
+        connect(btnEquipments, &QPushButton::clicked, this, [this]() {
+            QMessageBox::information(this, "Module Equipements", "Le module Equipements sera integre prochainement.");
+        });
+    }
+}
+
+int SmartMarket::addEmbeddedWindow(QMainWindow *window)
+{
+    if (!window)
+        return -1;
+
+    QWidget *central = window->centralWidget();
+    if (!central)
+        return -1;
+
+    central->setParent(nullptr);
+    window->setCentralWidget(nullptr);
+
+    QWidget *container = new QWidget(this);
+    auto layout = new QVBoxLayout(container);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->addWidget(central);
+
+    return ui->stackedWidgetMain->addWidget(container);
 }
 
 // ============================================================
@@ -375,8 +425,12 @@ void SmartMarket::on_pushButton_21_clicked()
     bool pdf = ui->radioButton_7->isChecked();
     bool excel = ui->radioButton_8->isChecked();
     bool includeVides = ui->checkBox_3->isChecked();
-    
-    QString format = pdf ? "PDF" : "Excel";
+
+    QString format = "PDF";
+    if (excel)
+        format = "Excel";
+    else if (pdf)
+        format = "PDF";
     QString scope = toutes ? "toutes les publications" : "les publications filtrées";
     
     QMessageBox::information(this, "Export", 
@@ -438,8 +492,15 @@ void SmartMarket::on_pushButton_14_clicked()
 
 void SmartMarket::on_pushButton_16_clicked()
 {
-    QMessageBox::information(this, "Module Reviewers", 
-        "Le module Reviewers sera intégré prochainement.");
+    if (reviewersPageIndex >= 0)
+    {
+        ui->stackedWidgetMain->setCurrentIndex(reviewersPageIndex);
+    }
+    else
+    {
+        QMessageBox::warning(this, "Module Reviewers", 
+            "Le module Reviewers n'est pas disponible (chargement de mainwindow.ui echoue)." );
+    }
 }
 
 void SmartMarket::on_pushButton_17_clicked()

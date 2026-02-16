@@ -991,22 +991,6 @@ QStatusBar {
        <property name="spacing">
         <number>10</number>
        </property>
-       <item>
-        <widget class="QFrame" name="chartFramePie">
-         <property name="minimumSize">
-          <size>
-           <width>200</width>
-           <height>150</height>
-          </size>
-         </property>
-         <property name="frameShape">
-          <enum>QFrame::Shape::StyledPanel</enum>
-         </property>
-         <property name="frameShadow">
-          <enum>QFrame::Shadow::Raised</enum>
-         </property>
-        </widget>
-       </item>
       </layout>
      </widget>
      <widget class="QWidget" name="widget_9" native="true">
@@ -1245,7 +1229,7 @@ QStatusBar {
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>230</y>
+        <y>200</y>
         <width>1081</width>
         <height>291</height>
        </rect>
@@ -1304,6 +1288,28 @@ QStatusBar {
         </widget>
        </item>
       </layout>
+     </widget>
+     <widget class="QFrame" name="chartFramePie">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>480</y>
+        <width>1069</width>
+        <height>259</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>200</width>
+        <height>150</height>
+       </size>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::Shape::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Shadow::Raised</enum>
+      </property>
      </widget>
     </widget>
    </widget>
