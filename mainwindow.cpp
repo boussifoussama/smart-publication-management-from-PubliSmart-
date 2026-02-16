@@ -11,6 +11,7 @@
 #include <QVBoxLayout>
 #include <QString>
 #include <QVector>
+#include <QDebug>
 
 // dummy data for demonstration; replace with real model later
 struct Reviewer {
@@ -50,43 +51,58 @@ MainWindow::~MainWindow()
 // -----------------------------------------------------
 void MainWindow::setupNavigation()
 {
+    qDebug() << "setupNavigation() called";
+    qDebug() << "btnList:" << ui->btnList;
+    qDebug() << "btnStatistics:" << ui->btnStatistics;
+    qDebug() << "btnList_2:" << ui->btnList_2;
+    qDebug() << "btnStatistics_2:" << ui->btnStatistics_2;
+    qDebug() << "stackedWidget:" << ui->stackedWidget;
+    const int listIndex = ui->stackedWidget->indexOf(ui->stackedWidgetPage1);
+    const int statsIndex = ui->stackedWidget->indexOf(ui->page);
+    qDebug() << "listIndex:" << listIndex << "statsIndex:" << statsIndex;
+    
     // Setup internal Reviewers page navigation
-    // The Reviewers section has 2 pages in stackedWidget:
-    // - Page 1 (stackedWidgetPage1): Reviewer List with btnList and btnStatistics
-    // - Page 2 (page): Statistics view with btnList_2 and btnStatistics_2
+    // - Page 1: Statistics (has btnList_2 and btnStatistics_2)
+    // - Page 2: List (has btnList and btnStatistics)
 
-    // Lambda to manage button states when switching pages
-    auto updateReviewersPageState = [this](int pageIndex) {
-        bool isPage1 = ( pageIndex == 1);
-        bool isPage2 = (pageIndex == 2);
-        ui->btnList->setChecked(isPage1);
-        ui->btnStatistics->setChecked(isPage2);
-        ui->btnList_2->setChecked(isPage1);
-        ui->btnStatistics_2->setChecked(isPage2);
+    // Lambda to manage button states
+    auto updateButtonStates = [this, listIndex, statsIndex](int pageIndex) {
+        bool isListPage = (pageIndex == listIndex);
+        bool isStatsPage = (pageIndex == statsIndex);
+        // Page 1 buttons
+        ui->btnList_2->setChecked(isListPage);         // List button
+        ui->btnStatistics_2->setChecked(isStatsPage);  // Statistics button
+        // Page 2 buttons
+        ui->btnList->setChecked(isListPage);           // List button
+        ui->btnStatistics->setChecked(isStatsPage);    // Statistics button
     };
 
-    // Setup page 1 buttons (List and Statistics)
-    connect(ui->btnList, &QPushButton::clicked,
-            this, [=]() { 
-                ui->stackedWidget->setCurrentIndex(1); 
-                updateReviewersPageState(1);
-            });
-    connect(ui->btnStatistics, &QPushButton::clicked,
-            this, [=]() { 
-                ui->stackedWidget->setCurrentIndex(2); 
-                updateReviewersPageState(2);
-            });
-
-    // Setup page 2 buttons (mirror of page 1)
+    // Page 1 buttons (btnList_2, btnStatistics_2) - on Statistics page
     connect(ui->btnList_2, &QPushButton::clicked,
             this, [=]() { 
-                ui->stackedWidget->setCurrentIndex(1); 
-                updateReviewersPageState(1);
+                qDebug() << "btnList_2 clicked - switching to page 2 (List)";
+                ui->stackedWidget->setCurrentIndex(listIndex); 
+                updateButtonStates(listIndex);
             });
     connect(ui->btnStatistics_2, &QPushButton::clicked,
             this, [=]() { 
-                ui->stackedWidget->setCurrentIndex(2); 
-                updateReviewersPageState(2);
+                qDebug() << "btnStatistics_2 clicked - staying on page 1 (Statistics)";
+                ui->stackedWidget->setCurrentIndex(statsIndex); 
+                updateButtonStates(statsIndex);
+            });
+
+    // Page 2 buttons (btnList, btnStatistics) - on List page
+    connect(ui->btnList, &QPushButton::clicked,
+            this, [=]() { 
+                qDebug() << "btnList clicked - staying on page 2 (List)";
+                ui->stackedWidget->setCurrentIndex(listIndex); 
+                updateButtonStates(listIndex);
+            });
+    connect(ui->btnStatistics, &QPushButton::clicked,
+            this, [=]() { 
+                qDebug() << "btnStatistics clicked - switching to page 1 (Statistics)";
+                ui->stackedWidget->setCurrentIndex(statsIndex); 
+                updateButtonStates(statsIndex);
             });
 
     // Make buttons checkable for visual feedback
@@ -95,9 +111,9 @@ void MainWindow::setupNavigation()
     ui->btnList_2->setCheckable(true);
     ui->btnStatistics_2->setCheckable(true);
 
-    // Start on Reviewer List page
-    ui->stackedWidget->setCurrentIndex(1);
-    updateReviewersPageState(1);
+    // Start on Statistics page
+    ui->stackedWidget->setCurrentIndex(statsIndex);
+    updateButtonStates(statsIndex);
 }
 
 void MainWindow::updateKPIs()
