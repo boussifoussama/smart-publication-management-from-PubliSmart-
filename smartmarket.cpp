@@ -1,13 +1,16 @@
 #include "smartmarket.h"
 #include "ui_smartmarket.h"
-#include "oussama.h"
-#include "mainwindow.h"
 
 #include <QHeaderView>
 #include <QStandardItem>
 #include <QVBoxLayout>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QLabel>
+#include <QVector>
+#include <QGraphicsScene>
+#include <QPen>
+#include <QBrush>
 
 // Qt Charts
 #include <QtCharts/QChartView>
@@ -16,8 +19,22 @@
 #include <QtCharts/QBarSeries>
 #include <QtCharts/QBarSet>
 #include <QtCharts/QBarCategoryAxis>
+#include <QtCharts/QLineSeries>
 #include <QtCharts/QValueAxis>
 #include <QtCharts/QLegend>
+
+struct Reviewer {
+    QString name;
+    int evaluationCount;
+    float reliability; // 0–100
+};
+
+static QVector<Reviewer> reviewersData = {
+    {"John Doe", 10, 95},
+    {"Jane Smith", 12, 88},
+    {"Ali Ben", 8, 82},
+    {"Sara Lee", 5, 90}
+};
 
 SmartMarket::SmartMarket(QWidget *parent)
     : QMainWindow(parent)
@@ -31,7 +48,7 @@ SmartMarket::SmartMarket(QWidget *parent)
     setupReviewersPage();
     
     // Masquer le mot de passe
-    ui->lineEdit_10->setEchoMode(QLineEdit::Password);
+    ui->lineEditLoginPassword->setEchoMode(QLineEdit::Password);
     
     // Initialiser le tableau des publications
     initPublicationTable();
@@ -168,50 +185,161 @@ void SmartMarket::createCharts()
     barLayout->addWidget(barChartView);
 }
 
+void SmartMarket::setupConferenceCharts()
+{
+    const QStringList conferences = {"Conf A", "Conf B", "Conf C", "Conf D"};
+
+    if (ui->conf_graphicsView1)
+    {
+        QGraphicsScene *scene1 = new QGraphicsScene(this);
+        ui->conf_graphicsView1->setScene(scene1);
+        scene1->setSceneRect(0, 0, 500, 300);
+
+        QPen axisPen(Qt::black);
+        axisPen.setWidth(2);
+        scene1->addLine(50, 20, 50, 260, axisPen);
+        scene1->addLine(50, 260, 480, 260, axisPen);
+
+        QList<int> participants = {120, 80, 150, 100};
+        const int barWidth = 40;
+        const int spacing = 35;
+        const int startX = 90;
+        const int baseY = 260;
+        QBrush barBrush(Qt::blue);
+
+        for (int i = 0; i < participants.size() && i < conferences.size(); ++i)
+        {
+            int barHeight = participants[i];
+
+            scene1->addRect(startX + i * (barWidth + spacing),
+                            baseY - barHeight,
+                            barWidth,
+                            barHeight,
+                            QPen(Qt::NoPen),
+                            barBrush);
+
+            scene1->addText(QString::number(participants[i]))
+                ->setPos(startX + i * (barWidth + spacing),
+                         baseY - barHeight - 20);
+
+            scene1->addText(conferences[i])
+                ->setPos(startX + i * (barWidth + spacing) - 5,
+                         baseY + 5);
+        }
+
+        scene1->addText("Participants per Conference")->setPos(150, 0);
+    }
+
+    if (ui->conf_graphicsView1_2)
+    {
+        QGraphicsScene *scene2 = new QGraphicsScene(this);
+        ui->conf_graphicsView1_2->setScene(scene2);
+        scene2->setSceneRect(0, 0, 500, 300);
+
+        QPen axisPen(Qt::black);
+        axisPen.setWidth(2);
+        scene2->addLine(50, 20, 50, 260, axisPen);
+        scene2->addLine(50, 260, 480, 260, axisPen);
+
+        QList<int> publications = {10, 6, 14, 9};
+        const int barWidth = 40;
+        const int spacing = 35;
+        const int startX = 90;
+        const int baseY = 260;
+        QBrush barBrush2(Qt::darkGreen);
+
+        for (int i = 0; i < publications.size() && i < conferences.size(); ++i)
+        {
+            int barHeight = publications[i] * 10; // mise à l'échelle
+
+            scene2->addRect(startX + i * (barWidth + spacing),
+                            baseY - barHeight,
+                            barWidth,
+                            barHeight,
+                            QPen(Qt::NoPen),
+                            barBrush2);
+
+            scene2->addText(QString::number(publications[i]))
+                ->setPos(startX + i * (barWidth + spacing),
+                         baseY - barHeight - 20);
+
+            scene2->addText(conferences[i])
+                ->setPos(startX + i * (barWidth + spacing) - 5,
+                         baseY + 5);
+        }
+
+        scene2->addText("Publications per Conference")->setPos(150, 0);
+    }
+}
+
 void SmartMarket::setupConferencePage()
 {
-    conferenceWindow = std::make_unique<OussamaWindow>(this);
-    conferencePageIndex = addEmbeddedWindow(conferenceWindow.get());
+    conferencePageIndex = ui->stackedWidgetMain->indexOf(ui->page2);
 
     if (conferencePageIndex < 0)
         return;
 
-    auto container = ui->stackedWidgetMain->widget(conferencePageIndex);
-
-    // Relier le bouton pushButton_13 de la page conférences pour revenir aux publications
-    if (auto btnConfBack = container->findChild<QPushButton*>("pushButton_13"))
+    // Bouton retour vers publications
+    if (auto btnConfBack = ui->page2->findChild<QPushButton*>("conf_pushButton_13"))
     {
         connect(btnConfBack, &QPushButton::clicked, this, [this]() {
             ui->stackedWidgetMain->setCurrentIndex(1);
         });
     }
+
+    // Nav vers reviewers
+    if (auto btnConfReviewers = ui->page2->findChild<QPushButton*>("conf_pushButton_14"))
+    {
+        connect(btnConfReviewers, &QPushButton::clicked, this, [this]() {
+            if (reviewersPageIndex >= 0)
+                ui->stackedWidgetMain->setCurrentIndex(reviewersPageIndex);
+            else
+                QMessageBox::warning(this, "Module Reviewers", "Le module Reviewers n'est pas disponible.");
+        });
+    }
+
+    // Nav vers conférences (page actuelle)
+    if (auto btnConfSelf = ui->page2->findChild<QPushButton*>("conf_pushButton_15"))
+    {
+        connect(btnConfSelf, &QPushButton::clicked, this, [this]() {
+            ui->stackedWidgetMain->setCurrentIndex(conferencePageIndex);
+        });
+    }
+
+    // Nav vers équipements
+    if (auto btnConfEquip = ui->page2->findChild<QPushButton*>("conf_pushButton_16"))
+    {
+        connect(btnConfEquip, &QPushButton::clicked, this, [this]() {
+            QMessageBox::information(this, "Module Équipements", "Le module Équipements sera intégré prochainement.");
+        });
+    }
+
+    setupConferenceCharts();
 }
 
 void SmartMarket::setupReviewersPage()
 {
-    reviewersWindow = std::make_unique<MainWindow>(this);
-    reviewersPageIndex = addEmbeddedWindow(reviewersWindow.get());
+    reviewersPageIndex = ui->stackedWidgetMain->indexOf(ui->page3);
 
     if (reviewersPageIndex < 0)
         return;
 
-    auto container = ui->stackedWidgetMain->widget(reviewersPageIndex);
-
-    if (auto btnPublications = container->findChild<QPushButton*>("btnPublications"))
+    // Sidebar navigation (page3)
+    if (auto btnPublications = ui->page3->findChild<QPushButton*>("rev_btnPublications"))
     {
         connect(btnPublications, &QPushButton::clicked, this, [this]() {
             ui->stackedWidgetMain->setCurrentIndex(1);
         });
     }
 
-    if (auto btnReviewers = container->findChild<QPushButton*>("btnReviewers"))
+    if (auto btnReviewers = ui->page3->findChild<QPushButton*>("rev_btnReviewers"))
     {
         connect(btnReviewers, &QPushButton::clicked, this, [this]() {
             ui->stackedWidgetMain->setCurrentIndex(reviewersPageIndex);
         });
     }
 
-    if (auto btnConferences = container->findChild<QPushButton*>("btnConferences"))
+    if (auto btnConferences = ui->page3->findChild<QPushButton*>("rev_btnConferences"))
     {
         connect(btnConferences, &QPushButton::clicked, this, [this]() {
             if (conferencePageIndex >= 0)
@@ -221,12 +349,219 @@ void SmartMarket::setupReviewersPage()
         });
     }
 
-    if (auto btnEquipments = container->findChild<QPushButton*>("btnEquipments"))
+    if (auto btnEquipments = ui->page3->findChild<QPushButton*>("rev_btnEquipments"))
     {
         connect(btnEquipments, &QPushButton::clicked, this, [this]() {
             QMessageBox::information(this, "Module Equipements", "Le module Equipements sera integre prochainement.");
         });
     }
+
+    reviewerUpdateKPIs();
+    reviewerCreateBarChart();
+    reviewerCreateLineChart();
+    reviewerCreatePieChart();
+    reviewerSetupNavigation();
+}
+
+void SmartMarket::reviewerUpdateKPIs()
+{
+    int total = reviewersData.size();
+    float avgRel = 0;
+    int maxEvals = 0;
+    QString topName;
+    QString mostEvalsName;
+    float topRel = 0;
+
+    for (const auto &r : reviewersData)
+    {
+        avgRel += r.reliability;
+        if (r.evaluationCount > maxEvals)
+        {
+            maxEvals = r.evaluationCount;
+            mostEvalsName = r.name;
+        }
+        if (r.reliability > topRel)
+        {
+            topRel = r.reliability;
+            topName = r.name;
+        }
+    }
+    if (total) avgRel /= total;
+
+    if (ui->rev_kpiTotalReviewers)
+        ui->rev_kpiTotalReviewers->setText(QString::number(total));
+    if (ui->rev_kpiAvgReliability)
+        ui->rev_kpiAvgReliability->setText(QString::number(avgRel) + "%");
+    if (ui->rev_kpiMostEvaluations)
+        ui->rev_kpiMostEvaluations->setText(mostEvalsName + " – " + QString::number(maxEvals));
+    if (ui->rev_kpiTopReviewer)
+        ui->rev_kpiTopReviewer->setText(topName + " – " + QString::number(topRel) + "%");
+}
+
+void SmartMarket::reviewerCreateBarChart()
+{
+    if (!ui->rev_chartFrameBar)
+        return;
+
+    auto *set = new QBarSet("Evaluations");
+    QStringList cats;
+    for (const auto &r : reviewersData)
+    {
+        *set << r.evaluationCount;
+        cats << r.name;
+    }
+
+    auto *series = new QBarSeries();
+    series->append(set);
+
+    auto *chart = new QChart();
+    chart->addSeries(series);
+    chart->setTitle("Number of Evaluations per Reviewer");
+    chart->createDefaultAxes();
+    if (!chart->axes(Qt::Horizontal).isEmpty())
+    {
+        if (auto *axis = qobject_cast<QBarCategoryAxis*>(chart->axes(Qt::Horizontal).first()))
+            axis->append(cats);
+    }
+
+    auto *view = new QChartView(chart);
+    view->setRenderHint(QPainter::Antialiasing);
+
+    if (auto *lbl = ui->rev_chartFrameBar->findChild<QLabel*>())
+        lbl->deleteLater();
+
+    auto *lay = new QVBoxLayout(ui->rev_chartFrameBar);
+    lay->setContentsMargins(0, 0, 0, 0);
+    lay->setSpacing(0);
+    view->setParent(ui->rev_chartFrameBar);
+    view->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    lay->addWidget(view);
+}
+
+void SmartMarket::reviewerCreateLineChart()
+{
+    if (!ui->rev_chartFrameLine)
+        return;
+
+    auto *series = new QLineSeries();
+    int x = 0;
+    for (const auto &r : reviewersData)
+        series->append(x++, r.evaluationCount);
+
+    auto *chart = new QChart();
+    chart->addSeries(series);
+    chart->setTitle("Evaluation Trend");
+    chart->createDefaultAxes();
+
+    auto *view = new QChartView(chart);
+    view->setRenderHint(QPainter::Antialiasing);
+
+    if (auto *lbl = ui->rev_chartFrameLine->findChild<QLabel*>())
+        lbl->deleteLater();
+
+    auto *lay = new QVBoxLayout(ui->rev_chartFrameLine);
+    lay->setContentsMargins(0, 0, 0, 0);
+    lay->setSpacing(0);
+    view->setParent(ui->rev_chartFrameLine);
+    view->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    lay->addWidget(view);
+}
+
+void SmartMarket::reviewerCreatePieChart()
+{
+    if (!ui->rev_chartFramePie)
+        return;
+
+    auto *series = new QPieSeries();
+    int c90_100 = 0, c80_90 = 0, cBelow = 0;
+    for (const auto &r : reviewersData)
+    {
+        if (r.reliability >= 90) ++c90_100;
+        else if (r.reliability >= 80) ++c80_90;
+        else ++cBelow;
+    }
+    series->append("90–100%", c90_100);
+    series->append("80–90%", c80_90);
+    series->append("<80%", cBelow);
+
+    auto *chart = new QChart();
+    chart->addSeries(series);
+    chart->setTitle("Reviewer Reliability Distribution");
+
+    auto *view = new QChartView(chart);
+    view->setRenderHint(QPainter::Antialiasing);
+
+    if (auto *lbl = ui->rev_chartFramePie->findChild<QLabel*>())
+        lbl->deleteLater();
+
+    auto *lay = new QVBoxLayout(ui->rev_chartFramePie);
+    lay->setContentsMargins(0, 0, 0, 0);
+    lay->setSpacing(0);
+    view->setParent(ui->rev_chartFramePie);
+    view->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    lay->addWidget(view);
+}
+
+void SmartMarket::reviewerSetupNavigation()
+{
+    if (!ui->rev_stackedWidget || !ui->rev_stackedWidgetPage1 || !ui->rev_page)
+        return;
+
+    const int listIndex = ui->rev_stackedWidget->indexOf(ui->rev_stackedWidgetPage1);
+    const int statsIndex = ui->rev_stackedWidget->indexOf(ui->rev_page);
+
+    auto updateButtons = [this, statsIndex, listIndex](int index) {
+        const bool isStats = (index == statsIndex);
+        const bool isList = (index == listIndex);
+
+        if (ui->rev_btnList)
+            ui->rev_btnList->setChecked(isList);
+        if (ui->rev_btnStatistics)
+            ui->rev_btnStatistics->setChecked(isStats);
+        if (ui->rev_btnList_2)
+            ui->rev_btnList_2->setChecked(isList);
+        if (ui->rev_btnStatistics_2)
+            ui->rev_btnStatistics_2->setChecked(isStats);
+    };
+
+    if (ui->rev_btnList_2)
+    {
+        ui->rev_btnList_2->setCheckable(true);
+        connect(ui->rev_btnList_2, &QPushButton::clicked, this, [this, listIndex, updateButtons]() {
+            ui->rev_stackedWidget->setCurrentIndex(listIndex);
+            updateButtons(listIndex);
+        });
+    }
+
+    if (ui->rev_btnStatistics_2)
+    {
+        ui->rev_btnStatistics_2->setCheckable(true);
+        connect(ui->rev_btnStatistics_2, &QPushButton::clicked, this, [this, statsIndex, updateButtons]() {
+            ui->rev_stackedWidget->setCurrentIndex(statsIndex);
+            updateButtons(statsIndex);
+        });
+    }
+
+    if (ui->rev_btnList)
+    {
+        ui->rev_btnList->setCheckable(true);
+        connect(ui->rev_btnList, &QPushButton::clicked, this, [this, listIndex, updateButtons]() {
+            ui->rev_stackedWidget->setCurrentIndex(listIndex);
+            updateButtons(listIndex);
+        });
+    }
+
+    if (ui->rev_btnStatistics)
+    {
+        ui->rev_btnStatistics->setCheckable(true);
+        connect(ui->rev_btnStatistics, &QPushButton::clicked, this, [this, statsIndex, updateButtons]() {
+            ui->rev_stackedWidget->setCurrentIndex(statsIndex);
+            updateButtons(statsIndex);
+        });
+    }
+
+    ui->rev_stackedWidget->setCurrentIndex(statsIndex);
+    updateButtons(statsIndex);
 }
 
 int SmartMarket::addEmbeddedWindow(QMainWindow *window)
@@ -253,10 +588,10 @@ int SmartMarket::addEmbeddedWindow(QMainWindow *window)
 // NAVIGATION - MODULE LOGIN
 // ============================================================
 
-void SmartMarket::on_pushButton_15_clicked()
+void SmartMarket::on_btnLoginEntrer_clicked()
 {
-    QString email = ui->lineEdit_8->text().trimmed();
-    QString password = ui->lineEdit_10->text().trimmed();
+    QString email = ui->lineEditLoginEmail->text().trimmed();
+    QString password = ui->lineEditLoginPassword->text().trimmed();
 
     if(email.compare("oussama", Qt::CaseInsensitive) == 0
         && password == "oussama")
@@ -272,9 +607,9 @@ void SmartMarket::on_pushButton_15_clicked()
     }
 }
 
-void SmartMarket::on_pushButton_13_clicked()
+void SmartMarket::on_btnLoginEnvoyer_clicked()
 {
-    QString email = ui->lineEdit_11->text().trimmed();
+    QString email = ui->lineEditResetEmail->text().trimmed();
     
     if(email.isEmpty())
     {
@@ -285,7 +620,7 @@ void SmartMarket::on_pushButton_13_clicked()
     QMessageBox::information(this, "Email envoyé", 
         "Un email de réinitialisation a été envoyé à : " + email);
     
-    ui->lineEdit_11->clear();
+    ui->lineEditResetEmail->clear();
 
     // Naviguer vers la page Publications
     ui->stackedWidgetMain->setCurrentIndex(1);

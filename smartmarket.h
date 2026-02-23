@@ -3,7 +3,6 @@
 
 #include <QMainWindow>
 #include <QStandardItemModel>
-#include <memory>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class SmartMarket; }
@@ -19,8 +18,8 @@ public:
 
 private slots:
     // ========== NAVIGATION LOGIN ==========
-    void on_pushButton_15_clicked();        // Bouton "Entrer" du Login
-    void on_pushButton_13_clicked();        // Bouton "Envoyer" (mot de passe oublié)
+    void on_btnLoginEntrer_clicked();       // Bouton "Entrer" du Login
+    void on_btnLoginEnvoyer_clicked();      // Bouton "Envoyer" (mot de passe oublié)
     
     // ========== MODULE PUBLICATION - CRUD ==========
     void on_pushButton_19_clicked();        // Ajouter une publication
@@ -43,8 +42,6 @@ private slots:
 private:
     Ui::SmartMarket *ui;
     QStandardItemModel *publicationModel;
-    std::unique_ptr<class OussamaWindow> conferenceWindow;
-    std::unique_ptr<class MainWindow> reviewersWindow;
     int conferencePageIndex;
     int reviewersPageIndex;
     
@@ -52,6 +49,13 @@ private:
     void createCharts();
     void setupConferencePage();
     void setupReviewersPage();
+    void setupConferenceCharts();
+    void setupReviewersCharts();
+    void reviewerUpdateKPIs();
+    void reviewerCreateBarChart();
+    void reviewerCreateLineChart();
+    void reviewerCreatePieChart();
+    void reviewerSetupNavigation();
     int addEmbeddedWindow(QMainWindow *window);
 };
 

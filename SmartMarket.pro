@@ -6,19 +6,13 @@ CONFIG += c++17
 # Union des deux anciens .pro pour ne garder qu'un seul projet buildable.
 SOURCES += \
     main.cpp \
-    mainwindow.cpp \
-    smartmarket.cpp \
-    oussama.cpp
+    smartmarket.cpp
 
 HEADERS += \
-    mainwindow.h \
-    smartmarket.h \
-    oussama.h
+    smartmarket.h
 
 FORMS += \
-    mainwindow.ui \
-    smartmarket.ui \
-    oussama.ui
+    smartmarket.ui
 
 TRANSLATIONS += \
     reviewers_en_US.ts
