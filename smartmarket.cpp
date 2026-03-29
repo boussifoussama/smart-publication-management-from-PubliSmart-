@@ -2,61 +2,77 @@
 #include "ui_smartmarket.h"
 
 #include <QHeaderView>
-#include <QStandardItem>
 #include <QVBoxLayout>
 #include <QMessageBox>
-#include <QPushButton>
-#include <QLabel>
-#include <QVector>
-#include <QGraphicsScene>
-#include <QPen>
-#include <QBrush>
+#include <QSqlQuery>
+#include <QSqlError>
+#include <QSqlTableModel>
+#include <QDebug>
+#include <QFileDialog>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
+#include <QSslConfiguration>
+#include <QSslSocket>
+#include <QTableWidgetItem>
+#include <QUrl>
+#include <QRegularExpression>
 
-// Qt Charts
+// PDF export via Qt
+#include <QPrinter>
+#include <QPainter>
+#include <QFont>
+#include <QColor>
+#include <QRect>
+#include <QFontMetrics>
+#include <QDateTime>
+
 #include <QtCharts/QChartView>
 #include <QtCharts/QPieSeries>
 #include <QtCharts/QChart>
 #include <QtCharts/QBarSeries>
 #include <QtCharts/QBarSet>
 #include <QtCharts/QBarCategoryAxis>
-#include <QtCharts/QLineSeries>
 #include <QtCharts/QValueAxis>
 #include <QtCharts/QLegend>
 
-struct Reviewer {
-    QString name;
-    int evaluationCount;
-    float reliability; // 0–100
+// ── Configuration Ollama (Gratuit, 100% Local) ─────────────────────────────────
+// Ollama fonctionne complètement gratuitement sur votre PC
+// Installation: https://ollama.ai
+// Puis: ollama pull neural-chat (plus rapide) ou ollama pull mistral
+static const QString OLLAMA_ENDPOINT = "http://localhost:11434/api/generate";
+static const QString OLLAMA_MODEL    = "neural-chat";  // Plus rapide que mistral
+
+// ── Domaines ─────────────────────────────────────────────────────────────────
+const QStringList SmartMarket::DOMAINES = {
+    "Informatique", "Mathematiques", "Physique", "Chimie", "Biologie",
+    "Medecine", "Droit", "Economie", "Histoire", "Geographie",
+    "Philosophie", "Litterature", "Arts", "Sport", "Autre"
 };
 
-static QVector<Reviewer> reviewersData = {
-    {"John Doe", 10, 95},
-    {"Jane Smith", 12, 88},
-    {"Ali Ben", 8, 82},
-    {"Sara Lee", 5, 90}
-};
-
+// ================================================================
+// CONSTRUCTEUR
+// ================================================================
 SmartMarket::SmartMarket(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::SmartMarket)
-    , publicationModel(new QStandardItemModel(this))
-    , conferencePageIndex(-1)
-    , reviewersPageIndex(-1)
+    , publicationModel(new QSqlTableModel(this))
+    , pieChartView(nullptr)
+    , barChartView(nullptr)
+    , networkManager(new QNetworkAccessManager(this))
 {
     ui->setupUi(this);
-    setupConferencePage();
-    setupReviewersPage();
+    ui->lineEdit_10->setEchoMode(QLineEdit::Password);
     
-    // Masquer le mot de passe
-    ui->lineEditLoginPassword->setEchoMode(QLineEdit::Password);
+    // Configuration SSL/TLS pour les appels API
+    QSslConfiguration sslConfig = QSslConfiguration::defaultConfiguration();
+    sslConfig.setPeerVerifyMode(QSslSocket::VerifyPeer);
+    sslConfig.setProtocol(QSsl::TlsV1_2OrLater);
     
-    // Initialiser le tableau des publications
-    initPublicationTable();
-    
-    // Créer les graphiques
-    createCharts();
-    
-    // Démarrer sur la page Login (page 0)
+    initDomaines();
     ui->stackedWidgetMain->setCurrentIndex(0);
 }
 
@@ -65,794 +81,1149 @@ SmartMarket::~SmartMarket()
     delete ui;
 }
 
+// ================================================================
+// INIT DOMAINES
+// ================================================================
+void SmartMarket::initDomaines()
+{
+    ui->comboBox_5->clear();
+    for (const QString &d : DOMAINES)
+        ui->comboBox_5->addItem(d);
+
+    ui->comboBox_2->clear();
+    ui->comboBox_2->addItem("Tous");
+    for (const QString &d : DOMAINES)
+        ui->comboBox_2->addItem(d);
+}
+
+// ================================================================
+// INIT TABLE PUBLICATIONS
+// ================================================================
 void SmartMarket::initPublicationTable()
 {
-    // ================== TABLEAU DES PUBLICATIONS ==================
-    publicationModel->setRowCount(4);
-    publicationModel->setColumnCount(5);
-
-    publicationModel->setHeaderData(0, Qt::Horizontal, "Domaine");
-    publicationModel->setHeaderData(1, Qt::Horizontal, "Titre");
-    publicationModel->setHeaderData(2, Qt::Horizontal, "Source");
-    publicationModel->setHeaderData(3, Qt::Horizontal, "Date");
-    publicationModel->setHeaderData(4, Qt::Horizontal, "Statut");
-
-    publicationModel->setItem(0, 0, new QStandardItem("SVT"));
-    publicationModel->setItem(0, 1, new QStandardItem("Molécules"));
-    publicationModel->setItem(0, 2, new QStandardItem("Journal"));
-    publicationModel->setItem(0, 3, new QStandardItem("01/11/2000"));
-    publicationModel->setItem(0, 4, new QStandardItem("Évaluée"));
-
-    publicationModel->setItem(1, 0, new QStandardItem("Informatique"));
-    publicationModel->setItem(1, 1, new QStandardItem("IA"));
-    publicationModel->setItem(1, 2, new QStandardItem("Magazine"));
-    publicationModel->setItem(1, 3, new QStandardItem("01/09/2009"));
-    publicationModel->setItem(1, 4, new QStandardItem("Non évaluée"));
-
-    publicationModel->setItem(2, 0, new QStandardItem("Informatique"));
-    publicationModel->setItem(2, 1, new QStandardItem("Deep Learning"));
-    publicationModel->setItem(2, 2, new QStandardItem("Magazine of Science"));
-    publicationModel->setItem(2, 3, new QStandardItem("06/09/2005"));
-    publicationModel->setItem(2, 4, new QStandardItem("Rejetée"));
-
-    publicationModel->setItem(3, 0, new QStandardItem("Physique"));
-    publicationModel->setItem(3, 1, new QStandardItem("Atomes"));
-    publicationModel->setItem(3, 2, new QStandardItem("Journal Parisien"));
-    publicationModel->setItem(3, 3, new QStandardItem("06/07/2008"));
-    publicationModel->setItem(3, 4, new QStandardItem("Rejetée"));
-
-    ui->tableView->setModel(publicationModel);
-    ui->tableView_2->setModel(publicationModel);
-
-    ui->tableView->horizontalHeader()->setStretchLastSection(true);
-    ui->tableView->resizeColumnsToContents();
-    ui->tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
-    ui->tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-
-    ui->tableView_2->horizontalHeader()->setStretchLastSection(true);
-    ui->tableView_2->resizeColumnsToContents();
-    ui->tableView_2->setSelectionBehavior(QAbstractItemView::SelectRows);
-    ui->tableView_2->setEditTriggers(QAbstractItemView::NoEditTriggers);
-}
-
-void SmartMarket::createCharts()
-{
-    // ================== PIE CHART - RÉPARTITION PAR STATUT ==================
-    int eval = 0, nonEval = 0, rejet = 0;
-    for (int row = 0; row < publicationModel->rowCount(); ++row) {
-        QString statut = publicationModel->item(row, 4)->text();
-        if (statut == "Évaluée") eval++;
-        else if (statut == "Non évaluée") nonEval++;
-        else if (statut == "Rejetée") rejet++;
-    }
-
-    QPieSeries *pieSeries = new QPieSeries();
-    pieSeries->append("Évaluée", eval);
-    pieSeries->append("Non évaluée", nonEval);
-    pieSeries->append("Rejetée", rejet);
-
-    QChart *pieChart = new QChart();
-    pieChart->addSeries(pieSeries);
-    pieChart->setTitle("Répartition des publications par statut");
-    pieChart->legend()->setAlignment(Qt::AlignRight);
-
-    QChartView *pieChartView = new QChartView(pieChart);
-    pieChartView->setRenderHint(QPainter::Antialiasing);
-
-    QVBoxLayout *pieLayout = new QVBoxLayout(ui->chartWidget);
-    pieLayout->setContentsMargins(0, 0, 0, 0);
-    pieLayout->addWidget(pieChartView);
-
-    // ================== BAR CHART - PUBLICATIONS PAR DOMAINE ==================
-    QStringList domaines = {"SVT", "Informatique", "Physique", "Math", "Chimie", "Biologie"};
-    QMap<QString, int> domainCounts;
-    for (const QString &d : domaines) domainCounts[d] = 0;
-
-    for (int row = 0; row < publicationModel->rowCount(); ++row) {
-        QString domaine = publicationModel->item(row, 0)->text();
-        if (domainCounts.contains(domaine)) domainCounts[domaine]++;
-    }
-
-    QBarSet *barSet = new QBarSet("Publications");
-    for (const QString &d : domaines)
-        *barSet << domainCounts[d];
-
-    QBarSeries *barSeries = new QBarSeries();
-    barSeries->append(barSet);
-
-    QChart *barChart = new QChart();
-    barChart->addSeries(barSeries);
-    barChart->setTitle("Nombre de publications par domaine");
-    barChart->setAnimationOptions(QChart::SeriesAnimations);
-
-    QBarCategoryAxis *axisX = new QBarCategoryAxis();
-    axisX->append(domaines);
-    barChart->addAxis(axisX, Qt::AlignBottom);
-    barSeries->attachAxis(axisX);
-
-    QValueAxis *axisY = new QValueAxis();
-    barChart->addAxis(axisY, Qt::AlignLeft);
-    barSeries->attachAxis(axisY);
-
-    barChart->legend()->setVisible(true);
-    barChart->legend()->setAlignment(Qt::AlignBottom);
-
-    QChartView *barChartView = new QChartView(barChart);
-    barChartView->setRenderHint(QPainter::Antialiasing);
-
-    QVBoxLayout *barLayout = new QVBoxLayout(ui->domainChartWidget);
-    barLayout->setContentsMargins(0, 0, 0, 0);
-    barLayout->addWidget(barChartView);
-}
-
-void SmartMarket::setupConferenceCharts()
-{
-    const QStringList conferences = {"Conf A", "Conf B", "Conf C", "Conf D"};
-
-    if (ui->conf_graphicsView1)
-    {
-        QGraphicsScene *scene1 = new QGraphicsScene(this);
-        ui->conf_graphicsView1->setScene(scene1);
-        scene1->setSceneRect(0, 0, 500, 300);
-
-        QPen axisPen(Qt::black);
-        axisPen.setWidth(2);
-        scene1->addLine(50, 20, 50, 260, axisPen);
-        scene1->addLine(50, 260, 480, 260, axisPen);
-
-        QList<int> participants = {120, 80, 150, 100};
-        const int barWidth = 40;
-        const int spacing = 35;
-        const int startX = 90;
-        const int baseY = 260;
-        QBrush barBrush(Qt::blue);
-
-        for (int i = 0; i < participants.size() && i < conferences.size(); ++i)
-        {
-            int barHeight = participants[i];
-
-            scene1->addRect(startX + i * (barWidth + spacing),
-                            baseY - barHeight,
-                            barWidth,
-                            barHeight,
-                            QPen(Qt::NoPen),
-                            barBrush);
-
-            scene1->addText(QString::number(participants[i]))
-                ->setPos(startX + i * (barWidth + spacing),
-                         baseY - barHeight - 20);
-
-            scene1->addText(conferences[i])
-                ->setPos(startX + i * (barWidth + spacing) - 5,
-                         baseY + 5);
-        }
-
-        scene1->addText("Participants per Conference")->setPos(150, 0);
-    }
-
-    if (ui->conf_graphicsView1_2)
-    {
-        QGraphicsScene *scene2 = new QGraphicsScene(this);
-        ui->conf_graphicsView1_2->setScene(scene2);
-        scene2->setSceneRect(0, 0, 500, 300);
-
-        QPen axisPen(Qt::black);
-        axisPen.setWidth(2);
-        scene2->addLine(50, 20, 50, 260, axisPen);
-        scene2->addLine(50, 260, 480, 260, axisPen);
-
-        QList<int> publications = {10, 6, 14, 9};
-        const int barWidth = 40;
-        const int spacing = 35;
-        const int startX = 90;
-        const int baseY = 260;
-        QBrush barBrush2(Qt::darkGreen);
-
-        for (int i = 0; i < publications.size() && i < conferences.size(); ++i)
-        {
-            int barHeight = publications[i] * 10; // mise à l'échelle
-
-            scene2->addRect(startX + i * (barWidth + spacing),
-                            baseY - barHeight,
-                            barWidth,
-                            barHeight,
-                            QPen(Qt::NoPen),
-                            barBrush2);
-
-            scene2->addText(QString::number(publications[i]))
-                ->setPos(startX + i * (barWidth + spacing),
-                         baseY - barHeight - 20);
-
-            scene2->addText(conferences[i])
-                ->setPos(startX + i * (barWidth + spacing) - 5,
-                         baseY + 5);
-        }
-
-        scene2->addText("Publications per Conference")->setPos(150, 0);
-    }
-}
-
-void SmartMarket::setupConferencePage()
-{
-    conferencePageIndex = ui->stackedWidgetMain->indexOf(ui->page2);
-
-    if (conferencePageIndex < 0)
+    QSqlQuery testQ;
+    if (!testQ.exec("SELECT COUNT(*) FROM SELIM.PUBLICATION")) {
+        QMessageBox::critical(this, "Erreur BDD",
+                              "Impossible d acces a SELIM.PUBLICATION :\n" + testQ.lastError().text());
         return;
-
-    // Bouton retour vers publications
-    if (auto btnConfBack = ui->page2->findChild<QPushButton*>("conf_pushButton_13"))
-    {
-        connect(btnConfBack, &QPushButton::clicked, this, [this]() {
-            ui->stackedWidgetMain->setCurrentIndex(1);
-        });
     }
+    testQ.next();
+    int rowCount = testQ.value(0).toInt();
+    qDebug() << "Lignes en BDD :" << rowCount;
 
-    // Nav vers reviewers
-    if (auto btnConfReviewers = ui->page2->findChild<QPushButton*>("conf_pushButton_14"))
-    {
-        connect(btnConfReviewers, &QPushButton::clicked, this, [this]() {
-            if (reviewersPageIndex >= 0)
-                ui->stackedWidgetMain->setCurrentIndex(reviewersPageIndex);
-            else
-                QMessageBox::warning(this, "Module Reviewers", "Le module Reviewers n'est pas disponible.");
-        });
-    }
+    QSqlQuery insertQ;
+    insertQ.prepare(
+        "INSERT INTO SELIM.PUBLICATION "
+        "(IDPUBLICATION, TITRE, SOURCE, DOMAINE, DATEPUBLICATION, STATUT, CONTENU) "
+        "VALUES (:id, :titre, :source, :domaine, TO_DATE(:date,'YYYY-MM-DD'), :statut, :contenu)"
+    );
 
-    // Nav vers conférences (page actuelle)
-    if (auto btnConfSelf = ui->page2->findChild<QPushButton*>("conf_pushButton_15"))
-    {
-        connect(btnConfSelf, &QPushButton::clicked, this, [this]() {
-            ui->stackedWidgetMain->setCurrentIndex(conferencePageIndex);
-        });
-    }
-
-    // Nav vers équipements
-    if (auto btnConfEquip = ui->page2->findChild<QPushButton*>("conf_pushButton_16"))
-    {
-        connect(btnConfEquip, &QPushButton::clicked, this, [this]() {
-            QMessageBox::information(this, "Module Équipements", "Le module Équipements sera intégré prochainement.");
-        });
-    }
-
-    setupConferenceCharts();
-}
-
-void SmartMarket::setupReviewersPage()
-{
-    reviewersPageIndex = ui->stackedWidgetMain->indexOf(ui->page3);
-
-    if (reviewersPageIndex < 0)
-        return;
-
-    // Sidebar navigation (page3)
-    if (auto btnPublications = ui->page3->findChild<QPushButton*>("rev_btnPublications"))
-    {
-        connect(btnPublications, &QPushButton::clicked, this, [this]() {
-            ui->stackedWidgetMain->setCurrentIndex(1);
-        });
-    }
-
-    if (auto btnReviewers = ui->page3->findChild<QPushButton*>("rev_btnReviewers"))
-    {
-        connect(btnReviewers, &QPushButton::clicked, this, [this]() {
-            ui->stackedWidgetMain->setCurrentIndex(reviewersPageIndex);
-        });
-    }
-
-    if (auto btnConferences = ui->page3->findChild<QPushButton*>("rev_btnConferences"))
-    {
-        connect(btnConferences, &QPushButton::clicked, this, [this]() {
-            if (conferencePageIndex >= 0)
-                ui->stackedWidgetMain->setCurrentIndex(conferencePageIndex);
-            else
-                QMessageBox::warning(this, "Module Conferences", "Le module Conferences n'est pas disponible.");
-        });
-    }
-
-    if (auto btnEquipments = ui->page3->findChild<QPushButton*>("rev_btnEquipments"))
-    {
-        connect(btnEquipments, &QPushButton::clicked, this, [this]() {
-            QMessageBox::information(this, "Module Equipements", "Le module Equipements sera integre prochainement.");
-        });
-    }
-
-    reviewerUpdateKPIs();
-    reviewerCreateBarChart();
-    reviewerCreateLineChart();
-    reviewerCreatePieChart();
-    reviewerSetupNavigation();
-}
-
-void SmartMarket::reviewerUpdateKPIs()
-{
-    int total = reviewersData.size();
-    float avgRel = 0;
-    int maxEvals = 0;
-    QString topName;
-    QString mostEvalsName;
-    float topRel = 0;
-
-    for (const auto &r : reviewersData)
-    {
-        avgRel += r.reliability;
-        if (r.evaluationCount > maxEvals)
-        {
-            maxEvals = r.evaluationCount;
-            mostEvalsName = r.name;
-        }
-        if (r.reliability > topRel)
-        {
-            topRel = r.reliability;
-            topName = r.name;
-        }
-    }
-    if (total) avgRel /= total;
-
-    if (ui->rev_kpiTotalReviewers)
-        ui->rev_kpiTotalReviewers->setText(QString::number(total));
-    if (ui->rev_kpiAvgReliability)
-        ui->rev_kpiAvgReliability->setText(QString::number(avgRel) + "%");
-    if (ui->rev_kpiMostEvaluations)
-        ui->rev_kpiMostEvaluations->setText(mostEvalsName + " – " + QString::number(maxEvals));
-    if (ui->rev_kpiTopReviewer)
-        ui->rev_kpiTopReviewer->setText(topName + " – " + QString::number(topRel) + "%");
-}
-
-void SmartMarket::reviewerCreateBarChart()
-{
-    if (!ui->rev_chartFrameBar)
-        return;
-
-    auto *set = new QBarSet("Evaluations");
-    QStringList cats;
-    for (const auto &r : reviewersData)
-    {
-        *set << r.evaluationCount;
-        cats << r.name;
-    }
-
-    auto *series = new QBarSeries();
-    series->append(set);
-
-    auto *chart = new QChart();
-    chart->addSeries(series);
-    chart->setTitle("Number of Evaluations per Reviewer");
-    chart->createDefaultAxes();
-    if (!chart->axes(Qt::Horizontal).isEmpty())
-    {
-        if (auto *axis = qobject_cast<QBarCategoryAxis*>(chart->axes(Qt::Horizontal).first()))
-            axis->append(cats);
-    }
-
-    auto *view = new QChartView(chart);
-    view->setRenderHint(QPainter::Antialiasing);
-
-    if (auto *lbl = ui->rev_chartFrameBar->findChild<QLabel*>())
-        lbl->deleteLater();
-
-    auto *lay = new QVBoxLayout(ui->rev_chartFrameBar);
-    lay->setContentsMargins(0, 0, 0, 0);
-    lay->setSpacing(0);
-    view->setParent(ui->rev_chartFrameBar);
-    view->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    lay->addWidget(view);
-}
-
-void SmartMarket::reviewerCreateLineChart()
-{
-    if (!ui->rev_chartFrameLine)
-        return;
-
-    auto *series = new QLineSeries();
-    int x = 0;
-    for (const auto &r : reviewersData)
-        series->append(x++, r.evaluationCount);
-
-    auto *chart = new QChart();
-    chart->addSeries(series);
-    chart->setTitle("Evaluation Trend");
-    chart->createDefaultAxes();
-
-    auto *view = new QChartView(chart);
-    view->setRenderHint(QPainter::Antialiasing);
-
-    if (auto *lbl = ui->rev_chartFrameLine->findChild<QLabel*>())
-        lbl->deleteLater();
-
-    auto *lay = new QVBoxLayout(ui->rev_chartFrameLine);
-    lay->setContentsMargins(0, 0, 0, 0);
-    lay->setSpacing(0);
-    view->setParent(ui->rev_chartFrameLine);
-    view->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    lay->addWidget(view);
-}
-
-void SmartMarket::reviewerCreatePieChart()
-{
-    if (!ui->rev_chartFramePie)
-        return;
-
-    auto *series = new QPieSeries();
-    int c90_100 = 0, c80_90 = 0, cBelow = 0;
-    for (const auto &r : reviewersData)
-    {
-        if (r.reliability >= 90) ++c90_100;
-        else if (r.reliability >= 80) ++c80_90;
-        else ++cBelow;
-    }
-    series->append("90–100%", c90_100);
-    series->append("80–90%", c80_90);
-    series->append("<80%", cBelow);
-
-    auto *chart = new QChart();
-    chart->addSeries(series);
-    chart->setTitle("Reviewer Reliability Distribution");
-
-    auto *view = new QChartView(chart);
-    view->setRenderHint(QPainter::Antialiasing);
-
-    if (auto *lbl = ui->rev_chartFramePie->findChild<QLabel*>())
-        lbl->deleteLater();
-
-    auto *lay = new QVBoxLayout(ui->rev_chartFramePie);
-    lay->setContentsMargins(0, 0, 0, 0);
-    lay->setSpacing(0);
-    view->setParent(ui->rev_chartFramePie);
-    view->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    lay->addWidget(view);
-}
-
-void SmartMarket::reviewerSetupNavigation()
-{
-    if (!ui->rev_stackedWidget || !ui->rev_stackedWidgetPage1 || !ui->rev_page)
-        return;
-
-    const int listIndex = ui->rev_stackedWidget->indexOf(ui->rev_stackedWidgetPage1);
-    const int statsIndex = ui->rev_stackedWidget->indexOf(ui->rev_page);
-
-    auto updateButtons = [this, statsIndex, listIndex](int index) {
-        const bool isStats = (index == statsIndex);
-        const bool isList = (index == listIndex);
-
-        if (ui->rev_btnList)
-            ui->rev_btnList->setChecked(isList);
-        if (ui->rev_btnStatistics)
-            ui->rev_btnStatistics->setChecked(isStats);
-        if (ui->rev_btnList_2)
-            ui->rev_btnList_2->setChecked(isList);
-        if (ui->rev_btnStatistics_2)
-            ui->rev_btnStatistics_2->setChecked(isStats);
+    QList<QVariantList> sampleRows = {
+        {"Publication sans source", "", "Informatique", "2024-02-01", "Non evaluee", "Test d une publication avec source manquante."},
+        {"Publication sans contenu", "arXiv", "Mathematiques", "2024-03-12", "Evaluee", ""},
+        {"Article rejete", "IEEE", "Physique", "2023-12-05", "Rejetee", "Etude refusee pour manque de details."},
+        {"Article en attente", "Springer", "Chimie", "2024-01-20", "En attente", "Relecture en cours."},
+        {"Sans statut", "ACM", "Biologie", "2024-04-10", "", "Publication a verifier."}
     };
 
-    if (ui->rev_btnList_2)
-    {
-        ui->rev_btnList_2->setCheckable(true);
-        connect(ui->rev_btnList_2, &QPushButton::clicked, this, [this, listIndex, updateButtons]() {
-            ui->rev_stackedWidget->setCurrentIndex(listIndex);
-            updateButtons(listIndex);
-        });
+    QSqlQuery checkQ;
+    QSqlQuery seqQ;
+    seqQ.exec("SELECT NVL(MAX(IDPUBLICATION),0) FROM SELIM.PUBLICATION");
+    int nextId = 1;
+    if (seqQ.next()) nextId = seqQ.value(0).toInt() + 1;
+
+    for (const QVariantList &row : sampleRows) {
+        checkQ.prepare("SELECT COUNT(*) FROM SELIM.PUBLICATION WHERE TITRE = :titre");
+        checkQ.bindValue(":titre", row[0]);
+        if (checkQ.exec() && checkQ.next() && checkQ.value(0).toInt() == 0) {
+            insertQ.bindValue(":id", nextId);
+            insertQ.bindValue(":titre", row[0]);
+            insertQ.bindValue(":source", row[1]);
+            insertQ.bindValue(":domaine", row[2]);
+            insertQ.bindValue(":date", row[3]);
+            insertQ.bindValue(":statut", row[4]);
+            insertQ.bindValue(":contenu", row[5]);
+            if (!insertQ.exec()) {
+                qDebug() << "Echec insertion publication de test :" << insertQ.lastError().text();
+            } else {
+                qDebug() << "Publication de test ajoutee :" << row[0] << "id=" << nextId;
+                nextId++;
+            }
+        }
     }
 
-    if (ui->rev_btnStatistics_2)
-    {
-        ui->rev_btnStatistics_2->setCheckable(true);
-        connect(ui->rev_btnStatistics_2, &QPushButton::clicked, this, [this, statsIndex, updateButtons]() {
-            ui->rev_stackedWidget->setCurrentIndex(statsIndex);
-            updateButtons(statsIndex);
-        });
-    }
+    publicationModel->setTable("SELIM.PUBLICATION");
+    publicationModel->setEditStrategy(QSqlTableModel::OnManualSubmit);
+    publicationModel->setHeaderData(0, Qt::Horizontal, "ID");
+    publicationModel->setHeaderData(1, Qt::Horizontal, "Titre");
+    publicationModel->setHeaderData(2, Qt::Horizontal, "Source");
+    publicationModel->setHeaderData(3, Qt::Horizontal, "Domaine");
+    publicationModel->setHeaderData(4, Qt::Horizontal, "Date");
+    publicationModel->setHeaderData(5, Qt::Horizontal, "Statut");
+    publicationModel->setHeaderData(6, Qt::Horizontal, "Contenu");
 
-    if (ui->rev_btnList)
-    {
-        ui->rev_btnList->setCheckable(true);
-        connect(ui->rev_btnList, &QPushButton::clicked, this, [this, listIndex, updateButtons]() {
-            ui->rev_stackedWidget->setCurrentIndex(listIndex);
-            updateButtons(listIndex);
-        });
+    bool ok = publicationModel->select();
+    if (!ok) {
+        QMessageBox::critical(this, "Erreur modele",
+                              "Echec select() :\n" + publicationModel->lastError().text());
+        return;
     }
+    while (publicationModel->canFetchMore())
+        publicationModel->fetchMore();
 
-    if (ui->rev_btnStatistics)
-    {
-        ui->rev_btnStatistics->setCheckable(true);
-        connect(ui->rev_btnStatistics, &QPushButton::clicked, this, [this, statsIndex, updateButtons]() {
-            ui->rev_stackedWidget->setCurrentIndex(statsIndex);
-            updateButtons(statsIndex);
-        });
-    }
-
-    ui->rev_stackedWidget->setCurrentIndex(statsIndex);
-    updateButtons(statsIndex);
+    ui->tableView->setModel(publicationModel);
+    ui->tableView->horizontalHeader()->setStretchLastSection(true);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    ui->tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->tableView->setAlternatingRowColors(true);
+    ui->tableView->setSortingEnabled(true);
+    ui->tableView->show();
 }
 
-int SmartMarket::addEmbeddedWindow(QMainWindow *window)
+// ================================================================
+// REFRESH
+// ================================================================
+void SmartMarket::refreshAll()
 {
-    if (!window)
-        return -1;
-
-    QWidget *central = window->centralWidget();
-    if (!central)
-        return -1;
-
-    central->setParent(nullptr);
-    window->setCentralWidget(nullptr);
-
-    QWidget *container = new QWidget(this);
-    auto layout = new QVBoxLayout(container);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->addWidget(central);
-
-    return ui->stackedWidgetMain->addWidget(container);
+    publicationModel->setFilter("");
+    publicationModel->select();
+    while (publicationModel->canFetchMore())
+        publicationModel->fetchMore();
+    ui->tableView->reset();
+    refreshCharts();
 }
 
-// ============================================================
-// NAVIGATION - MODULE LOGIN
-// ============================================================
-
-void SmartMarket::on_btnLoginEntrer_clicked()
+// ================================================================
+// GRAPHIQUES
+// ================================================================
+void SmartMarket::createCharts()
 {
-    QString email = ui->lineEditLoginEmail->text().trimmed();
-    QString password = ui->lineEditLoginPassword->text().trimmed();
+    if (!ui->chartWidget->layout()) {
+        QVBoxLayout *l = new QVBoxLayout(ui->chartWidget);
+        l->setContentsMargins(0,0,0,0);
+    }
+    if (!ui->domainChartWidget->layout()) {
+        QVBoxLayout *l = new QVBoxLayout(ui->domainChartWidget);
+        l->setContentsMargins(0,0,0,0);
+    }
+    refreshCharts();
+}
 
-    if(email.compare("oussama", Qt::CaseInsensitive) == 0
-        && password == "oussama")
+void SmartMarket::refreshCharts()
+{
+    if (pieChartView) {
+        ui->chartWidget->layout()->removeWidget(pieChartView);
+        delete pieChartView; pieChartView = nullptr;
+    }
+    if (barChartView) {
+        ui->domainChartWidget->layout()->removeWidget(barChartView);
+        delete barChartView; barChartView = nullptr;
+    }
+
+    QSqlQuery qStat;
+    qStat.exec("SELECT STATUT, COUNT(*) FROM SELIM.PUBLICATION GROUP BY STATUT");
+    QPieSeries *pie = new QPieSeries();
+    while (qStat.next()) {
+        QString s = qStat.value(0).toString();
+        pie->append(s.isEmpty() ? "Inconnu" : s, qStat.value(1).toInt());
+    }
+    for (auto *sl : pie->slices()) {
+        sl->setLabelVisible(true);
+        sl->setLabel(QString("%1 (%2)").arg(sl->label()).arg((int)sl->value()));
+    }
+    QChart *pc = new QChart();
+    pc->addSeries(pie);
+    pc->setTitle("Repartition par statut");
+    pc->legend()->setAlignment(Qt::AlignRight);
+    pc->setBackgroundVisible(false);
+    pc->setAnimationOptions(QChart::AllAnimations);
+    pieChartView = new QChartView(pc);
+    pieChartView->setRenderHint(QPainter::Antialiasing);
+    ui->chartWidget->layout()->addWidget(pieChartView);
+
+    QSqlQuery qDom;
+    qDom.exec(
+        "SELECT CASE WHEN TRIM(NVL(DOMAINE,'') ) = '' THEN 'Inconnu' ELSE DOMAINE END AS DOMAINE, "
+        "COUNT(*) AS CNT "
+        "FROM SELIM.PUBLICATION "
+        "GROUP BY CASE WHEN TRIM(NVL(DOMAINE,'')) = '' THEN 'Inconnu' ELSE DOMAINE END "
+        "ORDER BY CNT DESC, DOMAINE"
+    );
+    QStringList doms;
+    QList<int> cnts;
+    int maxCount = 0;
+    while (qDom.next()) {
+        QString d = qDom.value(0).toString();
+        doms << d;
+        int count = qDom.value(1).toInt();
+        cnts << count;
+        maxCount = qMax(maxCount, count);
+    }
+
+    QBarSet *bs = new QBarSet("Publications");
+    bs->setColor(QColor("#1E40AF"));
+    for (int c : cnts) *bs << c;
+    QBarSeries *bseries = new QBarSeries();
+    bseries->append(bs);
+    bseries->setLabelsVisible(true);
+    bseries->setLabelsPosition(QAbstractBarSeries::LabelsOutsideEnd);
+
+    QChart *bc = new QChart();
+    bc->addSeries(bseries);
+    bc->setTitle("Publications par domaine");
+    bc->setAnimationOptions(QChart::SeriesAnimations);
+    bc->setBackgroundVisible(false);
+    QBarCategoryAxis *axX = new QBarCategoryAxis();
+    axX->append(doms);
+    bc->addAxis(axX, Qt::AlignBottom);
+    bseries->attachAxis(axX);
+    QValueAxis *axY = new QValueAxis();
+    axY->setLabelFormat("%d");
+    axY->setRange(0, qMax(1, maxCount + 1));
+    bc->addAxis(axY, Qt::AlignLeft);
+    bseries->attachAxis(axY);
+    bc->legend()->setVisible(false);
+    bc->legend()->setAlignment(Qt::AlignBottom);
+    barChartView = new QChartView(bc);
+    barChartView->setRenderHint(QPainter::Antialiasing);
+    ui->domainChartWidget->layout()->addWidget(barChartView);
+}
+
+// ================================================================
+// LOGIN
+// ================================================================
+void SmartMarket::on_pushButton_15_clicked()
+{
+    QString email    = ui->lineEdit_8->text().trimmed();
+    QString password = ui->lineEdit_10->text().trimmed();
+
+    if (email.isEmpty() || password.isEmpty()) {
+        QMessageBox::warning(this, "Attention", "Remplissez l email et le mot de passe.");
+        return;
+    }
+    if (!email.contains("@") || !email.contains(".")) {
+        QMessageBox::warning(this, "Attention", "Adresse email invalide.");
+        return;
+    }
+    if (email.compare("Selim.ASCHI@esprit.tn", Qt::CaseInsensitive) == 0
+        && password == "selim")
     {
-        QMessageBox::information(this, "Succès", "Connexion réussie ! Bienvenue dans SmartMarket.");
-        
-        // 🔥 Navigation vers la page Publication (page 1)
         ui->stackedWidgetMain->setCurrentIndex(1);
+        initPublicationTable();
+        createCharts();
     }
     else
     {
         QMessageBox::warning(this, "Erreur", "Email ou mot de passe incorrect !");
+        ui->lineEdit_10->clear();
+        ui->lineEdit_10->setFocus();
     }
 }
 
-void SmartMarket::on_btnLoginEnvoyer_clicked()
+void SmartMarket::on_pushButton_13_clicked()
 {
-    QString email = ui->lineEditResetEmail->text().trimmed();
-    
-    if(email.isEmpty())
-    {
-        QMessageBox::warning(this, "Attention", "Veuillez entrer votre adresse email.");
-        return;
+    QString email = ui->lineEdit_11->text().trimmed();
+    if (email.isEmpty()) {
+        QMessageBox::warning(this, "Attention", "Entrez votre adresse email."); return;
     }
-    
-    QMessageBox::information(this, "Email envoyé", 
-        "Un email de réinitialisation a été envoyé à : " + email);
-    
-    ui->lineEditResetEmail->clear();
-
-    // Naviguer vers la page Publications
-    ui->stackedWidgetMain->setCurrentIndex(1);
+    if (!email.contains("@") || !email.contains(".")) {
+        QMessageBox::warning(this, "Attention", "Adresse email invalide."); return;
+    }
+    QMessageBox::information(this, "Email envoye",
+                             "Email de reinitialisation envoye a : " + email);
+    ui->lineEdit_11->clear();
 }
 
-// ============================================================
-// MODULE PUBLICATION - CRUD
-// ============================================================
-
+// ================================================================
+// CRUD — AJOUTER
+// ================================================================
 void SmartMarket::on_pushButton_19_clicked()
 {
-    QString titre = ui->lineEdit_16->text().trimmed();
-    QString source = ui->lineEdit_17->text().trimmed();
-    QString createur = ui->lineEdit_18->text().trimmed();
-    QString domaine = ui->comboBox_5->currentText();
-    QString date = ui->dateEdit_5->date().toString("dd/MM/yyyy");
-    QString idModif = ui->lineEdit_19->text().trimmed();
-    
-    if(titre.isEmpty() || source.isEmpty() || createur.isEmpty())
-    {
-        QMessageBox::warning(this, "Attention", "Veuillez remplir tous les champs obligatoires.");
+    QString titre   = ui->lineEdit_16->text().trimmed();
+    QString source  = ui->lineEdit_17->text().trimmed();
+    QString contenu = ui->lineEdit_18->toPlainText().trimmed();
+    QString domaine = ui->comboBox_5->currentText().trimmed();
+    QString date    = ui->dateEdit_5->date().toString("yyyy-MM-dd");
+
+    if (titre.isEmpty() || source.isEmpty() || domaine.isEmpty()) {
+        QMessageBox::warning(this, "Attention",
+                             "Remplissez obligatoirement : Titre, Source, Domaine.");
         return;
     }
-    
-    if(idModif.isEmpty())
-    {
-        int newRow = publicationModel->rowCount();
-        publicationModel->insertRow(newRow);
-        
-        publicationModel->setItem(newRow, 0, new QStandardItem(domaine));
-        publicationModel->setItem(newRow, 1, new QStandardItem(titre));
-        publicationModel->setItem(newRow, 2, new QStandardItem(source));
-        publicationModel->setItem(newRow, 3, new QStandardItem(date));
-        publicationModel->setItem(newRow, 4, new QStandardItem("Non évaluée"));
-        
-        QMessageBox::information(this, "Succès", "Publication ajoutée avec succès !");
-        
+    if (titre.length() > 20) {
+        QMessageBox::warning(this, "Attention", "Titre : max 20 caracteres."); return;
+    }
+    if (source.length() > 20) {
+        QMessageBox::warning(this, "Attention", "Source : max 20 caracteres."); return;
+    }
+    if (domaine.length() > 20) {
+        QMessageBox::warning(this, "Attention", "Domaine : max 20 caracteres."); return;
+    }
+
+    QSqlQuery seqQ;
+    seqQ.exec("SELECT NVL(MAX(IDPUBLICATION),0)+1 FROM SELIM.PUBLICATION");
+    int newId = 1;
+    if (seqQ.next()) newId = seqQ.value(0).toInt();
+
+    QSqlQuery q;
+    q.prepare(
+        "INSERT INTO SELIM.PUBLICATION "
+        "(IDPUBLICATION, TITRE, SOURCE, DOMAINE, DATEPUBLICATION, STATUT, CONTENU) "
+        "VALUES (:id, :titre, :source, :domaine, "
+        "TO_DATE(:date,'YYYY-MM-DD'), 'Non evaluee', :contenu)"
+        );
+    q.bindValue(":id",      newId);
+    q.bindValue(":titre",   titre);
+    q.bindValue(":source",  source);
+    q.bindValue(":domaine", domaine);
+    q.bindValue(":date",    date);
+    q.bindValue(":contenu", contenu);
+
+    if (q.exec()) {
+        QMessageBox::information(this, "Succes",
+                                 QString("Publication ajoutee ! ID : %1").arg(newId));
         ui->lineEdit_16->clear();
         ui->lineEdit_17->clear();
         ui->lineEdit_18->clear();
         ui->lineEdit_19->clear();
+        refreshAll();
+    } else {
+        QMessageBox::critical(this, "Erreur BDD", "Echec ajout :\n" + q.lastError().text());
     }
 }
 
+// ================================================================
+// CRUD — MODIFIER
+// ================================================================
 void SmartMarket::on_pushButton_20_clicked()
 {
-    QString titre = ui->lineEdit_16->text().trimmed();
-    QString source = ui->lineEdit_17->text().trimmed();
-    QString createur = ui->lineEdit_18->text().trimmed();
-    QString domaine = ui->comboBox_5->currentText();
-    QString date = ui->dateEdit_5->date().toString("dd/MM/yyyy");
-    QString idModif = ui->lineEdit_19->text().trimmed();
-    
-    if(idModif.isEmpty())
-    {
-        QMessageBox::warning(this, "Attention", "Veuillez entrer l'ID de la publication à modifier.");
-        return;
+    QString titre   = ui->lineEdit_16->text().trimmed();
+    QString source  = ui->lineEdit_17->text().trimmed();
+    QString contenu = ui->lineEdit_18->toPlainText().trimmed();
+    QString domaine = ui->comboBox_5->currentText().trimmed();
+    QString date    = ui->dateEdit_5->date().toString("yyyy-MM-dd");
+    QString idStr   = ui->lineEdit_19->text().trimmed();
+
+    if (idStr.isEmpty()) {
+        QMessageBox::warning(this, "Attention", "Entrez l ID de la publication a modifier."); return;
     }
-    
-    int rowToModify = idModif.toInt() - 1;
-    
-    if(rowToModify >= 0 && rowToModify < publicationModel->rowCount())
-    {
-        publicationModel->setItem(rowToModify, 0, new QStandardItem(domaine));
-        publicationModel->setItem(rowToModify, 1, new QStandardItem(titre));
-        publicationModel->setItem(rowToModify, 2, new QStandardItem(source));
-        publicationModel->setItem(rowToModify, 3, new QStandardItem(date));
-        
-        QMessageBox::information(this, "Succès", "Publication modifiée avec succès !");
-        
+    bool ok; int id = idStr.toInt(&ok);
+    if (!ok || id <= 0) {
+        QMessageBox::warning(this, "Attention", "L ID doit etre un entier positif."); return;
+    }
+    if (titre.isEmpty() || source.isEmpty()) {
+        QMessageBox::warning(this, "Attention", "Remplissez Titre et Source."); return;
+    }
+    if (titre.length() > 20) {
+        QMessageBox::warning(this, "Attention", "Titre : max 20 caracteres."); return;
+    }
+    if (domaine.length() > 20) {
+        QMessageBox::warning(this, "Attention", "Domaine : max 20 caracteres."); return;
+    }
+
+    QSqlQuery chk;
+    chk.prepare("SELECT COUNT(*) FROM SELIM.PUBLICATION WHERE IDPUBLICATION=:id");
+    chk.bindValue(":id", id); chk.exec();
+    if (chk.next() && chk.value(0).toInt() == 0) {
+        QMessageBox::warning(this, "Erreur", QString("ID %1 introuvable.").arg(id)); return;
+    }
+
+    QSqlQuery q;
+    q.prepare(
+        "UPDATE SELIM.PUBLICATION "
+        "SET TITRE=:titre, SOURCE=:source, DOMAINE=:domaine, "
+        "DATEPUBLICATION=TO_DATE(:date,'YYYY-MM-DD'), CONTENU=:contenu "
+        "WHERE IDPUBLICATION=:id"
+        );
+    q.bindValue(":titre",   titre);
+    q.bindValue(":source",  source);
+    q.bindValue(":domaine", domaine);
+    q.bindValue(":date",    date);
+    q.bindValue(":contenu", contenu);
+    q.bindValue(":id",      id);
+
+    if (q.exec()) {
+        QMessageBox::information(this, "Succes",
+                                 QString("Publication ID %1 modifiee !").arg(id));
         ui->lineEdit_16->clear();
         ui->lineEdit_17->clear();
         ui->lineEdit_18->clear();
         ui->lineEdit_19->clear();
-    }
-    else
-    {
-        QMessageBox::warning(this, "Erreur", "ID de publication introuvable.");
+        refreshAll();
+    } else {
+        QMessageBox::critical(this, "Erreur BDD", "Echec modification :\n" + q.lastError().text());
     }
 }
 
+// ================================================================
+// CRUD — SUPPRIMER
+// ================================================================
 void SmartMarket::on_pushButton_8_clicked()
 {
-    QString idSupprimer = ui->lineEdit_9->text().trimmed();
-    
-    if(idSupprimer.isEmpty())
-    {
-        QMessageBox::warning(this, "Attention", "Veuillez entrer l'ID de la publication à supprimer.");
-        return;
+    QString idStr = ui->lineEdit_9->text().trimmed();
+    if (idStr.isEmpty()) {
+        QMessageBox::warning(this, "Attention", "Entrez l ID a supprimer."); return;
     }
-    
-    int rowToDelete = idSupprimer.toInt() - 1;
-    
-    if(rowToDelete >= 0 && rowToDelete < publicationModel->rowCount())
-    {
-        publicationModel->removeRow(rowToDelete);
-        QMessageBox::information(this, "Succès", "Publication supprimée avec succès !");
+    bool ok; int id = idStr.toInt(&ok);
+    if (!ok || id <= 0) {
+        QMessageBox::warning(this, "Attention", "L ID doit etre un entier positif."); return;
+    }
+
+    QSqlQuery chk;
+    chk.prepare("SELECT TITRE FROM SELIM.PUBLICATION WHERE IDPUBLICATION=:id");
+    chk.bindValue(":id", id); chk.exec();
+    if (!chk.next()) {
+        QMessageBox::warning(this, "Erreur", QString("ID %1 introuvable.").arg(id)); return;
+    }
+    QString titre = chk.value(0).toString();
+
+    auto rep = QMessageBox::question(this, "Confirmation",
+                                     QString("Supprimer \"%1\" (ID %2) ?").arg(titre).arg(id),
+                                     QMessageBox::Yes | QMessageBox::No);
+    if (rep != QMessageBox::Yes) return;
+
+    QSqlQuery q;
+    q.prepare("DELETE FROM SELIM.PUBLICATION WHERE IDPUBLICATION=:id");
+    q.bindValue(":id", id);
+
+    if (q.exec()) {
+        QMessageBox::information(this, "Succes",
+                                 QString("Publication ID %1 supprimee !").arg(id));
         ui->lineEdit_9->clear();
-    }
-    else
-    {
-        QMessageBox::warning(this, "Erreur", "ID de publication introuvable.");
+        refreshAll();
+    } else {
+        QMessageBox::critical(this, "Erreur BDD", "Echec suppression :\n" + q.lastError().text());
     }
 }
 
+// ================================================================
+// RECHERCHER
+// ================================================================
 void SmartMarket::on_pushButton_9_clicked()
 {
-    QString titre = ui->lineEdit_20->text().trimmed();
-    QString source = ui->lineEdit_21->text().trimmed();
-    QString domaine = ui->comboBox_2->currentText();
-    QString score = ui->lineEdit_23->text().trimmed();
-    QString statut = ui->lineEdit_22->text().trimmed();
-    
-    QMessageBox::information(this, "Recherche", 
-        "Recherche effectuée avec les critères :\n"
-        "Titre: " + titre + "\n"
-        "Source: " + source + "\n"
-        "Domaine: " + domaine + "\n"
-        "Score: " + score + "\n"
-        "Statut: " + statut);
+    QString titre   = ui->lineEdit_20->text().trimmed();
+    QString source  = ui->lineEdit_21->text().trimmed();
+    QString domaine = ui->comboBox_2->currentText().trimmed();
+    QString statut  = ui->lineEdit_22->text().trimmed();
+
+    QString filter;
+    if (!titre.isEmpty())
+        filter += QString("UPPER(TITRE) LIKE UPPER('%%%1%%') AND ").arg(titre);
+    if (!source.isEmpty())
+        filter += QString("UPPER(SOURCE) LIKE UPPER('%%%1%%') AND ").arg(source);
+    if (!domaine.isEmpty() && domaine.toUpper() != "TOUS")
+        filter += QString("UPPER(DOMAINE) = UPPER('%1') AND ").arg(domaine);
+    if (!statut.isEmpty())
+        filter += QString("UPPER(STATUT) LIKE UPPER('%%%1%%') AND ").arg(statut);
+    if (filter.endsWith(" AND "))
+        filter.chop(5);
+
+    publicationModel->setFilter(filter);
+    publicationModel->select();
+    while (publicationModel->canFetchMore())
+        publicationModel->fetchMore();
+
+    if (publicationModel->rowCount() == 0)
+        QMessageBox::information(this, "Recherche", "Aucune publication trouvee.");
 }
 
+// ================================================================
+// REINITIALISER
+// ================================================================
 void SmartMarket::on_pushButton_5_clicked()
 {
     ui->lineEdit_20->clear();
     ui->lineEdit_21->clear();
-    ui->lineEdit_23->clear();
     ui->lineEdit_22->clear();
+    ui->lineEdit_23->clear();
     ui->comboBox_2->setCurrentIndex(0);
-    
-    QMessageBox::information(this, "Réinitialisation", "Critères de recherche réinitialisés.");
+    publicationModel->setFilter("");
+    publicationModel->select();
+    while (publicationModel->canFetchMore())
+        publicationModel->fetchMore();
 }
 
+// ================================================================
+// EXPORT PDF — 100% FONCTIONNEL avec QPrinter + QPainter
+// ================================================================
 void SmartMarket::on_pushButton_21_clicked()
 {
-    bool toutes = ui->radioButton_5->isChecked();
-    bool pdf = ui->radioButton_7->isChecked();
-    bool excel = ui->radioButton_8->isChecked();
-    bool includeVides = ui->checkBox_3->isChecked();
+    bool pdf    = ui->radioButton_7->isChecked();
+    bool excel  = ui->radioButton_8->isChecked();
 
-    QString format = "PDF";
-    if (excel)
-        format = "Excel";
-    else if (pdf)
-        format = "PDF";
-    QString scope = toutes ? "toutes les publications" : "les publications filtrées";
-    
-    QMessageBox::information(this, "Export", 
-        "Export en " + format + " de " + scope + ".\n"
-        "Inclure champs vides : " + (includeVides ? "Oui" : "Non"));
+    if (!pdf && !excel) {
+        QMessageBox::warning(this, "Attention", "Choisissez PDF ou Excel."); return;
+    }
+
+    if (excel) {
+        QMessageBox::information(this, "Export Excel",
+                                 "Export Excel : fonctionnalite reservee a une prochaine version.\n"
+                                 "Utilisez le format PDF disponible maintenant.");
+        return;
+    }
+
+    // PDF
+    bool toutesPublications = ui->radioButton_5->isChecked();
+    exporterPDF(toutesPublications);
 }
 
-// ============================================================
-// MODULE PUBLICATION - ANALYSE
-// ============================================================
+void SmartMarket::exporterPDF(bool toutesPublications)
+{
+    // Demander chemin de sauvegarde
+    QString filePath = QFileDialog::getSaveFileName(
+        this, "Enregistrer le PDF",
+        QDir::homePath() + "/publications_" +
+            QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".pdf",
+        "Fichiers PDF (*.pdf)"
+        );
+    if (filePath.isEmpty()) return;
 
+    // Préparer les données
+    QSqlQuery q;
+    QString sql = "SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, "
+                  "TO_CHAR(DATEPUBLICATION,'DD/MM/YYYY'), STATUT, CONTENU "
+                  "FROM SELIM.PUBLICATION";
+
+    // Si on exporte seulement les publications filtrées
+    if (!toutesPublications) {
+        QString currentFilter = publicationModel->filter();
+        if (!currentFilter.isEmpty())
+            sql += " WHERE " + currentFilter;
+    }
+    sql += " ORDER BY IDPUBLICATION";
+
+    if (!q.exec(sql)) {
+        QMessageBox::critical(this, "Erreur BDD",
+                              "Impossible de recuperer les donnees :\n" + q.lastError().text());
+        return;
+    }
+
+    // Charger toutes les lignes
+    struct PubRow {
+        QString id, titre, source, domaine, date, statut, contenu;
+    };
+    QList<PubRow> rows;
+    while (q.next()) {
+        PubRow r;
+        r.id      = q.value(0).toString();
+        r.titre   = q.value(1).toString();
+        r.source  = q.value(2).toString();
+        r.domaine = q.value(3).toString();
+        r.date    = q.value(4).toString();
+        r.statut  = q.value(5).toString();
+        r.contenu = q.value(6).toString();
+        rows << r;
+    }
+
+    if (rows.isEmpty()) {
+        QMessageBox::warning(this, "Export PDF",
+                             "Aucune publication a exporter.");
+        return;
+    }
+
+    // ── Créer le PDF via QPrinter ────────────────────────────────
+    QPrinter printer(QPrinter::HighResolution);
+    printer.setOutputFormat(QPrinter::PdfFormat);
+    printer.setOutputFileName(filePath);
+    printer.setPageSize(QPageSize(QPageSize::A4));
+    printer.setPageOrientation(QPageLayout::Landscape);
+    printer.setPageMargins(QMarginsF(15, 15, 15, 15), QPageLayout::Millimeter);
+
+    QPainter painter;
+    if (!painter.begin(&printer)) {
+        QMessageBox::critical(this, "Erreur PDF",
+                              "Impossible d initialiser le rendu PDF.\n"
+                              "Verifiez les permissions du fichier.");
+        return;
+    }
+
+    // Facteur de mise à l'échelle pour haute résolution
+    const double scale = printer.resolution() / 96.0;
+    const int pageW    = painter.device()->width();
+    const int pageH    = painter.device()->height();
+    const int marginX  = (int)(15 * scale * 3.78);  // mm → pixels approx
+    const int marginY  = (int)(15 * scale * 3.78);
+    const int contentW = pageW - 2 * marginX;
+
+    // Polices
+    QFont titleFont("Arial", (int)(16 * scale));
+    titleFont.setBold(true);
+    QFont headerFont("Arial", (int)(9 * scale));
+    headerFont.setBold(true);
+    QFont bodyFont("Arial", (int)(8 * scale));
+    QFont metaFont("Arial", (int)(7 * scale));
+
+    // Couleurs
+    QColor colorHeader(15, 42, 68);      // #0F2A44 — bleu marine
+    QColor colorAlt(240, 245, 255);      // bleu très clair
+    QColor colorBorder(180, 200, 230);
+    QColor colorTitle(255, 255, 255);
+    QColor colorText(30, 30, 30);
+
+    // Largeurs de colonnes (proportionnelles)
+    const int COL_COUNT = 7;
+    int colW[COL_COUNT];
+    double proportions[] = { 0.06, 0.18, 0.13, 0.12, 0.09, 0.12, 0.30 };
+    for (int i = 0; i < COL_COUNT; ++i)
+        colW[i] = (int)(contentW * proportions[i]);
+
+    const int rowH     = (int)(28 * scale);
+    const int headerH  = (int)(36 * scale);
+    const int titleH   = (int)(55 * scale);
+
+    // ── Fonction lambda pour dessiner l'en-tête de tableau ──────
+    auto drawTableHeader = [&](int y) {
+        const QString headers[] = { "ID", "Titre", "Source", "Domaine",
+                                   "Date", "Statut", "Contenu" };
+        int x = marginX;
+        for (int i = 0; i < COL_COUNT; ++i) {
+            // Fond
+            painter.fillRect(x, y, colW[i], headerH, colorHeader);
+            // Texte
+            painter.setFont(headerFont);
+            painter.setPen(colorTitle);
+            painter.drawText(QRect(x + (int)(4*scale), y,
+                                   colW[i] - (int)(8*scale), headerH),
+                             Qt::AlignVCenter | Qt::AlignLeft, headers[i]);
+            x += colW[i];
+        }
+    };
+
+    // ── Fonction lambda pour dessiner une ligne de données ───────
+    auto drawDataRow = [&](int y, const PubRow &r, bool alternate) {
+        const QString vals[] = { r.id, r.titre, r.source, r.domaine,
+                                r.date, r.statut, r.contenu };
+        int x = marginX;
+        for (int i = 0; i < COL_COUNT; ++i) {
+            // Fond
+            QColor bg = alternate ? colorAlt : QColor(255, 255, 255);
+            painter.fillRect(x, y, colW[i], rowH, bg);
+            // Bordure
+            painter.setPen(QPen(colorBorder, 1));
+            painter.drawRect(x, y, colW[i], rowH);
+            // Texte (tronqué si nécessaire)
+            painter.setFont(bodyFont);
+            painter.setPen(colorText);
+            QFontMetrics fm(bodyFont);
+            QString txt = fm.elidedText(vals[i], Qt::ElideRight,
+                                        colW[i] - (int)(10*scale));
+            painter.drawText(QRect(x + (int)(4*scale), y,
+                                   colW[i] - (int)(8*scale), rowH),
+                             Qt::AlignVCenter | Qt::AlignLeft, txt);
+            x += colW[i];
+        }
+    };
+
+    // ════════ PAGE(S) ════════════════════════════════════════════
+    int currentY   = marginY;
+    int pageNumber = 1;
+    bool firstPage = true;
+
+    for (int rowIdx = 0; rowIdx < rows.size(); ) {
+
+        // ── En-tête de page ─────────────────────────────────────
+        if (firstPage) {
+            // Bannière titre
+            painter.fillRect(marginX, currentY, contentW, titleH, colorHeader);
+            painter.setFont(titleFont);
+            painter.setPen(colorTitle);
+            painter.drawText(QRect(marginX, currentY, contentW, titleH),
+                             Qt::AlignCenter,
+                             "RAPPORT DES PUBLICATIONS — SmartMarket");
+            currentY += titleH + (int)(8 * scale);
+
+            // Méta-info
+            painter.setFont(metaFont);
+            painter.setPen(Qt::darkGray);
+            painter.drawText(marginX, currentY + (int)(14*scale),
+                             QString("Genere le : %1   |   Total : %2 publication(s)   |   Filtre : %3")
+                                 .arg(QDateTime::currentDateTime().toString("dd/MM/yyyy HH:mm"))
+                                 .arg(rows.size())
+                                 .arg(toutesPublications ? "Toutes" : "Filtrées"));
+            currentY += (int)(30 * scale);
+            firstPage = false;
+        }
+
+        // En-tête du tableau
+        drawTableHeader(currentY);
+        currentY += headerH;
+
+        // ── Lignes de données jusqu'en bas de page ───────────────
+        bool alternate = false;
+        while (rowIdx < rows.size()) {
+            // Espace restant ?
+            if (currentY + rowH > pageH - marginY - (int)(20*scale)) {
+                // Pied de page
+                painter.setFont(metaFont);
+                painter.setPen(Qt::gray);
+                painter.drawText(
+                    QRect(marginX, pageH - marginY - (int)(20*scale),
+                          contentW, (int)(20*scale)),
+                    Qt::AlignCenter,
+                    QString("Page %1  —  SmartMarket").arg(pageNumber));
+
+                printer.newPage();
+                pageNumber++;
+                currentY = marginY;
+                drawTableHeader(currentY);
+                currentY += headerH;
+                alternate = false;
+            }
+
+            drawDataRow(currentY, rows[rowIdx], alternate);
+            currentY += rowH;
+            alternate = !alternate;
+            ++rowIdx;
+        }
+    }
+
+    // Pied de dernière page
+    painter.setFont(metaFont);
+    painter.setPen(Qt::gray);
+    painter.drawText(
+        QRect(marginX, pageH - marginY - (int)(20*scale),
+              contentW, (int)(20*scale)),
+        Qt::AlignCenter,
+        QString("Page %1  —  SmartMarket").arg(pageNumber));
+
+    painter.end();
+
+    QMessageBox::information(this, "Export PDF",
+                             QString("PDF genere avec succes !\n%1\n\n"
+                                     "%2 publication(s) exportee(s).")
+                                 .arg(filePath).arg(rows.size()));
+}
+
+// ================================================================
+// SIMILARITE IA — Appel Anthropic
+// ================================================================
 void SmartMarket::on_pushButton_6_clicked()
 {
     QString id1 = ui->lineEdit_5->text().trimmed();
     QString id2 = ui->lineEdit_6->text().trimmed();
-    
-    if(id1.isEmpty() || id2.isEmpty())
-    {
-        QMessageBox::warning(this, "Attention", "Veuillez entrer les deux IDs de publication.");
-        return;
+
+    if (id1.isEmpty() || id2.isEmpty()) {
+        QMessageBox::warning(this, "Attention", "Entrez les deux IDs."); return;
     }
-    
-    int similarite = 75;
-    
-    QMessageBox::information(this, "Détection de similarité", 
-        "Comparaison des publications " + id1 + " et " + id2 + ".\n"
-        "Taux de similarité : " + QString::number(similarite) + "%");
-    
-    ui->progressBar->setValue(similarite);
+    if (id1 == id2) {
+        QMessageBox::warning(this, "Attention", "Les IDs doivent etre differents."); return;
+    }
+
+    // Récupérer les deux publications
+    QSqlQuery q;
+    q.prepare("SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, CONTENU, STATUT "
+              "FROM SELIM.PUBLICATION WHERE IDPUBLICATION IN (:a, :b)");
+    q.bindValue(":a", id1.toInt());
+    q.bindValue(":b", id2.toInt());
+    q.exec();
+
+    QString titreA, contenuA, sourceA, domaineA, statutA;
+    QString titreB, contenuB, sourceB, domaineB, statutB;
+    int foundCount = 0;
+    while (q.next()) {
+        int curId = q.value(0).toInt();
+        if (curId == id1.toInt()) {
+            titreA   = q.value(1).toString();
+            sourceA  = q.value(2).toString();
+            domaineA = q.value(3).toString();
+            contenuA = q.value(4).toString();
+            statutA  = q.value(5).toString();
+            foundCount++;
+        } else if (curId == id2.toInt()) {
+            titreB   = q.value(1).toString();
+            sourceB  = q.value(2).toString();
+            domaineB = q.value(3).toString();
+            contenuB = q.value(4).toString();
+            statutB  = q.value(5).toString();
+            foundCount++;
+        }
+    }
+
+    if (foundCount < 2) {
+        QMessageBox::warning(this, "Erreur",
+                             "Un ou les deux IDs introuvables dans la base."); return;
+    }
+
+    // Sauvegarder pour le callback
+    simId1     = id1; simId2     = id2;
+    simTitre1  = titreA; simTitre2  = titreB;
+    simContenu1 = contenuA; simContenu2 = contenuB;
+
+    // Vider le tableau et afficher un message d'attente
+    ui->tableWidget_4->clearContents();
+    ui->tableWidget_4->setRowCount(1);
+    ui->tableWidget_4->setColumnCount(4);
+    ui->tableWidget_4->setHorizontalHeaderLabels(
+        {"Publication 1", "Publication 2", "Taux de similarite", "Statut"});
+    ui->tableWidget_4->setItem(0, 0, new QTableWidgetItem(titreA));
+    ui->tableWidget_4->setItem(0, 1, new QTableWidgetItem(titreB));
+    ui->tableWidget_4->setItem(0, 2, new QTableWidgetItem("Analyse en cours..."));
+    ui->tableWidget_4->setItem(0, 3, new QTableWidgetItem("⏳ Traitement IA"));
+    ui->tableWidget_4->resizeColumnsToContents();
+
+    ui->progressBar->setValue(10);
+
+    // Appel IA
+    callAnthropicSimilarite(titreA, contenuA, titreB, contenuB);
 }
 
+void SmartMarket::callAnthropicSimilarite(const QString &titre1, const QString &contenu1,
+                                          const QString &titre2, const QString &contenu2)
+{
+    QString prompt = QString(
+                         "Tu es un expert en analyse de publications scientifiques.\n"
+                         "Analyse la similarite entre ces deux publications et reponds UNIQUEMENT en JSON valide.\n\n"
+                         "Publication 1:\n"
+                         "- Titre: %1\n"
+                         "- Contenu: %2\n\n"
+                         "Publication 2:\n"
+                         "- Titre: %3\n"
+                         "- Contenu: %4\n\n"
+                         "Reponds en JSON avec exactement ces champs:\n"
+                         "{\n"
+                         "  \"taux\": <entier entre 0 et 100>,\n"
+                         "  \"statut\": \"<Tres similaires | Moderement similaires | Peu similaires | Non similaires>\",\n"
+                         "  \"justification\": \"<explication concise en 1-2 phrases>\"\n"
+                         "}"
+                         ).arg(titre1, contenu1.left(500), titre2, contenu2.left(500));
+
+    // Appel à Ollama (100% gratuit, local)
+    QJsonObject body;
+    body["model"]  = OLLAMA_MODEL;
+    body["prompt"] = prompt;
+    body["stream"] = false;
+
+    QNetworkRequest req{QUrl(OLLAMA_ENDPOINT)};
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+    QNetworkReply *reply = networkManager->post(req, QJsonDocument(body).toJson());
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        onSimilariteReply(reply);
+    });
+}
+
+void SmartMarket::onSimilariteReply(QNetworkReply *reply)
+{
+    reply->deleteLater();
+
+    if (reply->error() != QNetworkReply::NoError) {
+        ui->tableWidget_4->setItem(0, 2, new QTableWidgetItem("Erreur reseau"));
+        ui->tableWidget_4->setItem(0, 3,
+                                   new QTableWidgetItem("Echec : " + reply->errorString()));
+        ui->progressBar->setValue(0);
+        
+        QString details = reply->errorString();
+        QByteArray serverResponse = reply->readAll();
+        int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        
+        if (httpStatus > 0) {
+            details += QString("\n\nCode HTTP: %1").arg(httpStatus);
+        }
+        if (!serverResponse.isEmpty()) {
+            details += QString("\n\nRéponse serveur:\n%1").arg(QString::fromUtf8(serverResponse));
+        }
+        
+        // Indice si Ollama n'est pas lancé
+        if (details.contains("Connection refused") || details.contains("localhost")) {
+            details += "\n\n💡 SOLUTION: Lancez Ollama d'abord!\n"
+                      "1. Installez Ollama: https://ollama.ai\n"
+                      "2. Dans le Terminal: ollama run mistral\n"
+                      "3. Relancez SmartMarket";
+        }
+        
+        QMessageBox::critical(this, "Erreur IA",
+                              "Erreur reseau :\n" + details);
+        return;
+    }
+
+    QByteArray raw = reply->readAll();
+    QJsonDocument doc = QJsonDocument::fromJson(raw);
+    if (doc.isNull()) {
+        ui->tableWidget_4->setItem(0, 2, new QTableWidgetItem("Erreur JSON"));
+        ui->progressBar->setValue(0);
+        return;
+    }
+
+    // Extraire le texte de la réponse Ollama
+    QJsonObject root = doc.object();
+    QString text = root["response"].toString();  // Ollama retourne "response"
+
+    // Parser le JSON imbriqué
+    // Nettoyer les éventuels blocs ```json
+    text = text.trimmed();
+    if (text.startsWith("```")) {
+        text = text.mid(text.indexOf('\n') + 1);
+        if (text.endsWith("```")) text.chop(3);
+    }
+
+    QJsonDocument inner = QJsonDocument::fromJson(text.toUtf8());
+    int taux = 0;
+    QString statut = "Inconnu";
+    QString justification;
+
+    if (!inner.isNull() && inner.isObject()) {
+        QJsonObject o = inner.object();
+        taux          = o["taux"].toInt();
+        statut        = o["statut"].toString();
+        justification = o["justification"].toString();
+    } else {
+        // Fallback : chercher un nombre dans le texte
+        QRegularExpression rx("(\\d+)");
+        QRegularExpressionMatch match = rx.match(text);
+        if (match.hasMatch())
+            taux = match.captured(1).toInt();
+        statut = "Voir justification";
+        justification = text;
+    }
+
+    taux = qBound(0, taux, 100);
+    ui->progressBar->setValue(taux);
+
+    ui->tableWidget_4->setItem(0, 2,
+                               new QTableWidgetItem(QString("%1%").arg(taux)));
+    ui->tableWidget_4->setItem(0, 3,
+                               new QTableWidgetItem(statut));
+
+    // Ajouter une ligne de justification
+    ui->tableWidget_4->setRowCount(2);
+    ui->tableWidget_4->setSpan(1, 0, 1, 4);
+    ui->tableWidget_4->setItem(1, 0,
+                               new QTableWidgetItem("Analyse IA : " + justification));
+
+    ui->tableWidget_4->resizeColumnsToContents();
+
+    QMessageBox::information(this, "Resultat Similarite",
+                             QString("Publications %1 & %2\n\n"
+                                     "Taux de similarite : %3%\n"
+                                     "Statut : %4\n\n"
+                                     "%5")
+                                 .arg(simId1, simId2)
+                                 .arg(taux)
+                                 .arg(statut)
+                                 .arg(justification));
+}
+
+// ================================================================
+// COMPLETUDE IA — Appel Anthropic
+// ================================================================
 void SmartMarket::on_pushButton_7_clicked()
 {
-    QString id = ui->lineEdit_7->text().trimmed();
-    
-    if(id.isEmpty())
-    {
-        QMessageBox::warning(this, "Attention", "Veuillez entrer l'ID de la publication.");
+    QString idStr = ui->lineEdit_7->text().trimmed();
+    if (idStr.isEmpty()) {
+        QMessageBox::warning(this, "Attention", "Entrez l ID."); return;
+    }
+
+    QSqlQuery q;
+    q.prepare("SELECT TITRE, SOURCE, DOMAINE, "
+              "TO_CHAR(DATEPUBLICATION,'DD/MM/YYYY'), STATUT, CONTENU "
+              "FROM SELIM.PUBLICATION WHERE IDPUBLICATION=:id");
+    q.bindValue(":id", idStr.toInt());
+    q.exec();
+
+    if (!q.next()) {
+        QMessageBox::warning(this, "Erreur", "Publication introuvable."); return;
+    }
+
+    QString titre   = q.value(0).toString();
+    QString source  = q.value(1).toString();
+    QString domaine = q.value(2).toString();
+    QString date    = q.value(3).toString();
+    QString statut  = q.value(4).toString();
+    QString contenu = q.value(5).toString();
+
+    // Complétude basique (champs remplis)
+    int total = 6, remplis = 0;
+    QStringList vals = {titre, source, domaine, date, statut, contenu};
+    for (const QString &v : vals) if (!v.isEmpty()) remplis++;
+    int pct = (remplis * 100) / total;
+    ui->progressBar_2->setValue(pct);
+
+    // Préparer tableau 5 — aperçu des champs
+    compIdStr = idStr; compTitre = titre;
+
+    ui->tableWidget_5->clearContents();
+    ui->tableWidget_5->setColumnCount(7);
+    ui->tableWidget_5->setHorizontalHeaderLabels(
+        {"Titre", "Domaine", "Source", "Date",
+         "Contenu", "Statut", "Score IA"});
+    ui->tableWidget_5->setRowCount(2);
+
+    // Ligne 1 : valeurs
+    ui->tableWidget_5->setItem(0, 0, new QTableWidgetItem(titre.isEmpty()   ? "❌ Manquant" : titre));
+    ui->tableWidget_5->setItem(0, 1, new QTableWidgetItem(domaine.isEmpty() ? "❌ Manquant" : domaine));
+    ui->tableWidget_5->setItem(0, 2, new QTableWidgetItem(source.isEmpty()  ? "❌ Manquant" : source));
+    ui->tableWidget_5->setItem(0, 3, new QTableWidgetItem(date.isEmpty()    ? "❌ Manquant" : date));
+    ui->tableWidget_5->setItem(0, 4, new QTableWidgetItem(contenu.isEmpty() ? "❌ Manquant" :
+                                                              contenu.left(40) + (contenu.length()>40?"…":"")));
+    ui->tableWidget_5->setItem(0, 5, new QTableWidgetItem(statut.isEmpty()  ? "❌ Manquant" : statut));
+    ui->tableWidget_5->setItem(0, 6, new QTableWidgetItem("Analyse IA en cours..."));
+
+    // Ligne 2 : analyse IA globale (placeholder)
+    ui->tableWidget_5->setSpan(1, 0, 1, 7);
+    ui->tableWidget_5->setItem(1, 0, new QTableWidgetItem("⏳ L'IA analyse la qualite de la publication..."));
+    ui->tableWidget_5->resizeColumnsToContents();
+
+    // Appel IA
+    callAnthropicCompletude(idStr, titre, source, domaine, date, statut, contenu);
+}
+
+void SmartMarket::callAnthropicCompletude(const QString &idStr,
+                                          const QString &titre,
+                                          const QString &source,
+                                          const QString &domaine,
+                                          const QString &date,
+                                          const QString &statut,
+                                          const QString &contenu)
+{
+    QString prompt = QString(
+                         "Tu es un expert en qualite de publications scientifiques.\n"
+                         "Evalue la completude et la qualite de cette publication. "
+                         "Reponds UNIQUEMENT en JSON valide.\n\n"
+                         "Donnees de la publication (ID: %1):\n"
+                         "- Titre: \"%2\"\n"
+                         "- Source: \"%3\"\n"
+                         "- Domaine: \"%4\"\n"
+                         "- Date: \"%5\"\n"
+                         "- Statut: \"%6\"\n"
+                         "- Contenu: \"%7\"\n\n"
+                         "Reponds avec exactement ce JSON:\n"
+                         "{\n"
+                         "  \"score\": <entier entre 0 et 100>,\n"
+                         "  \"champs_manquants\": [\"liste\", \"des\", \"champs\", \"vides\"],\n"
+                         "  \"qualite_contenu\": \"<Excellent | Bon | Moyen | Insuffisant | Absent>\",\n"
+                         "  \"recommandations\": \"<conseils concis pour ameliorer la publication>\"\n"
+                         "}"
+                         ).arg(idStr, titre, source, domaine, date, statut, contenu.left(600));
+
+    // Appel à Ollama (100% gratuit, local)
+    QJsonObject body;
+    body["model"]  = OLLAMA_MODEL;
+    body["prompt"] = prompt;
+    body["stream"] = false;
+
+    QNetworkRequest req{QUrl(OLLAMA_ENDPOINT)};
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+    QNetworkReply *reply = networkManager->post(req, QJsonDocument(body).toJson());
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        onCompletudReply(reply);
+    });
+}
+
+void SmartMarket::onCompletudReply(QNetworkReply *reply)
+{
+    reply->deleteLater();
+
+    if (reply->error() != QNetworkReply::NoError) {
+        ui->tableWidget_5->setItem(0, 6, new QTableWidgetItem("Erreur"));
+        ui->tableWidget_5->setItem(1, 0,
+                                   new QTableWidgetItem("Erreur reseau : " + reply->errorString()));
+        
+        QString details = reply->errorString();
+        QByteArray serverResponse = reply->readAll();
+        int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        
+        if (httpStatus > 0) {
+            details += QString("\n\nCode HTTP: %1").arg(httpStatus);
+        }
+        if (!serverResponse.isEmpty()) {
+            details += QString("\n\nRéponse serveur:\n%1").arg(QString::fromUtf8(serverResponse));
+        }
+        
+        // Indice si Ollama n'est pas lancé
+        if (details.contains("Connection refused") || details.contains("localhost")) {
+            details += "\n\n💡 SOLUTION: Lancez Ollama d'abord!\n"
+                      "1. Installez Ollama: https://ollama.ai\n"
+                      "2. Dans le Terminal: ollama run mistral\n"
+                      "3. Relancez SmartMarket";
+        }
+        
+        QMessageBox::critical(this, "Erreur IA",
+                              "Erreur reseau :\n" + details);
         return;
     }
-    
-    int completude = 85;
-    
-    QMessageBox::information(this, "Vérification de complétude", 
-        "Publication " + id + " vérifiée.\n"
-        "Complétude : " + QString::number(completude) + "%");
-    
-    ui->progressBar_2->setValue(completude);
+
+    QByteArray raw = reply->readAll();
+    QJsonDocument doc = QJsonDocument::fromJson(raw);
+    if (doc.isNull()) {
+        ui->tableWidget_5->setItem(0, 6, new QTableWidgetItem("Erreur JSON"));
+        return;
+    }
+
+    // Extraire le texte de la réponse Ollama
+    QJsonObject root = doc.object();
+    QString text = root["response"].toString();  // Ollama retourne "response"
+
+    // Nettoyer et parser
+    text = text.trimmed();
+    if (text.startsWith("```")) {
+        text = text.mid(text.indexOf('\n') + 1);
+        if (text.endsWith("```")) text.chop(3);
+    }
+
+    QJsonDocument inner = QJsonDocument::fromJson(text.toUtf8());
+    int score = 0;
+    QString qualite, recommandations;
+    QStringList manquants;
+
+    if (!inner.isNull() && inner.isObject()) {
+        QJsonObject o  = inner.object();
+        score          = o["score"].toInt();
+        qualite        = o["qualite_contenu"].toString();
+        recommandations = o["recommandations"].toString();
+        QJsonArray arr = o["champs_manquants"].toArray();
+        for (const QJsonValue &v : arr) manquants << v.toString();
+    } else {
+        score = 50;
+        recommandations = text;
+        qualite = "Voir recommandations";
+    }
+
+    score = qBound(0, score, 100);
+    ui->progressBar_2->setValue(score);
+
+    // Mettre à jour tableau
+    ui->tableWidget_5->setItem(0, 6,
+                               new QTableWidgetItem(QString("%1/100 — %2").arg(score).arg(qualite)));
+
+    QString missing = manquants.isEmpty() ? "Aucun" : manquants.join(", ");
+    QString analyse = "Champs manquants : " + missing +
+                      "\nRecommandations : " + recommandations;
+    ui->tableWidget_5->setItem(1, 0, new QTableWidgetItem("Analyse IA : " + analyse));
+    ui->tableWidget_5->resizeColumnsToContents();
+    ui->tableWidget_5->resizeRowToContents(1);
+
+    QMessageBox msg(QMessageBox::Information,
+                    "Compl\xc3\xa9tude — R\xc3\xa9sultat IA",
+                    QString("<b>Publication ID %1 :</b> %2").arg(compIdStr, compTitre),
+                    QMessageBox::Ok,
+                    this);
+    msg.setTextFormat(Qt::RichText);
+    msg.setInformativeText(
+        QString("<b>Score de compl\xc3\xa9tude :</b> %1/100<br>"
+                "<b>Qualit\xc3\xa9 du contenu :</b> %2<br>"
+                "<b>Champs manquants :</b> %3<br><br>"
+                "<b>Recommandations :</b><br>%4")
+            .arg(score)
+            .arg(qualite)
+            .arg(missing)
+            .arg(recommandations.toHtmlEscaped().replace("\n", "<br>")));
+    msg.setDetailedText(text);
+    msg.exec();
 }
 
-// ============================================================
-// SIDEBAR - NAVIGATION ENTRE MODULES
-// ============================================================
+// ================================================================
+// SIDEBAR
+// ================================================================
+void SmartMarket::on_pushButton_13_sidebar_clicked()
+{ ui->stackedWidgetMain->setCurrentIndex(1); }
 
 void SmartMarket::on_pushButton_14_clicked()
-{
-    ui->stackedWidgetMain->setCurrentIndex(1);
-}
+{ QMessageBox::information(this, "Info", "Deja sur Publications."); }
+
+void SmartMarket::on_pushButton_15_sidebar_clicked()
+{ QMessageBox::information(this, "Info", "Module Conferences a integrer."); }
 
 void SmartMarket::on_pushButton_16_clicked()
-{
-    if (reviewersPageIndex >= 0)
-    {
-        ui->stackedWidgetMain->setCurrentIndex(reviewersPageIndex);
-    }
-    else
-    {
-        QMessageBox::warning(this, "Module Reviewers", 
-            "Le module Reviewers n'est pas disponible (chargement de mainwindow.ui echoue)." );
-    }
-}
-
-void SmartMarket::on_pushButton_17_clicked()
-{
-    if (conferencePageIndex >= 0)
-    {
-        ui->stackedWidgetMain->setCurrentIndex(conferencePageIndex);
-    }
-    else
-    {
-        QMessageBox::warning(this, "Module Conférences", 
-            "Le module Conférences n'est pas disponible (chargement de l'interface oussama.ui échoué).");
-    }
-}
-
-void SmartMarket::on_pushButton_18_clicked()
-{
-    QMessageBox::information(this, "Module Équipements", 
-        "Le module Équipements sera intégré prochainement.");
-}
+{ QMessageBox::information(this, "Info", "Module Equipements a integrer."); }
