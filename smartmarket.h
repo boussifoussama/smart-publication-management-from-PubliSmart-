@@ -2,17 +2,11 @@
 #define SMARTMARKET_H
 
 #include <QMainWindow>
-#include <QSqlTableModel>
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
-#include <QStringList>
+#include <QStandardItemModel>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class SmartMarket; }
 QT_END_NAMESPACE
-
-// Forward declare chart views
-class QChartView;
 
 class SmartMarket : public QMainWindow
 {
@@ -23,63 +17,63 @@ public:
     ~SmartMarket();
 
 private slots:
-    // Login
-    void on_pushButton_15_clicked();   // Se connecter
-    void on_pushButton_13_clicked();   // Envoyer (reset mdp)
+    // ========== NAVIGATION LOGIN ==========
+    void on_btnLoginEntrer_clicked();       // Bouton "Entrer" du Login
+    void on_btnLoginEnvoyer_clicked();      // Bouton "Envoyer" (mot de passe oublié)
+    
+    // ========== MODULE PUBLICATION - CRUD ==========
+    void on_pushButton_19_clicked();        // Ajouter une publication
+    void on_pushButton_20_clicked();        // Modifier une publication
+    void on_pushButton_8_clicked();         // Supprimer une publication
+    void on_pushButton_9_clicked();         // Rechercher des publications
+    void on_pushButton_5_clicked();         // Réinitialiser la recherche
+    void on_pushButton_21_clicked();        // Exporter les publications
 
-    // CRUD
-    void on_pushButton_19_clicked();   // Ajouter
-    void on_pushButton_20_clicked();   // Modifier
-    void on_pushButton_8_clicked();    // Supprimer
-
-    // Recherche / Export
-    void on_pushButton_9_clicked();    // Rechercher
-    void on_pushButton_5_clicked();    // Réinitialiser
-    void on_pushButton_21_clicked();   // Exporter PDF
-
-    // Similarité / Complétude
-    void on_pushButton_6_clicked();    // Similarité
-    void on_pushButton_7_clicked();    // Complétude
-
-    // Sidebar
-    void on_pushButton_13_sidebar_clicked();
-    void on_pushButton_14_clicked();
-    void on_pushButton_15_sidebar_clicked();
-    void on_pushButton_16_clicked();
-
-    // Réponses réseau IA
-    void onSimilariteReply(QNetworkReply *reply);
-    void onCompletudReply(QNetworkReply *reply);
+    // ========== MODULE CONFERENCE - CRUD ==========
+    void on_conf_pushButton_26_clicked();   // Ajouter une conférence
+    void on_conf_pushButton_8_clicked();    // Supprimer une conférence par ID
+    void on_conf_pushButton_27_clicked();   // Modifier une conférence par ID
+    void on_conf_pushButton_19_clicked();   // Ajouter un participant
+    void on_conf_pushButton_12_clicked();   // Supprimer un participant
+    void on_conf_pushButton_10_clicked();   // Modifier un participant
+    void on_conf_pushButton_20_clicked();   // Filtrer les participants par nom
+    void on_conf_pushButton_5_clicked();    // Exporter conférences/participants en PDF
+    void on_conf_pushButton_21_clicked();   // Filtrer les conférences
+    void on_conf_calendarWidget_selectionChanged(); // Afficher les conférences du jour sélectionné
+    
+    // ========== MODULE PUBLICATION - ANALYSE ==========
+    void on_pushButton_6_clicked();         // Choisir 2 publications pour comparer
+    void on_pushButton_7_clicked();         // Vérifier la complétude
+    
+    // ========== SIDEBAR - NAVIGATION MODULES ==========
+    void on_pushButton_14_clicked();        // Publications
+    void on_pushButton_16_clicked();        // Reviewers
+    void on_pushButton_17_clicked();        // Conférences
+    void on_pushButton_18_clicked();        // Équipements
 
 private:
     Ui::SmartMarket *ui;
-    QSqlTableModel  *publicationModel;
-    QChartView      *pieChartView;
-    QChartView      *barChartView;
-    QNetworkAccessManager *networkManager;
-
-    // Données contextuelles pour les callbacks IA
-    QString simId1, simId2, simTitre1, simTitre2, simContenu1, simContenu2;
-    QString compIdStr, compTitre;
-
-    static const QStringList DOMAINES;
-
-    void initDomaines();
+    QStandardItemModel *publicationModel;
+    int conferencePageIndex;
+    int reviewersPageIndex;
+    
     void initPublicationTable();
-    void refreshAll();
+    void loadConferenceTable();
     void createCharts();
-    void refreshCharts();
-
-    // IA helpers
-    void callAnthropicSimilarite(const QString &titre1, const QString &contenu1,
-                                 const QString &titre2, const QString &contenu2);
-    void callAnthropicCompletude(const QString &idStr,
-                                 const QString &titre, const QString &source,
-                                 const QString &domaine, const QString &date,
-                                 const QString &statut, const QString &contenu);
-
-    // Export PDF helper
-    void exporterPDF(bool toutesPublications);
+    void setupConferencePage();
+    void setupReviewersPage();
+    void setupConferenceCharts();
+    void setupReviewersCharts();
+    void reviewerUpdateKPIs();
+    void reviewerCreateBarChart();
+    void reviewerCreateLineChart();
+    void reviewerCreatePieChart();
+    void reviewerSetupNavigation();
+    int addEmbeddedWindow(QMainWindow *window);
+    void updateConferenceParticipantsChart();
+    void updateConferenceDaysChart();
+    void updateConferenceCalendar();
+    void loadParticipantTable();
 };
 
 #endif // SMARTMARKET_H
