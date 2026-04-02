@@ -1,11 +1,27 @@
-#include "oussama.h"
+#include "smartmarket.h"
 
 #include <QApplication>
+#include "connection.h"
+
+#include <QLocale>
+#include <QTranslator>
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    MainWindow w;
+
+    Connection::getInstance();
+
+    QTranslator translator;
+    const QStringList uiLanguages = QLocale::system().uiLanguages();
+    for (const QString &locale : uiLanguages) {
+        const QString baseName = "reviewers_" + QLocale(locale).name();
+        if (translator.load(":/i18n/" + baseName)) {
+            a.installTranslator(&translator);
+            break;
+        }
+    }
+    SmartMarket w;
     w.show();
     return a.exec();
 }

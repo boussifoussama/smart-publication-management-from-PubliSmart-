@@ -1,4 +1,4 @@
-QT       += core gui
+QT       += core gui charts
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -10,13 +10,24 @@ CONFIG += c++17
 
 SOURCES += \
     main.cpp \
-    oussama.cpp
+    mainwindow.cpp \
+    oussama.cpp \
+    smartmarket.cpp
 
 HEADERS += \
-    oussama.h
+    mainwindow.h \
+    oussama.h \
+    smartmarket.h
 
 FORMS += \
-    oussama.ui
+    mainwindow.ui \
+    oussama.ui \
+    smartmarket.ui
+
+TRANSLATIONS += \
+    reviewers_en_US.ts
+CONFIG += lrelease
+CONFIG += embed_translations
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -24,7 +35,4 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 RESOURCES += \
-    resource.qrc
-
-DISTFILES += \
-    ../../../Downloads/image/image1.png
+    resources.qrc

@@ -1,0 +1,144 @@
+═══════════════════════════════════════════════════════════════
+   INSTRUCTIONS ULTRA-SIMPLES POUR GARDER 100% VOTRE STYLE
+═══════════════════════════════════════════════════════════════
+
+🎯 OBJECTIF : Créer SmartMarket en gardant EXACTEMENT vos styles
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ÉTAPE 1 : CRÉER LE PROJET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Dans Qt Creator : Fichier → Nouveau projet → Application Qt Widgets
+2. Nom: SmartMarket
+3. Kit: Desktop Qt 6.x MinGW 64-bit
+4. Créer le projet
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ÉTAPE 2 : REMPLACER LES FICHIERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Supprimer mainwindow.h, mainwindow.cpp, mainwindow.ui
+2. Copier dans le projet :
+   - smartmarket.h (du ZIP)
+   - smartmarket.cpp (du ZIP)
+   - main.cpp (du ZIP)
+   - SmartMarket.pro (du ZIP)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ÉTAPE 3 : CRÉER L'INTERFACE (MÉTHODE SIMPLE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+A) Ouvrir smartmarket.ui dans Qt Designer
+
+B) Créer le StackedWidget :
+   1. Supprimer tous les widgets du centralwidget
+   2. Ajouter un QStackedWidget nommé "stackedWidgetMain"
+   3. Taille: 1298 x 730 pixels
+   4. Remplir toute la fenêtre
+
+C) COPIER VOTRE PAGE LOGIN :
+   1. Ouvrir VOTRE fichier login.ui original (autre Qt Designer)
+   2. Sélectionner TOUT (Ctrl+A)
+   3. Copier (Ctrl+C)
+   4. Retour dans smartmarket.ui
+   5. Cliquer sur "Page 0" du StackedWidget
+   6. Coller (Ctrl+V)
+   
+   ✅ VOTRE LOGIN EST LÀ AVEC 100% DU STYLE !
+
+D) COPIER VOTRE PAGE PUBLICATION :
+   1. Clic droit sur StackedWidget → "Insérer une page"
+   2. Ouvrir VOTRE fichier publication.ui original
+   3. Sélectionner TOUT (Ctrl+A)
+   4. Copier (Ctrl+C)
+   5. Retour dans smartmarket.ui
+   6. Cliquer sur "Page 1" du StackedWidget
+   7. Coller (Ctrl+V)
+   
+   ✅ VOTRE PUBLICATION EST LÀ AVEC 100% DU STYLE !
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ÉTAPE 4 : RENOMMER LES WIDGETS (IMPORTANT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Dans Qt Designer, sélectionner chaque widget et changer son objectName:
+
+PAGE LOGIN (5 widgets à renommer) :
+┌─────────────────────┬────────────────────────┐
+│ Ancien nom          │ Nouveau nom            │
+├─────────────────────┼────────────────────────┤
+│ lineEdit_8          │ lineEdit_8 (garder)    │
+│ lineEdit_10         │ lineEdit_10 (garder)   │
+│ lineEdit_11         │ lineEdit_11 (garder)   │
+│ pushButton_15       │ pushButton_15 (garder) │
+│ pushButton_13       │ pushButton_13 (garder) │
+└─────────────────────┴────────────────────────┘
+
+PAGE PUBLICATION (gardez VOS noms) :
+  → Tous les noms sont déjà bons dans votre code !
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ÉTAPE 5 : AJOUTER VOS IMAGES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Créer dossier "images/" dans le projet
+2. Y mettre toutes vos images
+
+3. Créer resources.qrc :
+
+<RCC>
+    <qresource prefix="/new/prefix1">
+        <file>images/imagetouse.png-removebg-preview.png</file>
+        <file>Downloads/menuimage.png</file>
+        <file>Downloads/publication icon.png</file>
+        <file>Downloads/reviewer icon.png</file>
+        <file>Downloads/conference icon.png</file>
+        <file>Downloads/equipement icon.png</file>
+    </qresource>
+</RCC>
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ÉTAPE 6 : COMPILER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Build → Nettoyer tout
+2. Build → Reconstruire tout
+3. Exécuter (Ctrl+R)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ RÉSULTAT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✔ 100% de votre style conservé
+✔ Toutes vos images conservées
+✔ Tous vos boutons identiques
+✔ Navigation Login → Publication fonctionnelle
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔐 IDENTIFIANTS DE TEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Email    : Selim.ASCHI@esprit.tn
+Password : selim
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ SI ÇA NE COMPILE PAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Vérifier SmartMarket.pro contient: QT += charts
+2. Vérifier resources.qrc existe
+3. Vérifier images/ existe
+4. Nettoyer et reconstruire
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎉 C'EST TOUT ! VOUS GARDEZ 100% DE VOTRE STYLE !

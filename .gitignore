@@ -1,68 +1,63 @@
-# Qt/Qt Creator build artifacts
+# Qt/C++ build artifacts
 build/
-*.user
-*.user.*
-*.pro.user*
-*.qbs.user*
-*.autosave
-
-# Qt Creator settings/cache
-.qtcreator/
-CMakeLists.txt.user
-
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
+debug/
+release/
 *.o
 *.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
+*.exe
+*.dll
 *.so
 *.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
+*.slo
+*.lo
+*.gch
+*.pch
+*.ilk
 *.lai
 *.la
 *.a
 *.lib
-
-# Executables
-*.exe
 *.out
 *.app
 
-# Generated Qt files
-moc_*.cpp
+# Qt Creator / Qt .pro user files
+*.pro.user
+*.pro.user.*
+*.qmake.stash
+*.user
+*.user.*
+*.qbs.user*
+*.autosave
+*.ui.user*
+
+# Qt Creator settings/cache
+.idea/
+.qtcreator/
+CMakeLists.txt.user
+
+# Generated UI headers
 ui_*.h
 qrc_*.cpp
+moc_*.cpp
 
-# Qt Creator QML/Qt Quick
+# Qt Quick / QML
 *.qmlc
 *.jsc
 
-# Editor/OS noise
+# IDE / editor files
+*.vcxproj*
+*.sln
 *.swp
 *.swo
-*.DS_Store
+.DS_Store
 Thumbs.db
 
-# debug information files
+# Prerequisites
+*.d
+
+# Debug / linker / executable
+*.pdb
 *.dwo
+
+# Python cache
+__pycache__/
