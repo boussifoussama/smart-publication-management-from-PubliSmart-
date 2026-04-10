@@ -126,8 +126,8 @@ PAGE PUBLICATION (gardez VOS noms) :
 🔐 IDENTIFIANTS DE TEST
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Email    : Selim.ASCHI@esprit.tn
-Password : selim
+Email    : oussama@esprit.tn
+Password : oussama
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -142,3 +142,4 @@ Password : selim
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🎉 C'EST TOUT ! VOUS GARDEZ 100% DE VOTRE STYLE !
+

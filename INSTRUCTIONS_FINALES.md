@@ -142,8 +142,8 @@ SmartMarket (QStackedWidget principal)
 ## 🔐 IDENTIFIANTS DE TEST
 
 ```
-Email    : Selim.ASCHI@esprit.tn
-Password : selim
+Email    : oussama@esprit.tn
+Password : oussama
 ```
 
 ---
@@ -238,7 +238,7 @@ QProcess::startDetached(program);
 void SmartMarket::on_btnLoginEntrer_clicked()
 {
     // Validation
-    if(email == "Selim.ASCHI@esprit.tn" && password == "selim")
+    if(email == "oussama@esprit.tn" && password == "oussama")
     {
         // Navigation vers la page Publication
         ui->stackedWidgetMain->setCurrentIndex(1);
@@ -308,3 +308,4 @@ Votre projet **SmartMarket** est maintenant correctement intégré selon :
 ---
 
 *Projet SmartMarket - Intégration complète - 2A AU 2025-2026*
+

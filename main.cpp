@@ -1,26 +1,23 @@
 #include "smartmarket.h"
-
 #include <QApplication>
+#include <QMessageBox>
 #include "connection.h"
-
-#include <QLocale>
-#include <QTranslator>
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    Connection::getInstance();
+    // ✅ Connexion BDD EN PREMIER
+    Connection c;
+    bool test = c.createconnect();
 
-    QTranslator translator;
-    const QStringList uiLanguages = QLocale::system().uiLanguages();
-    for (const QString &locale : uiLanguages) {
-        const QString baseName = "reviewers_" + QLocale(locale).name();
-        if (translator.load(":/i18n/" + baseName)) {
-            a.installTranslator(&translator);
-            break;
-        }
+    if (!test) {
+        QMessageBox::critical(nullptr, "Erreur BDD",
+                              "Connexion a la base de donnees echouee.\n"
+                              "Verifiez votre source ODBC et relancez.");
+        return -1;
     }
+
     SmartMarket w;
     w.show();
     return a.exec();

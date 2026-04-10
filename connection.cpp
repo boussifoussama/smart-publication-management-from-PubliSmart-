@@ -1,38 +1,23 @@
 #include "connection.h"
-#include <QSqlError>
-#include <QDebug>
-#include <QMessageBox>
-
-Connection* Connection::instance = nullptr;
 
 Connection::Connection()
 {
-    db = QSqlDatabase::addDatabase("QODBC");
-    db.setDatabaseName("Source_Projet2A");
-    db.setUserName("oussama");
-    db.setPassword("0000");
+
+}
+
+bool Connection::createconnect()
+{bool test=false;
+    QSqlDatabase db = QSqlDatabase::addDatabase("QODBC");
+    db.setDatabaseName("Source_Projet2A");//inserer le nom de la source de données
+    db.setUserName("oussama");//inserer nom de l'utilisateur
+    db.setPassword("0000");//inserer mot de passe de cet utilisateur
 
     if (db.open())
-    {
-        qDebug() << "Connected!";
-        QMessageBox::information(nullptr, "Base de données", "Connected!");
-    }
-    else
-    {
-        const QString err = db.lastError().text();
-        qDebug() << "Connection failed:" << err;
-        QMessageBox::critical(nullptr, "Base de données", "Connection failed: " + err);
-    }
-}
+        test=true;
 
-Connection* Connection::getInstance()
-{
-    if (!instance)
-        instance = new Connection();
-    return instance;
-}
 
-QSqlDatabase Connection::getDatabase()
-{
-    return db;
+
+
+
+    return  test;
 }

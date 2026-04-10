@@ -194,8 +194,8 @@ RESOURCES += \
 ## 🔐 IDENTIFIANTS DE TEST
 
 **Login:**
-- Email: `Selim.ASCHI@esprit.tn` (insensible à la casse)
-- Mot de passe: `selim`
+- Email: `oussama@esprit.tn` (insensible à la casse)
+- Mot de passe: `oussama`
 
 ## 📝 CHECKLIST AVANT COMPILATION
 
@@ -249,3 +249,4 @@ Si vous rencontrez des problèmes, vérifiez:
 ---
 
 **Bonne intégration! 🚀**
+

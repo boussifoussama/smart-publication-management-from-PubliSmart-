@@ -58,7 +58,7 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
      </rect>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="pageLogin">
      <widget class="QGroupBox" name="groupBox_11_login">
@@ -73,7 +73,7 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
       <property name="title">
        <string>Official desktop app</string>
       </property>
-      <widget class="QPushButton" name="btnLoginEnvoyer">
+      <widget class="QPushButton" name="pushButton_13">
        <property name="geometry">
         <rect>
          <x>220</x>
@@ -86,7 +86,7 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
         <string>Envoyer</string>
        </property>
       </widget>
-      <widget class="QPushButton" name="btnLoginEntrer">
+      <widget class="QPushButton" name="pushButton_15">
        <property name="geometry">
         <rect>
          <x>230</x>
@@ -99,7 +99,7 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
         <string>entrer</string>
        </property>
       </widget>
-      <widget class="QLabel" name="labelLoginLogo">
+      <widget class="QLabel" name="label_29">
        <property name="geometry">
         <rect>
          <x>70</x>
@@ -116,7 +116,7 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
         <string/>
        </property>
       </widget>
-      <widget class="QLineEdit" name="lineEditLoginEmail">
+      <widget class="QLineEdit" name="lineEdit_8">
        <property name="geometry">
         <rect>
          <x>300</x>
@@ -135,7 +135,7 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
         <bool>false</bool>
        </property>
       </widget>
-      <widget class="QLineEdit" name="lineEditLoginPassword">
+      <widget class="QLineEdit" name="lineEdit_10">
        <property name="geometry">
         <rect>
          <x>300</x>
@@ -148,7 +148,7 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
         <string notr="true">QLineEdit { color: black; background-color: white; border: 2px solid #555; border-radius: 5px; padding: 5px; font-size: 14px; }</string>
        </property>
       </widget>
-      <widget class="QLineEdit" name="lineEditResetEmail">
+      <widget class="QLineEdit" name="lineEdit_11">
        <property name="geometry">
         <rect>
          <x>300</x>
@@ -161,7 +161,7 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
         <string notr="true">QLineEdit { color: black; background-color: white; border: 2px solid #555; border-radius: 5px; padding: 5px; font-size: 14px; }</string>
        </property>
       </widget>
-      <widget class="QLabel" name="labelLoginEmail">
+      <widget class="QLabel" name="label">
        <property name="geometry">
         <rect>
          <x>170</x>
@@ -174,7 +174,7 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
         <string>l'adresse mail :</string>
        </property>
       </widget>
-      <widget class="QLabel" name="labelLoginPassword">
+      <widget class="QLabel" name="label_2">
        <property name="geometry">
         <rect>
          <x>170</x>
@@ -187,7 +187,7 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
         <string>le mot de passe :</string>
        </property>
       </widget>
-      <widget class="QLabel" name="labelLoginTitle">
+      <widget class="QLabel" name="label_3">
        <property name="geometry">
         <rect>
          <x>50</x>
@@ -203,7 +203,7 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
         <string>se connecter :</string>
        </property>
       </widget>
-      <widget class="QLabel" name="labelLoginResetText">
+      <widget class="QLabel" name="label_4">
        <property name="geometry">
         <rect>
          <x>50</x>
@@ -220,7 +220,7 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
        </property>
       </widget>
      </widget>
-     <widget class="QGroupBox" name="groupBoxLoginIllustration">
+     <widget class="QGroupBox" name="groupBox">
       <property name="geometry">
        <rect>
         <x>640</x>
@@ -235,7 +235,7 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
       <property name="title">
        <string>GroupBox</string>
       </property>
-      <widget class="QLabel" name="labelLoginIllustration">
+      <widget class="QLabel" name="label_5">
        <property name="geometry">
         <rect>
          <x>-50</x>
@@ -346,7 +346,8 @@ image: url(:/imagetouse.png-removebg-preview.png);</string>
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">image :url(:/ressouces/publication icon.png)</string>
+        <string notr="true">
+image: url(:/publication icon.png);</string>
        </property>
        <property name="text">
         <string/>
@@ -363,7 +364,7 @@ image: url(:/imagetouse.png-removebg-preview.png);</string>
        </property>
        <property name="styleSheet">
         <string notr="true">
-image: url(:/ressouces/reviewer icon.png)</string>
+image: url(:/reviewer icon.png);</string>
        </property>
        <property name="text">
         <string/>
@@ -398,7 +399,7 @@ image: url(:/conference icon.png);</string>
        <property name="styleSheet">
         <string notr="true">
 
-image:  url(:/ressouces/equipement icon.png)</string>
+image: url(:/equipement icon.png);</string>
        </property>
        <property name="text">
         <string/>
@@ -621,8 +622,8 @@ QStatusBar {
        <widget class="QGroupBox" name="groupBox_8">
         <property name="geometry">
          <rect>
-          <x>660</x>
-          <y>-10</y>
+          <x>650</x>
+          <y>50</y>
           <width>431</width>
           <height>121</height>
          </rect>
@@ -707,15 +708,37 @@ QStatusBar {
           <x>10</x>
           <y>10</y>
           <width>641</width>
-          <height>161</height>
+          <height>321</height>
          </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QTableView {
+    background-color: white;
+    color: black;
+    selection-color: black;
+}
+
+QTableView::item {
+    color: black;
+    background-color: white;
+}
+
+QTableView::item:selected {
+    color: black;
+    background-color: #cfe3ff;
+}
+
+
+
+
+</string>
         </property>
        </widget>
        <widget class="QGroupBox" name="groupBox_12">
         <property name="geometry">
          <rect>
           <x>660</x>
-          <y>120</y>
+          <y>200</y>
           <width>421</width>
           <height>421</height>
          </rect>
@@ -766,17 +789,17 @@ QStatusBar {
 </string>
          </property>
         </widget>
-        <widget class="QLineEdit" name="lineEdit_18">
+        <widget class="QTextEdit" name="lineEdit_18">
          <property name="geometry">
           <rect>
-           <x>120</x>
+           <x>110</x>
            <y>140</y>
-           <width>281</width>
-           <height>26</height>
+           <width>291</width>
+           <height>31</height>
           </rect>
          </property>
          <property name="styleSheet">
-          <string notr="true">QLineEdit {
+          <string notr="true">QTextEdit {
     color: black;
     background-color: white;
     border: 2px solid #555;
@@ -917,7 +940,7 @@ QDateEdit QAbstractItemView {
           </rect>
          </property>
          <property name="text">
-          <string>Nom createur :</string>
+          <string>contenu :</string>
          </property>
         </widget>
         <widget class="QLabel" name="label_40">
@@ -1013,8 +1036,8 @@ QDateEdit QAbstractItemView {
        <widget class="QGroupBox" name="groupBox_4">
         <property name="geometry">
          <rect>
-          <x>10</x>
-          <y>180</y>
+          <x>0</x>
+          <y>350</y>
           <width>291</width>
           <height>291</height>
          </rect>
@@ -1262,8 +1285,8 @@ QComboBox QAbstractItemView {
        <widget class="QLabel" name="label_50">
         <property name="geometry">
          <rect>
-          <x>40</x>
-          <y>480</y>
+          <x>300</x>
+          <y>340</y>
           <width>191</width>
           <height>20</height>
          </rect>
@@ -1278,8 +1301,8 @@ QComboBox QAbstractItemView {
        <widget class="QGroupBox" name="groupBox_5">
         <property name="geometry">
          <rect>
-          <x>20</x>
-          <y>500</y>
+          <x>300</x>
+          <y>370</y>
           <width>121</width>
           <height>91</height>
          </rect>
@@ -1317,8 +1340,8 @@ QComboBox QAbstractItemView {
        <widget class="QGroupBox" name="groupBox_13">
         <property name="geometry">
          <rect>
-          <x>160</x>
-          <y>500</y>
+          <x>300</x>
+          <y>440</y>
           <width>271</width>
           <height>91</height>
          </rect>
@@ -1369,8 +1392,8 @@ QComboBox QAbstractItemView {
        <widget class="QPushButton" name="pushButton_21">
         <property name="geometry">
          <rect>
-          <x>90</x>
-          <y>600</y>
+          <x>300</x>
+          <y>590</y>
           <width>121</width>
           <height>41</height>
          </rect>
@@ -1382,8 +1405,8 @@ QComboBox QAbstractItemView {
        <widget class="QTableWidget" name="tableWidget_7">
         <property name="geometry">
          <rect>
-          <x>440</x>
-          <y>520</y>
+          <x>450</x>
+          <y>540</y>
           <width>121</width>
           <height>111</height>
          </rect>
@@ -1393,16 +1416,6 @@ QComboBox QAbstractItemView {
           <string>succès ou non</string>
          </property>
         </column>
-       </widget>
-       <widget class="QTableView" name="tableView_2">
-        <property name="geometry">
-         <rect>
-          <x>320</x>
-          <y>190</y>
-          <width>331</width>
-          <height>281</height>
-         </rect>
-        </property>
        </widget>
       </widget>
       <widget class="QWidget" name="tab_4">
@@ -1514,9 +1527,27 @@ QComboBox QAbstractItemView {
          <rect>
           <x>250</x>
           <y>20</y>
-          <width>421</width>
+          <width>401</width>
           <height>151</height>
          </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QTableView {
+    background-color: white;
+    color: black;
+    selection-color: black;
+}
+
+QTableView::item {
+    color: black;
+    background-color: white;
+}
+
+QTableView::item:selected {
+    color: black;
+    background-color: #cfe3ff;
+}
+</string>
         </property>
         <column>
          <property name="text">
@@ -1557,9 +1588,27 @@ QComboBox QAbstractItemView {
          <rect>
           <x>10</x>
           <y>290</y>
-          <width>661</width>
-          <height>91</height>
+          <width>641</width>
+          <height>111</height>
          </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QTableView {
+    background-color: white;
+    color: black;
+    selection-color: black;
+}
+
+QTableView::item {
+    color: black;
+    background-color: white;
+}
+
+QTableView::item:selected {
+    color: black;
+    background-color: #cfe3ff;
+}
+</string>
         </property>
         <column>
          <property name="text">
@@ -1726,18 +1775,18 @@ font: 900 9pt &quot;Segoe UI&quot;;</string>
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>390</y>
+          <y>400</y>
           <width>1061</width>
-          <height>251</height>
+          <height>241</height>
          </rect>
         </property>
        </widget>
        <widget class="QWidget" name="chartWidget" native="true">
         <property name="geometry">
          <rect>
-          <x>680</x>
+          <x>650</x>
           <y>10</y>
-          <width>391</width>
+          <width>421</width>
           <height>371</height>
          </rect>
         </property>
@@ -2170,7 +2219,7 @@ QStatusBar {
 </string>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="elideMode">
        <enum>Qt::TextElideMode::ElideNone</enum>
@@ -3185,1473 +3234,6 @@ QStatusBar {
       </widget>
      </widget>
     </widget>
-    <widget class="QWidget" name="page3">
-     <property name="styleSheet">
-      <string notr="true">/* =====================================================
-   THÈME GLOBAL – BLEU MARINE PREMIUM
-   ===================================================== */
-
-/* ---------- TYPOGRAPHIE ---------- */
-* {
-    font-family: &quot;Inter&quot;, &quot;Segoe UI&quot;, &quot;Roboto&quot;, &quot;Helvetica Neue&quot;, Arial, sans-serif;
-    font-size: 14px;
-    color: #E5E7EB;
-}
-
-/* ---------- FENÊTRE PRINCIPALE ---------- */
-QMainWindow {
-    background-color: #0B1F33;
-}
-
-/* ---------- BASE WIDGET ---------- */
-QWidget {
-    background-color: transparent;
-}
-
-/* ---------- GROUPBOX / PANNEAUX ---------- */
-QGroupBox {
-    background-color: #0F2A44;
-    border: 1px solid #1E3A8A;
-    border-radius: 14px;
-    margin-top: 22px;
-    padding: 18px;
-}
-
-QGroupBox::title {
-    subcontrol-origin: margin;
-    subcontrol-position: top center;
-    padding: 0 18px;
-    font-size: 15px;
-    font-weight: 800;
-    color: #FFFFFF;
-}
-
-/* ---------- LABELS ---------- */
-QLabel {
-    color: #E5E7EB;
-    font-weight: 500;
-}
-
-/* ---------- TAB WIDGET ---------- */
-QTabWidget::pane {
-    background-color: #0F2A44;
-    border: 1px solid #1E3A8A;
-    border-radius: 14px;
-    margin-top: 10px;
-}
-
-QTabBar::tab {
-    background-color: #0B1F33;
-    color: #CBD5E1;
-    padding: 14px 32px;
-    margin-right: 10px;
-    border-radius: 12px;
-    font-weight: 600;
-}
-
-QTabBar::tab:selected {
-    background-color: #1E40AF;
-    color: #FFFFFF;
-    font-weight: 900;
-}
-
-QTabBar::tab:hover:!selected {
-    background-color: #163B63;
-    color: #FFFFFF;
-}
-
-/* ---------- INPUTS ---------- */
-QLineEdit,
-QComboBox,
-QDateEdit,
-QSpinBox,
-QDoubleSpinBox {
-    background-color: #0B1F33;
-    border: 1px solid #1E3A8A;
-    border-radius: 10px;
-    padding: 12px;
-    color: #FFFFFF;
-    font-weight: 500;
-}
-
-QLineEdit:focus,
-QComboBox:focus,
-QDateEdit:focus,
-QSpinBox:focus,
-QDoubleSpinBox:focus {
-    border-color: #3B82F6;
-    background-color: #0F2A44;
-}
-
-/* ---------- BOUTONS ---------- */
-QPushButton {
-    background-color: #1E40AF;
-    color: #FFFFFF;
-    border-radius: 12px;
-    padding: 14px 30px;
-    font-weight: 800;
-    letter-spacing: 0.4px;
-}
-
-QPushButton:hover {
-    background-color: #2563EB;
-}
-
-QPushButton:pressed {
-    background-color: #1D4ED8;
-}
-
-QPushButton:disabled {
-    background-color: #475569;
-    color: #CBD5E1;
-}
-
-/* ---------- TABLES ---------- */
-QTableWidget {
-    background-color: #0F2A44;
-    border: 1px solid #1E3A8A;
-    border-radius: 14px;
-    gridline-color: #1E3A8A;
-    alternate-background-color: #0B1F33;
-    selection-background-color: #1E40AF;
-}
-
-QTableWidget::item {
-    padding: 14px;
-    color: #E5E7EB;
-    font-weight: 500;
-}
-
-QHeaderView::section {
-    background-color: #0B1F33;
-    color: #FFFFFF;
-    padding: 14px;
-    font-weight: 900;
-    border: none;
-}
-
-/* ---------- CHECKBOX / RADIO ---------- */
-QCheckBox,
-QRadioButton {
-    color: #E5E7EB;
-    font-weight: 600;
-}
-
-QCheckBox::indicator,
-QRadioButton::indicator {
-    width: 16px;
-    height: 16px;
-}
-
-/* ---------- PROGRESS BAR ---------- */
-QProgressBar {
-    background-color: #0B1F33;
-    border: 1px solid #1E3A8A;
-    border-radius: 12px;
-    text-align: center;
-    font-weight: 800;
-    color: #FFFFFF;
-}
-
-QProgressBar::chunk {
-    background-color: #2563EB;
-    border-radius: 10px;
-}
-
-/* ---------- MENU BAR ---------- */
-QMenuBar {
-    background-color: #071526;
-    color: #FFFFFF;
-    font-weight: 800;
-}
-
-QMenuBar::item:selected {
-    background-color: rgba(255, 255, 255, 0.15);
-}
-
-/* ---------- STATUS BAR ---------- */
-QStatusBar {
-    background-color: #071526;
-    color: #CBD5E1;
-}
-
-/* ---------- SIDEBAR (si objectName = groupBox_11) ---------- */
-#groupBox_11 {
-    background-color: #071526;
-    border: none;
-}
-
-#groupBox_11 QPushButton {
-    background-color: transparent;
-    color: #E5E7EB;
-    padding: 18px 24px;
-    border-radius: 14px;
-    font-size: 17px;
-    font-weight: 700;
-}
-
-#groupBox_11 QPushButton:hover {
-    background-color: rgba(255,255,255,0.15);
-}
-
-#pushButton_13 {
-    background-color: rgba(255,255,255,0.25);
-    font-weight: 900;
-}
-
-
-
-</string>
-     </property>
-     <widget class="QStackedWidget" name="rev_stackedWidget">
-      <property name="geometry">
-       <rect>
-        <x>200</x>
-        <y>0</y>
-        <width>1091</width>
-        <height>811</height>
-       </rect>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">/* =========================
-   TYPOGRAPHIE PREMIUM
-   ========================= */
-* {
-    font-family: &quot;Inter&quot;, &quot;Segoe UI&quot;, &quot;Roboto&quot;, &quot;Helvetica Neue&quot;, Arial, sans-serif;
-    font-size: 14px;
-    color: #374151;
-}
-
-/* =========================
-   FENÊTRE PRINCIPALE
-   ========================= */
-QMainWindow {
-    background-color: #F4F6F9;
-}
-
-/* =========================
-   TITRES &amp; LABELS
-   ========================= */
-QLabel {
-    font-weight: 500;
-    color: #1F2937;
-}
-
-QGroupBox {
-    background-color: #FFFFFF;
-    border-radius: 12px;
-    border: 1px solid #E5E7EB;
-    margin-top: 24px;
-    padding: 18px;
-    font-weight: 600;
-    color: #0F2A44;
-}
-
-QGroupBox::title {
-    subcontrol-origin: margin;
-    subcontrol-position: top center;
-    padding: 0 16px;
-    font-size: 15px;
-    font-weight: 700;
-}
-
-/* =========================
-   ONGLET (TAB BAR)
-   ========================= */
-QTabWidget::pane {
-    background-color: #FFFFFF;
-    border-radius: 12px;
-    border: 1px solid #E5E7EB;
-    margin-top: 10px;
-}
-
-QTabBar::tab {
-    background-color: #E5E7EB;
-    border-radius: 10px;
-    padding: 14px 28px;
-    margin-right: 8px;
-    font-weight: 500;
-    color: #374151;
-}
-
-QTabBar::tab:selected {
-    background-color: #0F2A44;
-    color: #FFFFFF;
-    font-weight: 700;
-}
-
-QTabBar::tab:hover:!selected {
-    background-color: #DBEAFE;
-    color: #1E3A8A;
-}
-
-/* =========================
-   INPUTS (ÉLÉGANTS)
-   ========================= */
-QLineEdit, QComboBox, QDateEdit {
-    background-color: #FFFFFF;
-    border-radius: 10px;
-    border: 1px solid #D1D5DB;
-    padding: 12px;
-    font-size: 14px;
-    font-weight: 500;
-}
-
-QLineEdit:focus, QComboBox:focus, QDateEdit:focus {
-    border-color: #2563EB;
-    background-color: #F0F9FF;
-}
-
-/* =========================
-   BOUTONS PREMIUM
-   ========================= */
-QPushButton {
-    background-color: #0F2A44;
-    color: #FFFFFF;
-    border-radius: 10px;
-    padding: 12px 26px;
-    font-weight: 700;
-    letter-spacing: 0.3px;
-}
-
-QPushButton:hover {
-    background-color: #163B63;
-}
-
-QPushButton:pressed {
-    background-color: #2563EB;
-}
-
-QPushButton:disabled {
-    background-color: #9CA3AF;
-    color: #E5E7EB;
-}
-
-/* =========================
-   TABLES (PRO DASHBOARD)
-   ========================= */
-QTableWidget {
-    background-color: #FFFFFF;
-    border-radius: 12px;
-    border: 1px solid #E5E7EB;
-    gridline-color: #E5E7EB;
-    alternate-background-color: #F9FAFB;
-    selection-background-color: #DBEAFE;
-}
-
-QTableWidget::item {
-    padding: 14px;
-    font-weight: 500;
-}
-
-QHeaderView::section {
-    background-color: #0F2A44;
-    color: #FFFFFF;
-    padding: 14px;
-    font-weight: 700;
-    border: none;
-}
-
-/* =========================
-   SIDEBAR MODERNE
-   ========================= */
-#groupBox_11 {
-    background-color: #0F2A44;
-    border: none;
-}
-
-#groupBox_11 QPushButton {
-    background-color: transparent;
-    color: #FFFFFF;
-    padding: 16px 22px;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 600;
-}
-
-#groupBox_11 QPushButton:hover {
-    background-color: rgba(255,255,255,0.15);
-}
-
-#pushButton_13 {
-    background-color: rgba(255,255,255,0.25);
-    font-weight: 800;
-}
-
-/* =========================
-   PROGRESS BAR
-   ========================= */
-QProgressBar {
-    background-color: #FFFFFF;
-    border-radius: 10px;
-    border: 1px solid #D1D5DB;
-    text-align: center;
-    font-weight: 700;
-}
-
-QProgressBar::chunk {
-    background-color: #2563EB;
-    border-radius: 8px;
-}
-
-/* =========================
-   MENU &amp; STATUS
-   ========================= */
-QMenuBar {
-    background-color: #0F2A44;
-    color: #FFFFFF;
-    font-weight: 700;
-}
-
-QStatusBar {
-    background-color: #F4F6F9;
-    color: #6B7280;
-}
-</string>
-      </property>
-      <property name="currentIndex">
-       <number>0</number>
-      </property>
-      <widget class="QWidget" name="rev_stackedWidgetPage1">
-       <widget class="QWidget" name="rev_widget_6" native="true">
-        <property name="geometry">
-         <rect>
-          <x>300</x>
-          <y>340</y>
-          <width>497</width>
-          <height>65</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="rev_horizontalLayout_11">
-         <item>
-          <widget class="QPushButton" name="rev_pushButton_10">
-           <property name="text">
-            <string>Modifier</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="rev_pushButton_21">
-           <property name="text">
-            <string>Suprrimer</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="rev_widget_13" native="true">
-        <property name="geometry">
-         <rect>
-          <x>80</x>
-          <y>60</y>
-          <width>777</width>
-          <height>69</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="rev_horizontalLayout_12">
-         <item>
-          <widget class="QLabel" name="rev_label_10">
-           <property name="text">
-            <string>Id:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="rev_idsearch_3"/>
-         </item>
-         <item>
-          <widget class="QLabel" name="rev_label_11">
-           <property name="text">
-            <string>Nom</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="rev_lineEdit_7"/>
-         </item>
-         <item>
-          <widget class="QLabel" name="rev_label_24">
-           <property name="text">
-            <string>Spécialié</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="rev_comboBox_12">
-           <item>
-            <property name="text">
-             <string>AI</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>CS</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>WD</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="rev_pushButton_8">
-           <property name="text">
-            <string>Rechercher</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="rev_pushButton_3">
-           <property name="text">
-            <string>Reset</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QGroupBox" name="rev_groupBox_12">
-        <property name="geometry">
-         <rect>
-          <x>310</x>
-          <y>370</y>
-          <width>491</width>
-          <height>351</height>
-         </rect>
-        </property>
-        <property name="title">
-         <string>ajout de publication</string>
-        </property>
-        <widget class="QLineEdit" name="rev_lineEdit_18">
-         <property name="geometry">
-          <rect>
-           <x>180</x>
-           <y>40</y>
-           <width>301</width>
-           <height>26</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QLineEdit" name="rev_lineEdit_19">
-         <property name="geometry">
-          <rect>
-           <x>180</x>
-           <y>80</y>
-           <width>301</width>
-           <height>26</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QLineEdit" name="rev_lineEdit_20">
-         <property name="geometry">
-          <rect>
-           <x>180</x>
-           <y>120</y>
-           <width>301</width>
-           <height>26</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QComboBox" name="rev_comboBox_13">
-         <property name="geometry">
-          <rect>
-           <x>180</x>
-           <y>160</y>
-           <width>171</width>
-           <height>26</height>
-          </rect>
-         </property>
-         <item>
-          <property name="text">
-           <string>svt</string>
-          </property>
-         </item>
-        </widget>
-        <widget class="QDateEdit" name="rev_dateEdit_6">
-         <property name="geometry">
-          <rect>
-           <x>180</x>
-           <y>200</y>
-           <width>110</width>
-           <height>26</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QPushButton" name="rev_pushButton_14">
-         <property name="geometry">
-          <rect>
-           <x>20</x>
-           <y>410</y>
-           <width>291</width>
-           <height>41</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>cliquez ici pour ajouter </string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="rev_label_34">
-         <property name="geometry">
-          <rect>
-           <x>20</x>
-           <y>40</y>
-           <width>63</width>
-           <height>20</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>ID:</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="rev_label_51">
-         <property name="geometry">
-          <rect>
-           <x>20</x>
-           <y>80</y>
-           <width>63</width>
-           <height>20</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Nom</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="rev_label_52">
-         <property name="geometry">
-          <rect>
-           <x>20</x>
-           <y>165</y>
-           <width>71</width>
-           <height>20</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Spécialité</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="rev_label_54">
-         <property name="geometry">
-          <rect>
-           <x>20</x>
-           <y>120</y>
-           <width>111</width>
-           <height>20</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Email:</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="rev_label_55">
-         <property name="geometry">
-          <rect>
-           <x>20</x>
-           <y>205</y>
-           <width>151</width>
-           <height>20</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Affiliation</string>
-         </property>
-        </widget>
-        <widget class="QLineEdit" name="rev_lineEdit_25">
-         <property name="geometry">
-          <rect>
-           <x>180</x>
-           <y>240</y>
-           <width>301</width>
-           <height>26</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QLineEdit" name="rev_lineEdit_26">
-         <property name="geometry">
-          <rect>
-           <x>180</x>
-           <y>280</y>
-           <width>301</width>
-           <height>26</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QLineEdit" name="rev_lineEdit_27">
-         <property name="geometry">
-          <rect>
-           <x>180</x>
-           <y>320</y>
-           <width>301</width>
-           <height>26</height>
-          </rect>
-         </property>
-        </widget>
-        <widget class="QLabel" name="rev_label_56">
-         <property name="geometry">
-          <rect>
-           <x>20</x>
-           <y>245</y>
-           <width>91</width>
-           <height>20</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Nb Evaluations</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="rev_label_57">
-         <property name="geometry">
-          <rect>
-           <x>20</x>
-           <y>290</y>
-           <width>63</width>
-           <height>31</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>Score Fiabilité
-</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="rev_label_58">
-         <property name="geometry">
-          <rect>
-           <x>20</x>
-           <y>325</y>
-           <width>63</width>
-           <height>20</height>
-          </rect>
-         </property>
-         <property name="text">
-          <string>ID pub</string>
-         </property>
-        </widget>
-        <widget class="QLabel" name="rev_label_59">
-         <property name="geometry">
-          <rect>
-           <x>630</x>
-           <y>330</y>
-           <width>91</width>
-           <height>71</height>
-          </rect>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">image: url(:/new/prefix1/Downloads/publication icon.png);</string>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="pixmap">
-          <pixmap resource="resources.qrc">:/ressouces/publication icon.png</pixmap>
-         </property>
-        </widget>
-       </widget>
-       <widget class="QTableWidget" name="rev_tableWidget_3">
-        <property name="geometry">
-         <rect>
-          <x>30</x>
-          <y>130</y>
-          <width>1021</width>
-          <height>191</height>
-         </rect>
-        </property>
-        <column>
-         <property name="text">
-          <string>ID</string>
-         </property>
-        </column>
-        <column>
-         <property name="text">
-          <string>Nom</string>
-         </property>
-        </column>
-        <column>
-         <property name="text">
-          <string>Email</string>
-         </property>
-        </column>
-        <column>
-         <property name="text">
-          <string>Spécialité</string>
-         </property>
-        </column>
-        <column>
-         <property name="text">
-          <string>Affiliation</string>
-         </property>
-        </column>
-        <column>
-         <property name="text">
-          <string>Nb Évaluations</string>
-         </property>
-        </column>
-        <column>
-         <property name="text">
-          <string>Score Fiabilité</string>
-         </property>
-        </column>
-        <column>
-         <property name="text">
-          <string>ID pub</string>
-         </property>
-        </column>
-       </widget>
-       <widget class="QPushButton" name="rev_pushButton_19">
-        <property name="geometry">
-         <rect>
-          <x>880</x>
-          <y>350</y>
-          <width>154</width>
-          <height>43</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>Exporter</string>
-        </property>
-       </widget>
-       <widget class="QWidget" name="rev_widget_16" native="true">
-        <property name="geometry">
-         <rect>
-          <x>480</x>
-          <y>1152</y>
-          <width>1091</width>
-          <height>281</height>
-         </rect>
-        </property>
-        <layout class="QVBoxLayout" name="rev_verticalLayout_7">
-         <property name="spacing">
-          <number>10</number>
-         </property>
-         <item>
-          <widget class="QFrame" name="rev_chartFramePie_5">
-           <property name="minimumSize">
-            <size>
-             <width>200</width>
-             <height>150</height>
-            </size>
-           </property>
-           <property name="frameShape">
-            <enum>QFrame::Shape::StyledPanel</enum>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Shadow::Raised</enum>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QPushButton" name="rev_pushButton_12">
-        <property name="geometry">
-         <rect>
-          <x>1020</x>
-          <y>810</y>
-          <width>291</width>
-          <height>41</height>
-         </rect>
-        </property>
-        <property name="text">
-         <string>cliquez ici pour ajouter </string>
-        </property>
-       </widget>
-       <widget class="QWidget" name="rev_widget_14" native="true">
-        <property name="geometry">
-         <rect>
-          <x>30</x>
-          <y>340</y>
-          <width>279</width>
-          <height>61</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="rev_horizontalLayout_13">
-         <item>
-          <widget class="QLabel" name="rev_label_35">
-           <property name="text">
-            <string>Tri par score Fia</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="rev_comboBox_14">
-           <item>
-            <property name="text">
-             <string>Croissant-decroissant</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Decroissant-croissant</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="rev_widget_15" native="true">
-        <property name="geometry">
-         <rect>
-          <x>30</x>
-          <y>370</y>
-          <width>279</width>
-          <height>129</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="rev_horizontalLayout_14">
-         <item>
-          <widget class="QLabel" name="rev_label_36">
-           <property name="text">
-            <string>Tri par Nb eva</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="rev_comboBox_15">
-           <item>
-            <property name="text">
-             <string>Croissant-decroissant</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>Decroissant-croissant</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="rev_widget_2" native="true">
-        <property name="geometry">
-         <rect>
-          <x>-10</x>
-          <y>-10</y>
-          <width>451</width>
-          <height>65</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="rev_horizontalLayout_2">
-         <item>
-          <widget class="QPushButton" name="rev_btnList">
-           <property name="text">
-            <string>Reviewer list</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="rev_btnStatistics">
-           <property name="text">
-            <string>Statistics</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </widget>
-      <widget class="QWidget" name="rev_page">
-       <widget class="QWidget" name="rev_widget_7" native="true">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>513</y>
-          <width>1091</width>
-          <height>281</height>
-         </rect>
-        </property>
-        <layout class="QVBoxLayout" name="rev_verticalLayout_3">
-         <property name="spacing">
-          <number>10</number>
-         </property>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="rev_widget_9" native="true">
-        <property name="geometry">
-         <rect>
-          <x>0</x>
-          <y>60</y>
-          <width>1081</width>
-          <height>141</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="rev_horizontalLayout_17">
-         <item>
-          <widget class="QFrame" name="rev_cardTotalReviewers">
-           <property name="enabled">
-            <bool>true</bool>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>120</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>190</height>
-            </size>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QFrame {
-    background-color: #f5f7fa;
-    border-radius: 10px;
-    border: 1px solid #dcdcdc;
-}
-</string>
-           </property>
-           <property name="frameShape">
-            <enum>QFrame::Shape::StyledPanel</enum>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Shadow::Raised</enum>
-           </property>
-           <layout class="QVBoxLayout" name="rev_verticalLayout_14">
-            <item>
-             <widget class="QLabel" name="rev_label_13">
-              <property name="text">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:22pt; font-weight:700;&quot;&gt;Total Reviewers&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="rev_kpiTotalReviewers">
-              <property name="text">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;25&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </item>
-         <item>
-          <widget class="QFrame" name="rev_cardTotalReviewers_2">
-           <property name="enabled">
-            <bool>true</bool>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>120</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>190</height>
-            </size>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QFrame {
-    background-color: #f5f7fa;
-    border-radius: 10px;
-    border: 1px solid #dcdcdc;
-}
-</string>
-           </property>
-           <property name="frameShape">
-            <enum>QFrame::Shape::StyledPanel</enum>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Shadow::Raised</enum>
-           </property>
-           <layout class="QVBoxLayout" name="rev_verticalLayout_15">
-            <item>
-             <widget class="QLabel" name="rev_label_60">
-              <property name="text">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:22pt; font-weight:700;&quot;&gt;Average Reliability&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="rev_kpiAvgReliability">
-              <property name="text">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;87%&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </item>
-         <item>
-          <widget class="QFrame" name="rev_cardTotalReviewers_3">
-           <property name="enabled">
-            <bool>true</bool>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>120</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>190</height>
-            </size>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QFrame {
-    background-color: #f5f7fa;
-    border-radius: 10px;
-    border: 1px solid #dcdcdc;
-}
-</string>
-           </property>
-           <property name="frameShape">
-            <enum>QFrame::Shape::StyledPanel</enum>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Shadow::Raised</enum>
-           </property>
-           <layout class="QVBoxLayout" name="rev_verticalLayout_16">
-            <item>
-             <widget class="QLabel" name="rev_label_15">
-              <property name="text">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:22pt; font-weight:700;&quot;&gt;Most Evaluations&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="rev_kpiMostEvaluations">
-              <property name="text">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt; Alex Smith&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </item>
-         <item>
-          <widget class="QFrame" name="rev_cardTotalReviewers_">
-           <property name="enabled">
-            <bool>true</bool>
-           </property>
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>0</width>
-             <height>120</height>
-            </size>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>190</height>
-            </size>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QFrame {
-    background-color: #f5f7fa;
-    border-radius: 10px;
-    border: 1px solid #dcdcdc;
-}
-</string>
-           </property>
-           <property name="frameShape">
-            <enum>QFrame::Shape::StyledPanel</enum>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Shadow::Raised</enum>
-           </property>
-           <layout class="QVBoxLayout" name="rev_verticalLayout_10">
-            <item>
-             <widget class="QLabel" name="rev_label_12">
-              <property name="text">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:22pt; font-weight:700;&quot;&gt;Top Reviewer&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="rev_kpiTopReviewer">
-              <property name="text">
-               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt; John Hart&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="rev_widget_10" native="true">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>200</y>
-          <width>1081</width>
-          <height>291</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="rev_horizontalLayout_18">
-         <item>
-          <widget class="QFrame" name="rev_chartFrameLine">
-           <property name="frameShape">
-            <enum>QFrame::Shape::StyledPanel</enum>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Shadow::Raised</enum>
-           </property>
-           <widget class="QFrame" name="rev_chartFrameBar">
-            <property name="geometry">
-             <rect>
-              <x>0</x>
-              <y>0</y>
-              <width>526</width>
-              <height>269</height>
-             </rect>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>200</width>
-              <height>150</height>
-             </size>
-            </property>
-            <property name="frameShape">
-             <enum>QFrame::Shape::StyledPanel</enum>
-            </property>
-            <property name="frameShadow">
-             <enum>QFrame::Shadow::Raised</enum>
-            </property>
-           </widget>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="rev_widget" native="true">
-        <property name="geometry">
-         <rect>
-          <x>-10</x>
-          <y>-10</y>
-          <width>451</width>
-          <height>65</height>
-         </rect>
-        </property>
-        <layout class="QHBoxLayout" name="rev_horizontalLayout">
-         <item>
-          <widget class="QPushButton" name="rev_btnList_2">
-           <property name="text">
-            <string>Reviewer list</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="rev_btnStatistics_2">
-           <property name="text">
-            <string>Statistics</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QFrame" name="rev_chartFramePie">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>480</y>
-          <width>1069</width>
-          <height>259</height>
-         </rect>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>200</width>
-          <height>150</height>
-         </size>
-        </property>
-        <property name="frameShape">
-         <enum>QFrame::Shape::StyledPanel</enum>
-        </property>
-        <property name="frameShadow">
-         <enum>QFrame::Shadow::Raised</enum>
-        </property>
-       </widget>
-      </widget>
-     </widget>
-     <widget class="QGroupBox" name="rev_groupBox_11">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>-60</y>
-        <width>211</width>
-        <height>851</height>
-       </rect>
-      </property>
-      <property name="title">
-       <string>Official desktop app</string>
-      </property>
-      <widget class="QPushButton" name="rev_btnConferences">
-       <property name="geometry">
-        <rect>
-         <x>20</x>
-         <y>590</y>
-         <width>161</width>
-         <height>51</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Conférences</string>
-       </property>
-       <property name="checkable">
-        <bool>true</bool>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="rev_btnEquipments">
-       <property name="geometry">
-        <rect>
-         <x>20</x>
-         <y>700</y>
-         <width>161</width>
-         <height>61</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Equipements</string>
-       </property>
-       <property name="checkable">
-        <bool>true</bool>
-       </property>
-      </widget>
-      <widget class="QLabel" name="rev_label_29">
-       <property name="geometry">
-        <rect>
-         <x>-20</x>
-         <y>130</y>
-         <width>261</width>
-         <height>171</height>
-        </rect>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">image: url(:/ressouces/imagetouse.png-removebg-preview (1).png);</string>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-      <widget class="QLabel" name="rev_label_31">
-       <property name="geometry">
-        <rect>
-         <x>50</x>
-         <y>400</y>
-         <width>101</width>
-         <height>91</height>
-        </rect>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">image: url(:/ressouces/reviewer icon.png);</string>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-      <widget class="QLabel" name="rev_imagecon">
-       <property name="geometry">
-        <rect>
-         <x>20</x>
-         <y>630</y>
-         <width>151</width>
-         <height>101</height>
-        </rect>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">image: url(:/ressouces/equipement icon.png);</string>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-      <widget class="QLabel" name="rev_imgaeeq">
-       <property name="geometry">
-        <rect>
-         <x>20</x>
-         <y>510</y>
-         <width>151</width>
-         <height>101</height>
-        </rect>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">image: url(:/ressouces/conference icon.png);</string>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="rev_btnReviewers">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>460</y>
-         <width>171</width>
-         <height>61</height>
-        </rect>
-       </property>
-       <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Reviewers&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
-       <property name="text">
-        <string>Reviewers</string>
-       </property>
-       <property name="checkable">
-        <bool>true</bool>
-       </property>
-       <property name="checked">
-        <bool>false</bool>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="rev_btnPublications">
-       <property name="geometry">
-        <rect>
-         <x>10</x>
-         <y>340</y>
-         <width>171</width>
-         <height>71</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Publications</string>
-       </property>
-       <property name="checkable">
-        <bool>true</bool>
-       </property>
-      </widget>
-      <widget class="QLabel" name="rev_label">
-       <property name="geometry">
-        <rect>
-         <x>60</x>
-         <y>300</y>
-         <width>81</width>
-         <height>61</height>
-        </rect>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">image:url(:/ressouces/publication icon.png);</string>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-     </widget>
-    </widget>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -4666,8 +3248,6 @@ QStatusBar {
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
- <resources>
-  <include location="resources.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>
