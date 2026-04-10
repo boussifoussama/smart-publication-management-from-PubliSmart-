@@ -31,6 +31,9 @@
 #include <QMap>
 #include <QGraphicsScene>
 #include <QGraphicsTextItem>
+#include <QImage>
+#include <QPdfWriter>
+#include <QStandardPaths>
 
 // PDF export via Qt
 #include <QPrinter>
@@ -138,25 +141,12 @@ void SmartMarket::setupConferencePage()
             this, &SmartMarket::on_conf_calendarWidget_selectionChanged);
 
     // Connect CRUD buttons for conferences
-    connect(ui->conf_pushButton_26, &QPushButton::clicked, this, &SmartMarket::addConference);
-    connect(ui->conf_pushButton_27, &QPushButton::clicked, this, &SmartMarket::modifyConference);
     connect(ui->conf_pushButton_8, &QPushButton::clicked, this, &SmartMarket::deleteConference);
 
-    // Connect CRUD buttons for participants
-    connect(ui->conf_pushButton_19, &QPushButton::clicked, this, &SmartMarket::addParticipant);
-    connect(ui->conf_pushButton_10, &QPushButton::clicked, this, &SmartMarket::modifyParticipant);
-    connect(ui->conf_pushButton_12, &QPushButton::clicked, this, &SmartMarket::deleteParticipant);
 
     // Connect sorting buttons
     connect(ui->conf_pushButton_17, &QPushButton::clicked, this, &SmartMarket::sortConferencesByDateAsc);
     connect(ui->conf_pushButton_18, &QPushButton::clicked, this, &SmartMarket::sortConferencesByDateDesc);
-
-    // Connect export button
-    connect(ui->conf_pushButton_5, &QPushButton::clicked, this, &SmartMarket::exportConferencesToPDF);
-
-    // Connect filtering
-    connect(ui->conf_pushButton_21, &QPushButton::clicked, this, &SmartMarket::filterConferences);
-    connect(ui->conf_pushButton_20, &QPushButton::clicked, this, &SmartMarket::filterParticipants);
 
     // Load initial data
     loadConferenceTable();
@@ -1765,79 +1755,155 @@ void SmartMarket::openConferenceModule()
 }
 
 // Conference CRUD Operations
-void SmartMarket::addConference()
+void SmartMarket::on_conf_pushButton_26_clicked()
 {
-    QString id = ui->conf_lineEdit_26->text().trimmed();
-    QString nom = ui->conf_lineEdit_27->text().trimmed();
-    QString lieu = ui->conf_lineEdit_24->text().trimmed();
-    QString theme = ui->conf_lineEdit_25->text().trimmed();
-    QDate date = ui->conf_dateEdit_6->date();
+    const QString idText = ui->conf_lineEdit_26 ? ui->conf_lineEdit_26->text().trimmed() : QString();
+    const QString nom = ui->conf_lineEdit_27 ? ui->conf_lineEdit_27->text().trimmed() : QString();
+    const QString lieu = ui->conf_lineEdit_24 ? ui->conf_lineEdit_24->text().trimmed() : QString();
+    const QDate date = ui->conf_dateEdit_6 ? ui->conf_dateEdit_6->date() : QDate();
+    const QString theme = ui->conf_lineEdit_25 ? ui->conf_lineEdit_25->text().trimmed() : QString();
 
-    if (id.isEmpty() || nom.isEmpty() || lieu.isEmpty() || theme.isEmpty()) {
-        QMessageBox::warning(this, "Champs manquants", "Veuillez remplir tous les champs.");
+    bool idOk = false;
+    const int id = idText.toInt(&idOk);
+
+    const int maxId = 9999999;
+
+    if (!idOk || nom.isEmpty() || lieu.isEmpty() || !date.isValid())
+    {
+        QMessageBox::warning(this, "Saisie incomplète", "Veuillez renseigner ID (numérique), Nom, Lieu et Date.");
+        return;
+    }
+
+    if (id < 0 || id > maxId)
+    {
+        QMessageBox::warning(this, "ID invalide", "ID doit être un entier entre 0 et " + QString::number(maxId) + ".");
         return;
     }
 
     QSqlDatabase db = QSqlDatabase::database();
-    if (!db.isOpen() && !db.open()) {
-        QMessageBox::critical(this, "Base de données", "Connexion impossible.");
+    if ((!db.isValid() || !db.isOpen()) && !db.open())
+    {
+        QMessageBox::critical(this, "Base de données", "Connexion BD indisponible : " + db.lastError().text());
         return;
     }
 
-    QSqlQuery query(db);
-    query.prepare("INSERT INTO OUSSAMA.conference (idconference, nom, lieu, datedebut, theme) VALUES (:id, :nom, :lieu, :date, :theme)");
-    query.bindValue(":id", id.toInt());
-    query.bindValue(":nom", nom);
-    query.bindValue(":lieu", lieu);
-    query.bindValue(":date", date);
-    query.bindValue(":theme", theme);
+    QSqlQuery q(db);
+    q.prepare("INSERT INTO OUSSAMA.conference (idconference, nom, lieu, datedebut, theme) "
+              "VALUES (:id, :nom, :lieu, :date, :theme)");
+    q.bindValue(":id", id);
+    q.bindValue(":nom", nom);
+    q.bindValue(":lieu", lieu);
+    q.bindValue(":date", date);
+    q.bindValue(":theme", theme);
 
-    if (query.exec()) {
-        QMessageBox::information(this, "Succès", "Conférence ajoutée avec succès.");
-        loadConferenceTable();
-        // Clear fields
-        ui->conf_lineEdit_26->clear();
-        ui->conf_lineEdit_27->clear();
-        ui->conf_lineEdit_24->clear();
-        ui->conf_lineEdit_25->clear();
-    } else {
-        QMessageBox::critical(this, "Erreur", "Échec de l'ajout: " + query.lastError().text());
+    if (!q.exec())
+    {
+        QMessageBox::critical(this, "Insertion conférence",
+                              "Echec INSERT : " + q.lastError().text() +
+                              "\nValeurs : ID=" + QString::number(id) +
+                              ", Nom=" + nom +
+                              ", Lieu=" + lieu +
+                              ", Date=" + date.toString("yyyy-MM-dd") +
+                              ", Theme=" + theme);
+        return;
     }
+
+    QMessageBox::information(this, "Succès", "Conférence ajoutée dans la base.");
+
+    loadConferenceTable();
+
+    if (ui->conf_lineEdit_26)
+        ui->conf_lineEdit_26->clear();
+    if (ui->conf_lineEdit_27)
+        ui->conf_lineEdit_27->clear();
+    if (ui->conf_lineEdit_24)
+        ui->conf_lineEdit_24->clear();
+    if (ui->conf_dateEdit_6)
+        ui->conf_dateEdit_6->setDate(QDate::currentDate());
+    if (ui->conf_lineEdit_25)
+        ui->conf_lineEdit_25->clear();
+}
+
+void SmartMarket::addConference()
+{
+    on_conf_pushButton_26_clicked();
+}
+
+void SmartMarket::on_conf_pushButton_27_clicked()
+{
+    const QString idText = ui->conf_lineEdit_31 ? ui->conf_lineEdit_31->text().trimmed() : QString();
+    const QString nom = ui->conf_lineEdit_28 ? ui->conf_lineEdit_28->text().trimmed() : QString();
+    const QString lieu = ui->conf_lineEdit_29 ? ui->conf_lineEdit_29->text().trimmed() : QString();
+    const QDate date = ui->conf_dateEdit_4 ? ui->conf_dateEdit_4->date() : QDate();
+    const QString theme = ui->conf_lineEdit_30 ? ui->conf_lineEdit_30->text().trimmed() : QString();
+
+    bool idOk = false;
+    const int id = idText.toInt(&idOk);
+    const int maxId = 9999999;
+
+    if (!idOk || nom.isEmpty() || lieu.isEmpty() || !date.isValid())
+    {
+        QMessageBox::warning(this, "Saisie incomplète", "Renseignez ID (numérique), Nom, Lieu et Date.");
+        return;
+    }
+
+    if (id < 0 || id > maxId)
+    {
+        QMessageBox::warning(this, "ID invalide", "ID doit être entre 0 et " + QString::number(maxId) + ".");
+        return;
+    }
+
+    QSqlDatabase db = QSqlDatabase::database();
+    if ((!db.isValid() || !db.isOpen()) && !db.open())
+    {
+        QMessageBox::critical(this, "Base de données", "Connexion BD indisponible : " + db.lastError().text());
+        return;
+    }
+
+    QSqlQuery q(db);
+    q.prepare("UPDATE OUSSAMA.conference "
+              "SET nom = :nom, lieu = :lieu, datedebut = :date, theme = :theme "
+              "WHERE idconference = :id");
+    q.bindValue(":nom", nom);
+    q.bindValue(":lieu", lieu);
+    q.bindValue(":date", date);
+    q.bindValue(":theme", theme);
+    q.bindValue(":id", id);
+
+    if (!q.exec())
+    {
+        QMessageBox::critical(this, "Mise à jour conférence",
+                              "Echec UPDATE : " + q.lastError().text() +
+                              "\nValeurs : ID=" + QString::number(id) +
+                              ", Nom=" + nom +
+                              ", Lieu=" + lieu +
+                              ", Date=" + date.toString("yyyy-MM-dd") +
+                              ", Theme=" + theme);
+        return;
+    }
+
+    if (q.numRowsAffected() == 0)
+        QMessageBox::information(this, "Mise à jour", "Aucune conférence trouvée avec cet ID.");
+    else
+        QMessageBox::information(this, "Mise à jour", "Conférence mise à jour.");
+
+    loadConferenceTable();
+
+    if (ui->conf_lineEdit_31)
+        ui->conf_lineEdit_31->clear();
+    if (ui->conf_lineEdit_28)
+        ui->conf_lineEdit_28->clear();
+    if (ui->conf_lineEdit_29)
+        ui->conf_lineEdit_29->clear();
+    if (ui->conf_dateEdit_4)
+        ui->conf_dateEdit_4->setDate(QDate::currentDate());
+    if (ui->conf_lineEdit_30)
+        ui->conf_lineEdit_30->clear();
 }
 
 void SmartMarket::modifyConference()
 {
-    QString id = ui->conf_lineEdit_31->text().trimmed();
-    QString nom = ui->conf_lineEdit_28->text().trimmed();
-    QString lieu = ui->conf_lineEdit_29->text().trimmed();
-    QString theme = ui->conf_lineEdit_30->text().trimmed();
-    QDate date = ui->conf_dateEdit_4->date();
-
-    if (id.isEmpty()) {
-        QMessageBox::warning(this, "ID manquant", "Veuillez saisir l'ID de la conférence à modifier.");
-        return;
-    }
-
-    QSqlDatabase db = QSqlDatabase::database();
-    if (!db.isOpen() && !db.open()) {
-        QMessageBox::critical(this, "Base de données", "Connexion impossible.");
-        return;
-    }
-
-    QSqlQuery query(db);
-    query.prepare("UPDATE OUSSAMA.conference SET nom=:nom, lieu=:lieu, datedebut=:date, theme=:theme WHERE idconference=:id");
-    query.bindValue(":id", id.toInt());
-    query.bindValue(":nom", nom);
-    query.bindValue(":lieu", lieu);
-    query.bindValue(":date", date);
-    query.bindValue(":theme", theme);
-
-    if (query.exec()) {
-        QMessageBox::information(this, "Succès", "Conférence modifiée avec succès.");
-        loadConferenceTable();
-    } else {
-        QMessageBox::critical(this, "Erreur", "Échec de la modification: " + query.lastError().text());
-    }
+    on_conf_pushButton_27_clicked();
 }
 
 void SmartMarket::deleteConference()
@@ -1871,106 +1937,239 @@ void SmartMarket::deleteConference()
     }
 }
 
-void SmartMarket::addParticipant()
+void SmartMarket::on_conf_pushButton_19_clicked()
 {
-    QString nom = ui->conf_lineEdit_20->text().trimmed();
-    QString idConf = ui->conf_lineEdit_22->text().trimmed();
+    const QString idText = ui->conf_lineEdit_21 ? ui->conf_lineEdit_21->text().trimmed() : QString();
+    const QString nom = ui->conf_lineEdit_20 ? ui->conf_lineEdit_20->text().trimmed() : QString();
+    const QString confIdText = ui->conf_lineEdit_22 ? ui->conf_lineEdit_22->text().trimmed() : QString();
 
-    if (nom.isEmpty() || idConf.isEmpty()) {
-        QMessageBox::warning(this, "Champs manquants", "Veuillez remplir tous les champs.");
+    bool idOk = false;
+    const int participantId = idText.toInt(&idOk);
+    bool confIdOk = false;
+    const int conferenceId = confIdText.toInt(&confIdOk);
+
+    const QRegularExpression nameRegex("^[A-Za-z\\s]+$");
+
+    if (!idOk || idText.isEmpty())
+    {
+        QMessageBox::warning(this, "ID participant", "L'ID doit contenir uniquement des chiffres.");
+        return;
+    }
+
+    if (nom.isEmpty() || !nameRegex.match(nom).hasMatch())
+    {
+        QMessageBox::warning(this, "Nom participant", "Le nom doit contenir uniquement des lettres et des espaces.");
+        return;
+    }
+
+    if (!confIdOk || confIdText.isEmpty())
+    {
+        QMessageBox::warning(this, "ID conférence", "L'ID conférence doit être numérique.");
         return;
     }
 
     QSqlDatabase db = QSqlDatabase::database();
-    if (!db.isOpen() && !db.open()) {
-        QMessageBox::critical(this, "Base de données", "Connexion impossible.");
+    if ((!db.isValid() || !db.isOpen()) && !db.open())
+    {
+        QMessageBox::critical(this, "Base de données", "Connexion BD indisponible : " + db.lastError().text());
         return;
     }
 
-    // Get next ID
-    QSqlQuery idQuery(db);
-    idQuery.exec("SELECT NVL(MAX(id), 0) + 1 FROM OUSSAMA.participant");
-    int nextId = 1;
-    if (idQuery.next()) {
-        nextId = idQuery.value(0).toInt();
+    QSqlQuery checkConf(db);
+    checkConf.prepare("SELECT 1 FROM OUSSAMA.conference WHERE idconference = :id");
+    checkConf.bindValue(":id", conferenceId);
+    if (!checkConf.exec())
+    {
+        QMessageBox::critical(this, "Validation", "Echec vérification conférence : " + checkConf.lastError().text());
+        return;
     }
 
-    QSqlQuery query(db);
-    query.prepare("INSERT INTO OUSSAMA.participant (id, nom, idconference) VALUES (:id, :nom, :idconf)");
-    query.bindValue(":id", nextId);
-    query.bindValue(":nom", nom);
-    query.bindValue(":idconf", idConf.toInt());
+    if (!checkConf.next())
+    {
+        QMessageBox::warning(this, "Validation", "Aucune conférence avec cet ID. Veuillez en choisir une existante.");
+        return;
+    }
 
-    if (query.exec()) {
-        QMessageBox::information(this, "Succès", "Participant ajouté avec succès.");
-        loadParticipantTable();
+    QSqlQuery insert(db);
+    insert.prepare("INSERT INTO OUSSAMA.participant (id, nom, idconference) VALUES (:id, :nom, :idconference)");
+    insert.bindValue(":id", participantId);
+    insert.bindValue(":nom", nom);
+    insert.bindValue(":idconference", conferenceId);
+
+    if (!insert.exec())
+    {
+        QMessageBox::critical(this, "Insertion participant", "Echec INSERT : " + insert.lastError().text());
+        return;
+    }
+
+    QMessageBox::information(this, "Succès", "Participant ajouté dans la base.");
+    loadParticipantTable();
+    loadConferenceTable();
+
+    if (ui->conf_lineEdit_21)
+        ui->conf_lineEdit_21->clear();
+    if (ui->conf_lineEdit_20)
         ui->conf_lineEdit_20->clear();
+    if (ui->conf_lineEdit_22)
         ui->conf_lineEdit_22->clear();
-    } else {
-        QMessageBox::critical(this, "Erreur", "Échec de l'ajout: " + query.lastError().text());
+}
+
+void SmartMarket::addParticipant()
+{
+    on_conf_pushButton_19_clicked();
+}
+
+void SmartMarket::on_conf_pushButton_10_clicked()
+{
+    const QString idText = ui->conf_lineEdit_23 ? ui->conf_lineEdit_23->text().trimmed() : QString();
+    const QString nom = ui->conf_lineEdit_15 ? ui->conf_lineEdit_15->text().trimmed() : QString();
+    const QString confIdText = ui->conf_lineEdit_14 ? ui->conf_lineEdit_14->text().trimmed() : QString();
+
+    bool idOk = false;
+    const int participantId = idText.toInt(&idOk);
+    bool confIdOk = false;
+    const int conferenceId = confIdText.toInt(&confIdOk);
+
+    const QRegularExpression nameRegex("^[A-Za-z\\s]+$");
+
+    if (!idOk || idText.isEmpty())
+    {
+        QMessageBox::warning(this, "ID participant", "L'ID à modifier doit être numérique.");
+        return;
     }
+
+    if (nom.isEmpty() || !nameRegex.match(nom).hasMatch())
+    {
+        QMessageBox::warning(this, "Nom participant", "Le nom doit contenir uniquement des lettres et des espaces.");
+        return;
+    }
+
+    if (!confIdOk || confIdText.isEmpty())
+    {
+        QMessageBox::warning(this, "ID conférence", "L'ID conférence doit être numérique.");
+        return;
+    }
+
+    QSqlDatabase db = QSqlDatabase::database();
+    if ((!db.isValid() || !db.isOpen()) && !db.open())
+    {
+        QMessageBox::critical(this, "Base de données", "Connexion BD indisponible : " + db.lastError().text());
+        return;
+    }
+
+    QSqlQuery checkParticipant(db);
+    checkParticipant.prepare("SELECT 1 FROM OUSSAMA.participant WHERE id = :id");
+    checkParticipant.bindValue(":id", participantId);
+    if (!checkParticipant.exec())
+    {
+        QMessageBox::critical(this, "Validation", "Echec vérification participant : " + checkParticipant.lastError().text());
+        return;
+    }
+
+    if (!checkParticipant.next())
+    {
+        QMessageBox::information(this, "Mise à jour", "Aucun participant avec cet ID.");
+        return;
+    }
+
+    QSqlQuery checkConf(db);
+    checkConf.prepare("SELECT 1 FROM OUSSAMA.conference WHERE idconference = :id");
+    checkConf.bindValue(":id", conferenceId);
+    if (!checkConf.exec())
+    {
+        QMessageBox::critical(this, "Validation", "Echec vérification conférence : " + checkConf.lastError().text());
+        return;
+    }
+
+    if (!checkConf.next())
+    {
+        QMessageBox::warning(this, "Validation", "Aucune conférence avec cet ID. Veuillez en choisir une existante.");
+        return;
+    }
+
+    QSqlQuery update(db);
+    update.prepare("UPDATE OUSSAMA.participant SET nom = :nom, idconference = :idconference WHERE id = :id");
+    update.bindValue(":nom", nom);
+    update.bindValue(":idconference", conferenceId);
+    update.bindValue(":id", participantId);
+
+    if (!update.exec())
+    {
+        QMessageBox::critical(this, "Mise à jour participant", "Echec UPDATE : " + update.lastError().text());
+        return;
+    }
+
+    QMessageBox::information(this, "Mise à jour", "Participant modifié.");
+    loadParticipantTable();
+    loadConferenceTable();
+
+    if (ui->conf_lineEdit_23)
+        ui->conf_lineEdit_23->clear();
+    if (ui->conf_lineEdit_15)
+        ui->conf_lineEdit_15->clear();
+    if (ui->conf_lineEdit_14)
+        ui->conf_lineEdit_14->clear();
 }
 
 void SmartMarket::modifyParticipant()
 {
-    QString id = ui->conf_lineEdit_23->text().trimmed();
-    QString nom = ui->conf_lineEdit_14->text().trimmed();
-    QString idConf = ui->conf_lineEdit_15->text().trimmed();
+    on_conf_pushButton_10_clicked();
+}
 
-    if (id.isEmpty()) {
-        QMessageBox::warning(this, "ID manquant", "Veuillez saisir l'ID du participant à modifier.");
+void SmartMarket::on_conf_pushButton_12_clicked()
+{
+    const QString idText = ui->conf_lineEdit_13 ? ui->conf_lineEdit_13->text().trimmed() : QString();
+    bool ok = false;
+    const int participantId = idText.toInt(&ok);
+
+    if (!ok || idText.isEmpty())
+    {
+        QMessageBox::warning(this, "ID participant", "L'ID à supprimer doit être numérique.");
         return;
     }
 
     QSqlDatabase db = QSqlDatabase::database();
-    if (!db.isOpen() && !db.open()) {
-        QMessageBox::critical(this, "Base de données", "Connexion impossible.");
+    if ((!db.isValid() || !db.isOpen()) && !db.open())
+    {
+        QMessageBox::critical(this, "Base de données", "Connexion BD indisponible : " + db.lastError().text());
         return;
     }
 
-    QSqlQuery query(db);
-    query.prepare("UPDATE OUSSAMA.participant SET nom=:nom, idconference=:idconf WHERE id=:id");
-    query.bindValue(":id", id.toInt());
-    query.bindValue(":nom", nom);
-    query.bindValue(":idconf", idConf.toInt());
-
-    if (query.exec()) {
-        QMessageBox::information(this, "Succès", "Participant modifié avec succès.");
-        loadParticipantTable();
-    } else {
-        QMessageBox::critical(this, "Erreur", "Échec de la modification: " + query.lastError().text());
+    QSqlQuery check(db);
+    check.prepare("SELECT 1 FROM OUSSAMA.participant WHERE id = :id");
+    check.bindValue(":id", participantId);
+    if (!check.exec())
+    {
+        QMessageBox::critical(this, "Validation", "Echec vérification participant : " + check.lastError().text());
+        return;
     }
+
+    if (!check.next())
+    {
+        QMessageBox::information(this, "Suppression", "Aucun participant avec cet ID.");
+        return;
+    }
+
+    QSqlQuery del(db);
+    del.prepare("DELETE FROM OUSSAMA.participant WHERE id = :id");
+    del.bindValue(":id", participantId);
+
+    if (!del.exec())
+    {
+        QMessageBox::critical(this, "Suppression participant", "Echec DELETE : " + del.lastError().text());
+        return;
+    }
+
+    QMessageBox::information(this, "Suppression", "Participant supprimé.");
+    loadParticipantTable();
+    loadConferenceTable();
+    if (ui->conf_lineEdit_13)
+        ui->conf_lineEdit_13->clear();
 }
 
 void SmartMarket::deleteParticipant()
 {
-    QString id = ui->conf_lineEdit_13->text().trimmed();
-
-    if (id.isEmpty()) {
-        QMessageBox::warning(this, "ID manquant", "Veuillez saisir l'ID du participant à supprimer.");
-        return;
-    }
-
-    if (QMessageBox::question(this, "Confirmation", "Êtes-vous sûr de vouloir supprimer ce participant?") != QMessageBox::Yes)
-        return;
-
-    QSqlDatabase db = QSqlDatabase::database();
-    if (!db.isOpen() && !db.open()) {
-        QMessageBox::critical(this, "Base de données", "Connexion impossible.");
-        return;
-    }
-
-    QSqlQuery query(db);
-    query.prepare("DELETE FROM OUSSAMA.participant WHERE id=:id");
-    query.bindValue(":id", id.toInt());
-
-    if (query.exec()) {
-        QMessageBox::information(this, "Succès", "Participant supprimé avec succès.");
-        loadParticipantTable();
-        ui->conf_lineEdit_13->clear();
-    } else {
-        QMessageBox::critical(this, "Erreur", "Échec de la suppression: " + query.lastError().text());
-    }
+    on_conf_pushButton_12_clicked();
 }
 
 void SmartMarket::sortConferencesByDateAsc()
@@ -1985,128 +2184,297 @@ void SmartMarket::sortConferencesByDateDesc()
     table->sortItems(3, Qt::DescendingOrder); // Column 3 is date
 }
 
-void SmartMarket::exportConferencesToPDF()
+void SmartMarket::on_conf_pushButton_5_clicked()
 {
-    QTableWidget *table = ui->conf_tableWidget_7;
-    if (!table || table->rowCount() == 0) {
-        QMessageBox::warning(this, "Export PDF", "Aucune conférence à exporter.");
+    if (!ui->conf_tableWidget_7 || !ui->conf_tableWidget_2 || !ui->conf_graphicsView1 || !ui->conf_graphicsView1_2)
+    {
+        QMessageBox::warning(this, "Export PDF", "Composants manquants pour l'export (tables ou graphiques).");
         return;
     }
 
-    QString filePath = QFileDialog::getSaveFileName(
-        this,
-        "Enregistrer le PDF des conférences",
-        QDir::homePath() + "/conferences_" + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".pdf",
-        "Fichiers PDF (*.pdf)"
-    );
-    if (filePath.isEmpty())
-        return;
+    QString basePath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    QString filePath = basePath.isEmpty() ? "export_conferences.pdf" : basePath + "/export_conferences.pdf";
 
-    QPrinter printer(QPrinter::HighResolution);
-    printer.setOutputFormat(QPrinter::PdfFormat);
-    printer.setOutputFileName(filePath);
-    printer.setPageOrientation(QPageLayout::Landscape);
-    printer.setPageSize(QPageSize(QPageSize::A4));
-    printer.setPageMargins(QMarginsF(15, 15, 15, 15), QPageLayout::Millimeter);
+    QPdfWriter writer(filePath);
+    writer.setPageSize(QPageSize(QPageSize::A4));
+    writer.setResolution(300);
 
-    QPainter painter;
-    if (!painter.begin(&printer)) {
-        QMessageBox::critical(this, "Export PDF", "Impossible de générer le PDF.");
+    QPainter painter(&writer);
+    if (!painter.isActive())
+    {
+        QMessageBox::critical(this, "Export PDF", "Impossible d'ouvrir le PDF en écriture : " + filePath);
         return;
     }
 
-    const int pageW = printer.pageLayout().paintRectPixels(printer.resolution()).width();
-    const int pageH = printer.pageLayout().paintRectPixels(printer.resolution()).height();
-    const int margin = 30;
-    const int topY = 40;
-    const int rowH = 28;
-    const int headerH = 34;
+    const int pageW = writer.width();
+    const int pageH = writer.height();
+    const int margin = 70;
+    int y = margin;
 
-    QStringList headers;
-    for (int c = 0; c < table->columnCount(); ++c)
-        headers << table->horizontalHeaderItem(c)->text();
+    QFont titleFont("Segoe UI", 14, QFont::Bold);
+    QFont headerFont("Segoe UI", 10, QFont::Bold);
+    QFont cellFont("Segoe UI", 9);
+    QPen gridPen(Qt::black);
+    gridPen.setWidth(1);
 
-    QVector<int> widths;
-    widths.reserve(table->columnCount());
-    int totalWidth = pageW - 2 * margin;
-    QVector<double> ratios = {0.12, 0.22, 0.18, 0.18, 0.18, 0.12};
-    for (int i = 0; i < table->columnCount(); ++i) {
-        double ratio = i < ratios.size() ? ratios[i] : (1.0 / qMax(1, table->columnCount()));
-        widths.push_back(int(totalWidth * ratio));
-    }
-
-    auto drawHeader = [&](int y) {
-        int x = margin;
-        painter.setFont(QFont("Arial", 10, QFont::Bold));
-        painter.setPen(Qt::white);
-        painter.fillRect(margin, y, totalWidth, headerH, QColor(15, 42, 68));
-        for (int c = 0; c < headers.size(); ++c) {
-            painter.drawRect(x, y, widths[c], headerH);
-            painter.drawText(QRect(x + 4, y, widths[c] - 8, headerH), Qt::AlignVCenter | Qt::AlignLeft, headers[c]);
-            x += widths[c];
+    auto newPageIfNeeded = [&](int blockHeight) {
+        if (y + blockHeight > pageH - margin)
+        {
+            writer.newPage();
+            y = margin;
         }
     };
 
-    auto drawRow = [&](int y, int row) {
-        int x = margin;
-        painter.setFont(QFont("Arial", 9));
-        painter.setPen(Qt::black);
-        for (int c = 0; c < table->columnCount(); ++c) {
-            const QString text = table->item(row, c) ? table->item(row, c)->text() : QString();
-            painter.drawRect(x, y, widths[c], rowH);
-            painter.drawText(QRect(x + 4, y, widths[c] - 8, rowH), Qt::AlignVCenter | Qt::AlignLeft, text);
-            x += widths[c];
+    auto drawTable = [&](QTableWidget *table, const QString &title, const QVector<QString> &headers)
+    {
+        if (!table)
+            return;
+
+        const int cols = headers.size();
+        if (cols == 0)
+            return;
+
+        const int colWidth = (pageW - 2 * margin) / cols;
+        const int rowHeight = 24;
+        const int headerHeight = 28;
+        const int totalHeight = headerHeight + table->rowCount() * rowHeight + 30;
+        newPageIfNeeded(totalHeight + 30);
+
+        painter.setFont(titleFont);
+        painter.drawText(margin, y, pageW - 2 * margin, headerHeight, Qt::AlignLeft | Qt::AlignVCenter, title);
+        y += headerHeight + 4;
+
+        painter.setFont(headerFont);
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QColor("#f0f0f0"));
+        painter.drawRect(margin, y, colWidth * cols, headerHeight);
+        painter.setBrush(Qt::NoBrush);
+        painter.setPen(gridPen);
+        for (int c = 0; c < cols; ++c)
+        {
+            painter.drawText(margin + c * colWidth, y, colWidth, headerHeight, Qt::AlignLeft | Qt::AlignVCenter, headers[c]);
+            painter.drawRect(margin + c * colWidth, y, colWidth, headerHeight);
         }
+        y += headerHeight;
+
+        painter.setFont(cellFont);
+        for (int r = 0; r < table->rowCount(); ++r)
+        {
+            for (int c = 0; c < cols; ++c)
+            {
+                const QString text = table->item(r, c) ? table->item(r, c)->text() : "";
+                painter.drawText(margin + c * colWidth, y, colWidth, rowHeight, Qt::AlignLeft | Qt::AlignVCenter, text);
+                painter.drawRect(margin + c * colWidth, y, colWidth, rowHeight);
+            }
+            y += rowHeight;
+            if (y > pageH - margin)
+            {
+                writer.newPage();
+                y = margin;
+                painter.setFont(headerFont);
+                painter.setPen(Qt::NoPen);
+                painter.setBrush(QColor("#f0f0f0"));
+                painter.drawRect(margin, y, colWidth * cols, headerHeight);
+                painter.setBrush(Qt::NoBrush);
+                painter.setPen(gridPen);
+                for (int c = 0; c < cols; ++c)
+                {
+                    painter.drawText(margin + c * colWidth, y, colWidth, headerHeight, Qt::AlignLeft | Qt::AlignVCenter, headers[c]);
+                    painter.drawRect(margin + c * colWidth, y, colWidth, headerHeight);
+                }
+                y += headerHeight;
+                painter.setFont(cellFont);
+            }
+        }
+
+        y += 20;
     };
 
-    int y = topY;
-    int printedRows = 0;
-    painter.setFont(QFont("Arial", 14, QFont::Bold));
-    painter.drawText(QRect(margin, 5, totalWidth, 25), Qt::AlignCenter, "Liste des conférences");
-    y += 20;
-    drawHeader(y);
-    y += headerH;
+    auto drawChart = [&](QGraphicsView *view, const QString &title)
+    {
+        if (!view || !view->scene())
+            return;
 
-    for (int row = 0; row < table->rowCount(); ++row) {
-        if (y + rowH > pageH - margin) {
-            printer.newPage();
-            y = topY;
-            drawHeader(y);
-            y += headerH;
+        const int exportW = pageW - 2 * margin;
+        const int exportH = 350;
+
+        QImage img(view->viewport()->size() * view->devicePixelRatioF(), QImage::Format_ARGB32);
+        img.setDevicePixelRatio(view->devicePixelRatioF());
+        img.fill(Qt::white);
+        QPainter imgPainter(&img);
+        view->scene()->render(&imgPainter);
+        imgPainter.end();
+
+        QImage scaled = img.scaled(exportW, exportH, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+        newPageIfNeeded(title.isEmpty() ? exportH + 10 : exportH + 40);
+        if (!title.isEmpty())
+        {
+            painter.setFont(titleFont);
+            painter.drawText(margin, y, exportW, 24, Qt::AlignLeft | Qt::AlignVCenter, title);
+            y += 28;
         }
-        drawRow(y, row);
-        y += rowH;
-        ++printedRows;
-    }
+
+        painter.drawImage(QRect(margin, y, scaled.width(), scaled.height()), scaled);
+        y += scaled.height() + 20;
+    };
+
+    drawTable(ui->conf_tableWidget_7, "Conférences", {"ID", "Nom", "Lieu", "Date", "Thème", "Participants"});
+    drawTable(ui->conf_tableWidget_2, "Participants", {"ID", "Nom", "Id Conférence"});
+    drawChart(ui->conf_graphicsView1, "Participants par conférence");
+    drawChart(ui->conf_graphicsView1_2, "Conférences par date");
 
     painter.end();
-    QMessageBox::information(this, "Export PDF",
-                             QString("PDF généré avec succès :\n%1\n\n%2 conférence(s) exportée(s).")
-                                 .arg(filePath)
-                                 .arg(printedRows));
+
+    QMessageBox::information(this, "Export PDF", "PDF généré : " + filePath);
+}
+
+void SmartMarket::exportConferencesToPDF()
+{
+    on_conf_pushButton_5_clicked();
+}
+
+void SmartMarket::on_conf_pushButton_21_clicked()
+{
+    if (!ui->conf_tableWidget_7)
+        return;
+
+    const QString filterText = ui->conf_lineEdit_2 ? ui->conf_lineEdit_2->text().trimmed() : QString();
+    QString dateFilter;
+    if (ui->conf_radioButton_19 && ui->conf_radioButton_19->isChecked())
+    {
+        if (ui->dateEdit)
+            dateFilter = ui->dateEdit->date().toString("yyyy-MM-dd");
+        if (dateFilter.isEmpty())
+        {
+            QMessageBox::warning(this, "Filtrage", "Veuillez choisir une date pour filtrer.");
+            return;
+        }
+    }
+
+    QString whereClause;
+    if (ui->conf_radioButton_17 && ui->conf_radioButton_17->isChecked())
+        whereClause = "LOWER(c.nom) LIKE LOWER(:f)";
+    else if (ui->conf_radioButton_18 && ui->conf_radioButton_18->isChecked())
+        whereClause = "LOWER(c.lieu) LIKE LOWER(:f)";
+    else if (ui->conf_radioButton_19 && ui->conf_radioButton_19->isChecked())
+        whereClause = "TO_CHAR(c.datedebut, 'YYYY-MM-DD') = :d";
+    else if (ui->conf_radioButton_20 && ui->conf_radioButton_20->isChecked())
+        whereClause = "LOWER(c.theme) LIKE LOWER(:f)";
+
+    QSqlDatabase db = QSqlDatabase::database();
+    if ((!db.isValid() || !db.isOpen()) && !db.open())
+    {
+        QMessageBox::critical(this, "Base de données", "Connexion BD indisponible : " + db.lastError().text());
+        return;
+    }
+
+    QSqlQuery query(db);
+    QString sql = "SELECT c.idconference, c.nom, c.lieu, c.datedebut, c.theme, "
+                  "       (SELECT COUNT(*) FROM participant p WHERE p.idconference = c.idconference) AS nombreparticipants "
+                  "FROM conference c ";
+
+    const bool isDateFilter = ui->conf_radioButton_19 && ui->conf_radioButton_19->isChecked();
+
+    if (!whereClause.isEmpty() && ((isDateFilter && !dateFilter.isEmpty()) || (!isDateFilter && !filterText.isEmpty())))
+        sql += "WHERE " + whereClause + " ";
+
+    sql += "ORDER BY c.idconference";
+
+    query.prepare(sql);
+    if (!whereClause.isEmpty())
+    {
+        if (isDateFilter)
+            query.bindValue(":d", dateFilter);
+        else if (!filterText.isEmpty())
+            query.bindValue(":f", "%" + filterText + "%");
+    }
+
+    if (!query.exec())
+    {
+        QMessageBox::critical(this, "Filtrage conférences", "Echec SELECT : " + query.lastError().text());
+        return;
+    }
+
+    ui->conf_tableWidget_7->setRowCount(0);
+    int row = 0;
+    while (query.next())
+    {
+        ui->conf_tableWidget_7->insertRow(row);
+        ui->conf_tableWidget_7->setItem(row, 0, new QTableWidgetItem(query.value(0).toString()));
+        ui->conf_tableWidget_7->setItem(row, 1, new QTableWidgetItem(query.value(1).toString()));
+        ui->conf_tableWidget_7->setItem(row, 2, new QTableWidgetItem(query.value(2).toString()));
+        const QString dateStr = query.value(3).toDate().toString("yyyy-MM-dd");
+        ui->conf_tableWidget_7->setItem(row, 3, new QTableWidgetItem(dateStr));
+        ui->conf_tableWidget_7->setItem(row, 4, new QTableWidgetItem(query.value(4).toString()));
+        ui->conf_tableWidget_7->setItem(row, 5, new QTableWidgetItem(query.value(5).toString()));
+        ++row;
+    }
+
+    if (row == 0)
+        QMessageBox::information(this, "Filtrage", "Aucune conférence pour ce filtre.");
+
+    updateConferenceParticipantsChart();
+    updateConferenceDaysChart();
+    updateConferenceCalendar();
 }
 
 void SmartMarket::filterConferences()
 {
-    loadConferenceTable(); // Re-filter based on current filter text
+    on_conf_pushButton_21_clicked();
+}
+
+void SmartMarket::on_conf_pushButton_20_clicked()
+{
+    if (!ui->conf_tableWidget_2)
+        return;
+
+    const QString filter = ui->conf_lineEdit ? ui->conf_lineEdit->text().trimmed() : QString();
+
+    QSqlDatabase db = QSqlDatabase::database();
+    if ((!db.isValid() || !db.isOpen()) && !db.open())
+    {
+        QMessageBox::critical(this, "Base de données", "Connexion BD indisponible : " + db.lastError().text());
+        return;
+    }
+
+    QSqlQuery query(db);
+    if (filter.isEmpty())
+    {
+        query.prepare("SELECT id, nom, idconference FROM OUSSAMA.participant ORDER BY id");
+    }
+    else
+    {
+        query.prepare("SELECT id, nom, idconference FROM OUSSAMA.participant WHERE LOWER(nom) LIKE LOWER(:f) ORDER BY id");
+        query.bindValue(":f", "%" + filter + "%");
+    }
+
+    if (!query.exec())
+    {
+        QMessageBox::critical(this, "Filtrage participants", "Echec SELECT : " + query.lastError().text());
+        return;
+    }
+
+    ui->conf_tableWidget_2->setRowCount(0);
+    int row = 0;
+    while (query.next())
+    {
+        ui->conf_tableWidget_2->insertRow(row);
+        ui->conf_tableWidget_2->setItem(row, 0, new QTableWidgetItem(query.value(0).toString()));
+        ui->conf_tableWidget_2->setItem(row, 1, new QTableWidgetItem(query.value(1).toString()));
+        ui->conf_tableWidget_2->setItem(row, 2, new QTableWidgetItem(query.value(2).toString()));
+        ++row;
+    }
+
+    if (row == 0)
+    {
+        QMessageBox::information(this, "Filtrage", "Aucun participant pour ce filtre.");
+    }
 }
 
 void SmartMarket::filterParticipants()
 {
-    QString filter = ui->conf_lineEdit->text().trimmed().toLower();
-    QTableWidget *table = ui->conf_tableWidget_2;
-
-    for (int row = 0; row < table->rowCount(); ++row) {
-        bool match = false;
-        for (int col = 0; col < table->columnCount(); ++col) {
-            QTableWidgetItem *item = table->item(row, col);
-            if (item && item->text().toLower().contains(filter)) {
-                match = true;
-                break;
-            }
-        }
-        table->setRowHidden(row, !match && !filter.isEmpty());
-    }
+    on_conf_pushButton_20_clicked();
 }
 
 

@@ -55,6 +55,16 @@ private slots:
     void onSimilariteReply(QNetworkReply *reply);
     void onCompletudReply(QNetworkReply *reply);
 
+    // Conference UI slots
+    void on_conf_pushButton_5_clicked();
+    void on_conf_pushButton_21_clicked();
+    void on_conf_pushButton_20_clicked();
+    void on_conf_pushButton_19_clicked();
+    void on_conf_pushButton_12_clicked();
+    void on_conf_pushButton_10_clicked();
+    void on_conf_pushButton_26_clicked();
+    void on_conf_pushButton_27_clicked();
+
 private:
     Ui::SmartMarket *ui;
     QSqlTableModel  *publicationModel;
