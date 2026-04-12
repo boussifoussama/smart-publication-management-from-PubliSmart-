@@ -5,7 +5,7 @@
 # - Page 0: Login (avec EXACTEMENT le style original)
 # - Page 1: Publication (avec EXACTEMENT le style original)
 
-print("🎨 Génération du fichier smartmarket.ui avec vos styles EXACTS...")
+print("smartmarket.ui avec vos styles EXACTS...")
 
 with open('smartmarket.ui', 'w', encoding='utf-8') as f:
     f.write('''<?xml version="1.0" encoding="UTF-8"?>
