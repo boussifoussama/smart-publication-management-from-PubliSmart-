@@ -302,5 +302,4 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
  <connections/>
 </ui>''')
 
-print("✅ Fichier UI créé (Page Login)")
-print("\nℹ️  La page Publication sera ajoutée séparément...")
+
