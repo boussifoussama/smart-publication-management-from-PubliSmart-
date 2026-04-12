@@ -280,7 +280,7 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
     </widget>
 ''')
 
-    print("✅ Page Login créée avec style EXACT")
+   
     
     # Fermer le fichier pour l'instant
     f.write('''
