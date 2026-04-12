@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Script pour générer le fichier smartmarket.ui complet avec les styles EXACTS de l'original
+
 
 # Ce script crée un fichier UI qui combine:
 # - Page 0: Login (avec EXACTEMENT le style original)
