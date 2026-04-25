@@ -1,4 +1,4 @@
-#include "smartmarket.h"
+﻿#include "smartmarket.h"
 #include "ui_smartmarket.h"
 #include "arduino.h"
 
@@ -64,8 +64,8 @@
 #include <QtCharts/QValueAxis>
 #include <QtCharts/QLegend>
 
-// ── Configuration Ollama (Gratuit, 100% Local) ─────────────────────────────────
-// Ollama fonctionne complètement gratuitement sur votre PC
+// â”€â”€ Configuration Ollama (Gratuit, 100% Local) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ollama fonctionne complÃ¨tement gratuitement sur votre PC
 // Installation: https://ollama.ai
 // Puis: ollama pull neural-chat (plus rapide) ou ollama pull mistral
 static const QString OLLAMA_ENDPOINT = "http://localhost:11434/api/generate";
@@ -273,6 +273,62 @@ void SmartMarket::loadParticipantTable()
     updateConferenceParticipantsChart();
 }
 
+void SmartMarket::updateConferenceCalendar()
+{
+    if (!ui->conf_calendarWidget || !ui->conf_tableWidget_7)
+        return;
+
+    ui->conf_calendarWidget->setDateTextFormat(QDate(), QTextCharFormat());
+
+    const int rows = ui->conf_tableWidget_7->rowCount();
+    QTextCharFormat fmt;
+    fmt.setForeground(Qt::white);
+    fmt.setBackground(QBrush(Qt::red));
+    fmt.setFontWeight(QFont::Bold);
+
+    for (int r = 0; r < rows; ++r)
+    {
+        const QString dateStr = ui->conf_tableWidget_7->item(r, 3) ? ui->conf_tableWidget_7->item(r, 3)->text() : QString();
+        const QDate d = QDate::fromString(dateStr, "yyyy-MM-dd");
+        if (d.isValid())
+            ui->conf_calendarWidget->setDateTextFormat(d, fmt);
+    }
+}
+
+void SmartMarket::on_conf_calendarWidget_selectionChanged()
+{
+    if (!ui->conf_calendarWidget || !ui->conf_tableWidget_7)
+        return;
+
+    const QDate selected = ui->conf_calendarWidget->selectedDate();
+    if (!selected.isValid())
+        return;
+
+    QStringList lines;
+    const int rows = ui->conf_tableWidget_7->rowCount();
+    for (int r = 0; r < rows; ++r)
+    {
+        const QString dateStr = ui->conf_tableWidget_7->item(r, 3) ? ui->conf_tableWidget_7->item(r, 3)->text() : QString();
+        const QDate d = QDate::fromString(dateStr, "yyyy-MM-dd");
+        if (d != selected)
+            continue;
+
+        const QString nom = ui->conf_tableWidget_7->item(r, 1) ? ui->conf_tableWidget_7->item(r, 1)->text() : "(sans nom)";
+        const QString lieu = ui->conf_tableWidget_7->item(r, 2) ? ui->conf_tableWidget_7->item(r, 2)->text() : "";
+        const QString participants = ui->conf_tableWidget_7->item(r, 5) ? ui->conf_tableWidget_7->item(r, 5)->text() : "";
+        lines << nom + (lieu.isEmpty() ? "" : " - " + lieu) + (participants.isEmpty() ? "" : " | Participants: " + participants);
+    }
+
+    if (lines.isEmpty())
+    {
+        QMessageBox::information(this, "Calendrier", "Aucune conference prevue ce jour.");
+    }
+    else
+    {
+        QMessageBox::information(this, "Calendrier", lines.join("\n"));
+    }
+}
+
 void SmartMarket::updateConferenceParticipantsChart()
 {
     if (!ui->conf_graphicsView1 || !ui->conf_tableWidget_7)
@@ -294,7 +350,7 @@ void SmartMarket::updateConferenceParticipantsChart()
 
     const int rows = ui->conf_tableWidget_7->rowCount();
     if (rows == 0) {
-        QGraphicsTextItem *text = scene->addText("Aucune conférence trouvée");
+        QGraphicsTextItem *text = scene->addText("Aucune confÃ©rence trouvÃ©e");
         text->setPos(sceneW / 2 - 90, sceneH / 2);
         return;
     }
@@ -419,7 +475,7 @@ void SmartMarket::updateConferenceDaysChart()
 
     const int rows = ui->conf_tableWidget_7->rowCount();
     if (rows == 0) {
-        QGraphicsTextItem *text = scene->addText("Aucune conférence trouvée");
+        QGraphicsTextItem *text = scene->addText("Aucune confÃ©rence trouvÃ©e");
         text->setPos(sceneW / 2 - 90, sceneH / 2);
         return;
     }
@@ -1101,7 +1157,7 @@ void SmartMarket::on_pushButton_13_clicked()
 }
 
 // ================================================================
-// CRUD — AJOUTER
+// CRUD â€” AJOUTER
 // ================================================================
 void SmartMarket::on_pushButton_19_clicked()
 {
@@ -1152,7 +1208,7 @@ void SmartMarket::on_pushButton_19_clicked()
 }
 
 // ================================================================
-// CRUD — MODIFIER
+// CRUD â€” MODIFIER
 // ================================================================
 void SmartMarket::on_pushButton_20_clicked()
 {
@@ -1213,7 +1269,7 @@ void SmartMarket::on_pushButton_20_clicked()
 }
 
 // ================================================================
-// CRUD — SUPPRIMER
+// CRUD â€” SUPPRIMER
 // ================================================================
 void SmartMarket::on_pushButton_8_clicked()
 {
@@ -1325,7 +1381,24 @@ void SmartMarket::on_btnSortPubDesc_clicked()
 }
 
 // ================================================================
-// EXPORT PDF — 100% FONCTIONNEL avec QPrinter + QPainter
+// TRI PUBLICATIONS
+// ================================================================
+void SmartMarket::on_btnSortPubAsc_clicked()
+{
+    Publication p;
+    publicationModel = p.trier("DATEPUBLICATION", "ASC");
+    ui->tableView->setModel(publicationModel);
+}
+
+void SmartMarket::on_btnSortPubDesc_clicked()
+{
+    Publication p;
+    publicationModel = p.trier("DATEPUBLICATION", "DESC");
+    ui->tableView->setModel(publicationModel);
+}
+
+// ================================================================
+// EXPORT PDF â€” 100% FONCTIONNEL avec QPrinter + QPainter
 // ================================================================
 void SmartMarket::on_pushButton_21_clicked()
 {
@@ -1358,13 +1431,13 @@ void SmartMarket::exporterPDF(bool toutesPublications)
         );
     if (filePath.isEmpty()) return;
 
-    // Préparer les données
+    // PrÃ©parer les donnÃ©es
     QSqlQuery q;
     QString sql = "SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, "
                   "TO_CHAR(DATEPUBLICATION,'DD/MM/YYYY'), STATUT, CONTENU "
                   "FROM SELIM.PUBLICATION";
 
-    // Si on exporte seulement les publications filtrées
+    // Si on exporte seulement les publications filtrÃ©es
     if (!toutesPublications) {
         if (!lastPubFilter.isEmpty())
             sql += " WHERE " + lastPubFilter;
@@ -1420,7 +1493,7 @@ void SmartMarket::exporterPDF(bool toutesPublications)
     const double scale = 1.0;
     const int pageW    = painter.device()->width();
     const int pageH    = painter.device()->height();
-    const int marginX  = (int)(15 * scale * 3.78);  // mm → pixels approx
+    const int marginX  = (int)(15 * scale * 3.78);  // mm â†’ pixels approx
     const int marginY  = (int)(15 * scale * 3.78);
     const int contentW = pageW - 2 * marginX;
 
@@ -1435,8 +1508,8 @@ void SmartMarket::exporterPDF(bool toutesPublications)
     QFont metaFont("Arial", 7);
 
     // Couleurs
-    QColor colorHeader(15, 42, 68);      // #0F2A44 — bleu marine
-    QColor colorAlt(240, 245, 255);      // bleu très clair
+    QColor colorHeader(15, 42, 68);      // #0F2A44 â€” bleu marine
+    QColor colorAlt(240, 245, 255);      // bleu trÃ¨s clair
     QColor colorBorder(180, 200, 230);
     QColor colorTitle(255, 255, 255);
     QColor colorText(30, 30, 30);
@@ -1452,7 +1525,7 @@ void SmartMarket::exporterPDF(bool toutesPublications)
     const int headerH  = 36;
     const int titleH   = 55;
 
-    // ── Fonction lambda pour dessiner l'en-tête de tableau ──────
+    // â”€â”€ Fonction lambda pour dessiner l'en-tÃªte de tableau â”€â”€â”€â”€â”€â”€
     auto drawTableHeader = [&](int y) {
         const QString headers[] = { "ID", "Titre", "Source", "Domaine",
                                    "Date", "Statut", "Contenu" };
@@ -1470,7 +1543,7 @@ void SmartMarket::exporterPDF(bool toutesPublications)
         }
     };
 
-    // ── Fonction lambda pour dessiner une ligne de données ───────
+    // â”€â”€ Fonction lambda pour dessiner une ligne de donnÃ©es â”€â”€â”€â”€â”€â”€â”€
     auto drawDataRow = [&](int y, const PubRow &r, bool alternate) {
         const QString vals[] = { r.id, r.titre, r.source, r.domaine,
                                 r.date, r.statut, r.contenu };
@@ -1482,7 +1555,7 @@ void SmartMarket::exporterPDF(bool toutesPublications)
             // Bordure
             painter.setPen(QPen(colorBorder, 1));
             painter.drawRect(x, y, colW[i], rowH);
-            // Texte (tronqué si nécessaire)
+            // Texte (tronquÃ© si nÃ©cessaire)
             painter.setFont(bodyFont);
             painter.setPen(colorText);
             QFontMetrics fm(bodyFont);
@@ -1495,16 +1568,16 @@ void SmartMarket::exporterPDF(bool toutesPublications)
         }
     };
 
-    // ════════ PAGE(S) ════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â• PAGE(S) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     int currentY   = marginY;
     int pageNumber = 1;
     bool firstPage = true;
 
     for (int rowIdx = 0; rowIdx < rows.size(); ) {
 
-        // ── En-tête de page ─────────────────────────────────────
+        // â”€â”€ En-tÃªte de page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (firstPage) {
-            // Bannière titre
+            // BanniÃ¨re titre
             painter.fillRect(marginX, currentY, contentW, titleH, colorHeader);
             painter.setFont(titleFont);
             painter.setPen(colorTitle);
@@ -1513,7 +1586,7 @@ void SmartMarket::exporterPDF(bool toutesPublications)
                              "RAPPORT DES PUBLICATIONS — SmartMarket");
             currentY += titleH + 8;
 
-            // Méta-info
+            // MÃ©ta-info
             painter.setFont(metaFont);
             painter.setPen(Qt::darkGray);
             painter.drawText(marginX, currentY + 14,
@@ -1525,11 +1598,11 @@ void SmartMarket::exporterPDF(bool toutesPublications)
             firstPage = false;
         }
 
-        // En-tête du tableau
+        // En-tÃªte du tableau
         drawTableHeader(currentY);
         currentY += headerH;
 
-        // ── Lignes de données jusqu'en bas de page ───────────────
+        // â”€â”€ Lignes de donnÃ©es jusqu'en bas de page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         bool alternate = false;
         while (rowIdx < rows.size()) {
             // Espace restant ?
@@ -1541,7 +1614,7 @@ void SmartMarket::exporterPDF(bool toutesPublications)
                   QRect(marginX, pageH - marginY - 20,
                       contentW, 20),
                     Qt::AlignCenter,
-                    QString("Page %1  —  SmartMarket").arg(pageNumber));
+                    QString("Page %1  â€”  SmartMarket").arg(pageNumber));
 
                 printer.newPage();
                 pageNumber++;
@@ -1558,14 +1631,14 @@ void SmartMarket::exporterPDF(bool toutesPublications)
         }
     }
 
-    // Pied de dernière page
+    // Pied de derniÃ¨re page
     painter.setFont(metaFont);
     painter.setPen(Qt::gray);
     painter.drawText(
           QRect(marginX, pageH - marginY - 20,
               contentW, 20),
         Qt::AlignCenter,
-        QString("Page %1  —  SmartMarket").arg(pageNumber));
+        QString("Page %1  â€”  SmartMarket").arg(pageNumber));
 
     painter.end();
 
@@ -1752,7 +1825,7 @@ void SmartMarket::exporterExcel(bool toutesPublications)
 }
 
 // ================================================================
-// SIMILARITE IA — Appel Anthropic
+// SIMILARITE IA â€” Appel Anthropic
 // ================================================================
 void SmartMarket::on_pushButton_6_clicked()
 {
@@ -1766,7 +1839,7 @@ void SmartMarket::on_pushButton_6_clicked()
         QMessageBox::warning(this, "Attention", "Les IDs doivent etre differents."); return;
     }
 
-    // Récupérer les deux publications
+    // RÃ©cupÃ©rer les deux publications
     QSqlQuery q;
     q.prepare("SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, CONTENU, STATUT "
               "FROM SELIM.PUBLICATION WHERE IDPUBLICATION IN (:a, :b)");
@@ -1815,7 +1888,7 @@ void SmartMarket::on_pushButton_6_clicked()
     ui->tableWidget_4->setItem(0, 0, new QTableWidgetItem(titreA));
     ui->tableWidget_4->setItem(0, 1, new QTableWidgetItem(titreB));
     ui->tableWidget_4->setItem(0, 2, new QTableWidgetItem("Analyse en cours..."));
-    ui->tableWidget_4->setItem(0, 3, new QTableWidgetItem("⏳ Traitement IA"));
+    ui->tableWidget_4->setItem(0, 3, new QTableWidgetItem("â³ Traitement IA"));
     ui->tableWidget_4->resizeColumnsToContents();
 
     ui->progressBar->setValue(10);
@@ -1844,7 +1917,7 @@ void SmartMarket::callAnthropicSimilarite(const QString &titre1, const QString &
                          "}"
                          ).arg(titre1, contenu1.left(500), titre2, contenu2.left(500));
 
-    // Appel à Ollama (100% gratuit, local)
+    // Appel Ã  Ollama (100% gratuit, local)
     QJsonObject body;
     body["model"]  = OLLAMA_MODEL;
     body["prompt"] = prompt;
@@ -1877,12 +1950,12 @@ void SmartMarket::onSimilariteReply(QNetworkReply *reply)
             details += QString("\n\nCode HTTP: %1").arg(httpStatus);
         }
         if (!serverResponse.isEmpty()) {
-            details += QString("\n\nRéponse serveur:\n%1").arg(QString::fromUtf8(serverResponse));
+            details += QString("\n\nRÃ©ponse serveur:\n%1").arg(QString::fromUtf8(serverResponse));
         }
         
-        // Indice si Ollama n'est pas lancé
+        // Indice si Ollama n'est pas lancÃ©
         if (details.contains("Connection refused") || details.contains("localhost")) {
-            details += "\n\n💡 SOLUTION: Lancez Ollama d'abord!\n"
+            details += "\n\nðŸ’¡ SOLUTION: Lancez Ollama d'abord!\n"
                       "1. Installez Ollama: https://ollama.ai\n"
                       "2. Dans le Terminal: ollama run mistral\n"
                       "3. Relancez SmartMarket";
@@ -1901,12 +1974,12 @@ void SmartMarket::onSimilariteReply(QNetworkReply *reply)
         return;
     }
 
-    // Extraire le texte de la réponse Ollama
+    // Extraire le texte de la rÃ©ponse Ollama
     QJsonObject root = doc.object();
     QString text = root["response"].toString();  // Ollama retourne "response"
 
-    // Parser le JSON imbriqué
-    // Nettoyer les éventuels blocs ```json
+    // Parser le JSON imbriquÃ©
+    // Nettoyer les Ã©ventuels blocs ```json
     text = text.trimmed();
     if (text.startsWith("```")) {
         text = text.mid(text.indexOf('\n') + 1);
@@ -1961,7 +2034,7 @@ void SmartMarket::onSimilariteReply(QNetworkReply *reply)
 }
 
 // ================================================================
-// COMPLETUDE IA — Appel Anthropic
+// COMPLETUDE IA â€” Appel Anthropic
 // ================================================================
 void SmartMarket::on_pushButton_7_clicked()
 {
@@ -1988,14 +2061,14 @@ void SmartMarket::on_pushButton_7_clicked()
     QString statut  = q.value(4).toString();
     QString contenu = q.value(5).toString();
 
-    // Complétude basique (champs remplis)
+    // ComplÃ©tude basique (champs remplis)
     int total = 6, remplis = 0;
     QStringList vals = {titre, source, domaine, date, statut, contenu};
     for (const QString &v : vals) if (!v.isEmpty()) remplis++;
     int pct = (remplis * 100) / total;
     ui->progressBar_2->setValue(pct);
 
-    // Préparer tableau 5 — aperçu des champs
+    // PrÃ©parer tableau 5 â€” aperÃ§u des champs
     compIdStr = idStr; compTitre = titre;
 
     ui->tableWidget_5->clearContents();
@@ -2006,18 +2079,18 @@ void SmartMarket::on_pushButton_7_clicked()
     ui->tableWidget_5->setRowCount(2);
 
     // Ligne 1 : valeurs
-    ui->tableWidget_5->setItem(0, 0, new QTableWidgetItem(titre.isEmpty()   ? "❌ Manquant" : titre));
-    ui->tableWidget_5->setItem(0, 1, new QTableWidgetItem(domaine.isEmpty() ? "❌ Manquant" : domaine));
-    ui->tableWidget_5->setItem(0, 2, new QTableWidgetItem(source.isEmpty()  ? "❌ Manquant" : source));
-    ui->tableWidget_5->setItem(0, 3, new QTableWidgetItem(date.isEmpty()    ? "❌ Manquant" : date));
-    ui->tableWidget_5->setItem(0, 4, new QTableWidgetItem(contenu.isEmpty() ? "❌ Manquant" :
-                                                              contenu.left(40) + (contenu.length()>40?"…":"")));
-    ui->tableWidget_5->setItem(0, 5, new QTableWidgetItem(statut.isEmpty()  ? "❌ Manquant" : statut));
+    ui->tableWidget_5->setItem(0, 0, new QTableWidgetItem(titre.isEmpty()   ? "âŒ Manquant" : titre));
+    ui->tableWidget_5->setItem(0, 1, new QTableWidgetItem(domaine.isEmpty() ? "âŒ Manquant" : domaine));
+    ui->tableWidget_5->setItem(0, 2, new QTableWidgetItem(source.isEmpty()  ? "âŒ Manquant" : source));
+    ui->tableWidget_5->setItem(0, 3, new QTableWidgetItem(date.isEmpty()    ? "âŒ Manquant" : date));
+    ui->tableWidget_5->setItem(0, 4, new QTableWidgetItem(contenu.isEmpty() ? "âŒ Manquant" :
+                                                              contenu.left(40) + (contenu.length()>40?"â€¦":"")));
+    ui->tableWidget_5->setItem(0, 5, new QTableWidgetItem(statut.isEmpty()  ? "âŒ Manquant" : statut));
     ui->tableWidget_5->setItem(0, 6, new QTableWidgetItem("Analyse IA en cours..."));
 
     // Ligne 2 : analyse IA globale (placeholder)
     ui->tableWidget_5->setSpan(1, 0, 1, 7);
-    ui->tableWidget_5->setItem(1, 0, new QTableWidgetItem("⏳ L'IA analyse la qualite de la publication..."));
+    ui->tableWidget_5->setItem(1, 0, new QTableWidgetItem("â³ L'IA analyse la qualite de la publication..."));
     ui->tableWidget_5->resizeColumnsToContents();
 
     // Appel IA
@@ -2052,7 +2125,7 @@ void SmartMarket::callAnthropicCompletude(const QString &idStr,
                          "}"
                          ).arg(idStr, titre, source, domaine, date, statut, contenu.left(600));
 
-    // Appel à Ollama (100% gratuit, local)
+    // Appel Ã  Ollama (100% gratuit, local)
     QJsonObject body;
     body["model"]  = OLLAMA_MODEL;
     body["prompt"] = prompt;
@@ -2084,12 +2157,12 @@ void SmartMarket::onCompletudReply(QNetworkReply *reply)
             details += QString("\n\nCode HTTP: %1").arg(httpStatus);
         }
         if (!serverResponse.isEmpty()) {
-            details += QString("\n\nRéponse serveur:\n%1").arg(QString::fromUtf8(serverResponse));
+            details += QString("\n\nRÃ©ponse serveur:\n%1").arg(QString::fromUtf8(serverResponse));
         }
         
-        // Indice si Ollama n'est pas lancé
+        // Indice si Ollama n'est pas lancÃ©
         if (details.contains("Connection refused") || details.contains("localhost")) {
-            details += "\n\n💡 SOLUTION: Lancez Ollama d'abord!\n"
+            details += "\n\nðŸ’¡ SOLUTION: Lancez Ollama d'abord!\n"
                       "1. Installez Ollama: https://ollama.ai\n"
                       "2. Dans le Terminal: ollama run mistral\n"
                       "3. Relancez SmartMarket";
@@ -2107,7 +2180,7 @@ void SmartMarket::onCompletudReply(QNetworkReply *reply)
         return;
     }
 
-    // Extraire le texte de la réponse Ollama
+    // Extraire le texte de la rÃ©ponse Ollama
     QJsonObject root = doc.object();
     QString text = root["response"].toString();  // Ollama retourne "response"
 
@@ -2139,9 +2212,9 @@ void SmartMarket::onCompletudReply(QNetworkReply *reply)
     score = qBound(0, score, 100);
     ui->progressBar_2->setValue(score);
 
-    // Mettre à jour tableau
+    // Mettre Ã  jour tableau
     ui->tableWidget_5->setItem(0, 6,
-                               new QTableWidgetItem(QString("%1/100 — %2").arg(score).arg(qualite)));
+                               new QTableWidgetItem(QString("%1/100 â€” %2").arg(score).arg(qualite)));
 
     QString missing = manquants.isEmpty() ? "Aucun" : manquants.join(", ");
     QString analyse = "Champs manquants : " + missing +
@@ -2151,7 +2224,7 @@ void SmartMarket::onCompletudReply(QNetworkReply *reply)
     ui->tableWidget_5->resizeRowToContents(1);
 
     QMessageBox msg(QMessageBox::Information,
-                    "Compl\xc3\xa9tude — R\xc3\xa9sultat IA",
+                    "Compl\xc3\xa9tude â€” R\xc3\xa9sultat IA",
                     QString("<b>Publication ID %1 :</b> %2").arg(compIdStr, compTitre),
                     QMessageBox::Ok,
                     this);
@@ -2308,17 +2381,22 @@ void SmartMarket::deleteConference()
 <<<<<<< Updated upstream
     QString id = ui->conf_lineEdit_8->text().trimmed();
 
-    if (id.isEmpty()) {
-        QMessageBox::warning(this, "ID manquant", "Veuillez saisir l'ID de la conférence à supprimer.");
+void SmartMarket::on_conf_pushButton_8_clicked()
+{
+    const QString idText = ui->conf_lineEdit_8->text().trimmed();
+    bool ok = false;
+    const int id = idText.toInt(&ok);
+
+    if (!ok)
+    {
+        QMessageBox::warning(this, "ID invalide", "Veuillez saisir un ID numerique valide.");
         return;
     }
 
-    if (QMessageBox::question(this, "Confirmation", "Êtes-vous sûr de vouloir supprimer cette conférence?") != QMessageBox::Yes)
-        return;
-
     QSqlDatabase db = QSqlDatabase::database();
-    if (!db.isOpen() && !db.open()) {
-        QMessageBox::critical(this, "Base de données", "Connexion impossible.");
+    if (!db.isOpen() && !db.open())
+    {
+        QMessageBox::critical(this, "Base de donnees", "Connexion BD indisponible : " + db.lastError().text());
         return;
     }
 
@@ -2338,6 +2416,19 @@ void SmartMarket::deleteConference()
     } else {
         QMessageBox::critical(this, "Erreur", "Echec suppression conférence.");
     }
+
+    // Note: numRowsAffected can return -1 depending on the driver.
+    if (q.numRowsAffected() == 0)
+    {
+        QMessageBox::information(this, "Suppression", "Aucune conference trouvee avec cet ID.");
+    }
+    else
+    {
+        QMessageBox::information(this, "Suppression", "Conference supprimee.");
+    }
+
+    loadConferenceTable();
+    ui->conf_lineEdit_8->clear();
 }
 
 <<<<<<< Updated upstream
@@ -2546,7 +2637,7 @@ void SmartMarket::on_conf_pushButton_5_clicked()
     QPainter painter;
     if (!painter.begin(&printer))
     {
-        QMessageBox::critical(this, "Export PDF", "Impossible d'ouvrir le PDF en écriture : " + filePath);
+        QMessageBox::critical(this, "Export PDF", "Impossible d'ouvrir le PDF en Ã©criture : " + filePath);
         return;
     }
 
@@ -2729,7 +2820,7 @@ void SmartMarket::on_conf_pushButton_5_clicked()
 
     painter.end();
 
-    QMessageBox::information(this, "Export PDF", "PDF généré : " + filePath);
+    QMessageBox::information(this, "Export PDF", "PDF gÃ©nÃ©rÃ© : " + filePath);
 }
 
 void SmartMarket::exportConferencesToPDF()

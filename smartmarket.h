@@ -63,6 +63,7 @@ private slots:
 =======
     // Conference UI slots
     void on_conf_pushButton_5_clicked();
+    void on_conf_pushButton_8_clicked();
     void on_conf_pushButton_21_clicked();
     void on_conf_pushButton_20_clicked();
     void on_conf_pushButton_19_clicked();
