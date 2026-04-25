@@ -1,11 +1,20 @@
 <RCC>
     <qresource prefix="/new/prefix1"/>
     <qresource prefix="/">
+<<<<<<< Updated upstream
         <file>../../../equipement icon.png</file>
         <file>../../../conference icon.png</file>
         <file>../../../reviewer icon.png</file>
         <file>../../../publication icon.png</file>
         <file>../../../imagetouse.png-removebg-preview.png</file>
         <file>../../../menuimage.png</file>
+=======
+        <file>ressouces/conference icon.png</file>
+        <file>ressouces/equipement icon.png</file>
+        <file>ressouces/imagetouse.png.png</file>
+        <file>ressouces/imagetouse.png-removebg-preview (1).png</file>
+        <file>ressouces/publication icon.png</file>
+        <file>ressouces/reviewer icon.png</file>
+>>>>>>> Stashed changes
     </qresource>
 </RCC>

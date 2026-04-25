@@ -734,6 +734,19 @@ QTableView::item:selected {
 </string>
         </property>
        </widget>
+       <widget class="QGroupBox" name="groupBox_sort_pub">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>340</y>
+          <width>641</width>
+          <height>81</height>
+         </rect>
+        </property>
+        <property name="title">
+         <string>Tri des publications</string>
+        </property>
+       </widget>
        <widget class="QGroupBox" name="groupBox_12">
         <property name="geometry">
          <rect>
@@ -1417,6 +1430,32 @@ QComboBox QAbstractItemView {
          </property>
         </column>
        </widget>
+       <widget class="QPushButton" name="btnSortPubDesc">
+        <property name="geometry">
+         <rect>
+          <x>660</x>
+          <y>20</y>
+          <width>171</width>
+          <height>41</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Tri Décroissant </string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="btnSortPubAsc">
+        <property name="geometry">
+         <rect>
+          <x>900</x>
+          <y>20</y>
+          <width>171</width>
+          <height>41</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Tri Croissant </string>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="tab_4">
        <attribute name="title">
@@ -2016,7 +2055,7 @@ QStatusBar {
       <property name="geometry">
        <rect>
         <x>200</x>
-        <y>-10</y>
+        <y>-20</y>
         <width>1091</width>
         <height>721</height>
        </rect>
@@ -3089,9 +3128,9 @@ QStatusBar {
      <widget class="QGroupBox" name="conf_groupBox_11">
       <property name="geometry">
        <rect>
-        <x>0</x>
+        <x>10</x>
         <y>-30</y>
-        <width>211</width>
+        <width>201</width>
         <height>771</height>
        </rect>
       </property>

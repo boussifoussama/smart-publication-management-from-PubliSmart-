@@ -142,7 +142,11 @@ SmartMarket (QStackedWidget principal)
 ## 🔐 IDENTIFIANTS DE TEST
 
 ```
+<<<<<<< Updated upstream
 Email    : Selim.ASCHI@esprit.tn
+=======
+Email    : selim@esprit.tn
+>>>>>>> Stashed changes
 Password : selim
 ```
 
@@ -238,7 +242,11 @@ QProcess::startDetached(program);
 void SmartMarket::on_btnLoginEntrer_clicked()
 {
     // Validation
+<<<<<<< Updated upstream
     if(email == "Selim.ASCHI@esprit.tn" && password == "selim")
+=======
+    if(email == "selim@esprit.tn" && password == "selim")
+>>>>>>> Stashed changes
     {
         // Navigation vers la page Publication
         ui->stackedWidgetMain->setCurrentIndex(1);

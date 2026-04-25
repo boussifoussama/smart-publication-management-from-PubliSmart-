@@ -1,5 +1,6 @@
 #include "smartmarket.h"
 #include "ui_smartmarket.h"
+#include "arduino.h"
 
 #include <QHeaderView>
 #include <QVBoxLayout>
@@ -9,7 +10,9 @@
 #include <QSqlError>
 #include <QSqlTableModel>
 #include <QDebug>
+#include <QFile>
 #include <QFileDialog>
+#include <QTextStream>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -24,10 +27,22 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QHBoxLayout>
+#include <QInputDialog>
 #include <QUrl>
 #include <QRegularExpression>
 #include <QProcess>
 #include <QFileInfo>
+<<<<<<< Updated upstream
+=======
+#include <QMap>
+#include <QGraphicsScene>
+#include <QGraphicsTextItem>
+#include <QImage>
+#include <QPdfWriter>
+#include <QPageLayout>
+#include <QStandardPaths>
+#include <QSerialPortInfo>
+>>>>>>> Stashed changes
 
 // PDF export via Qt
 #include <QPrinter>
@@ -37,9 +52,11 @@
 #include <QRect>
 #include <QFontMetrics>
 #include <QDateTime>
+#include <QXmlStreamWriter>
 
 #include <QtCharts/QChartView>
 #include <QtCharts/QPieSeries>
+#include <QtCharts/QPieSlice>
 #include <QtCharts/QChart>
 #include <QtCharts/QBarSeries>
 #include <QtCharts/QBarSet>
@@ -54,6 +71,16 @@
 static const QString OLLAMA_ENDPOINT = "http://localhost:11434/api/generate";
 static const QString OLLAMA_MODEL    = "neural-chat";  // Plus rapide que mistral
 
+static QString formatPercentage(int value, int total)
+{
+    if (total <= 0)
+        return QStringLiteral("0%");
+
+    const double ratio = (100.0 * value) / total;
+    const double bounded = qBound(0.0, ratio, 100.0);
+    return QString::number(bounded, 'f', 1) + "%";
+}
+
 // ── Domaines ─────────────────────────────────────────────────────────────────
 const QStringList SmartMarket::DOMAINES = {
     "Informatique", "Mathematiques", "Physique", "Chimie", "Biologie",
@@ -67,10 +94,11 @@ const QStringList SmartMarket::DOMAINES = {
 SmartMarket::SmartMarket(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::SmartMarket)
-    , publicationModel(new QSqlTableModel(this))
+    , publicationModel(new QSqlQueryModel(this))
     , pieChartView(nullptr)
     , barChartView(nullptr)
     , networkManager(new QNetworkAccessManager(this))
+    , arduinoBridge(nullptr)
 {
     ui->setupUi(this);
     ui->lineEdit_10->setEchoMode(QLineEdit::Password);
@@ -92,6 +120,7 @@ SmartMarket::SmartMarket(QWidget *parent)
     sslConfig.setProtocol(QSsl::TlsV1_2OrLater);
     
     initDomaines();
+    initializeArduinoAccess();
     ui->stackedWidgetMain->setCurrentIndex(0);
 }
 
@@ -160,26 +189,10 @@ void SmartMarket::setupConferencePage()
 void SmartMarket::loadConferenceTable()
 {
     QTableWidget *confTableWidget = ui->conf_tableWidget_7;
-    if (!confTableWidget)
-        return;
-
-    QSqlDatabase db = QSqlDatabase::database();
-    if (!db.isValid() || !db.isOpen()) {
-        if (!db.open()) {
-            QMessageBox::critical(this, "Base de données", "Connexion BD indisponible : " + db.lastError().text());
-            return;
-        }
-    }
-
-    if (!ensureConferenceTables(db)) {
-        QStringList tables = db.tables(QSql::Tables);
-        QMessageBox::critical(this, "Base de données",
-                              "Les tables Conference ou Participant sont manquantes ou introuvables.\n"
-                              "Tables accessibles : " + tables.join(", "));
-        return;
-    }
+    if (!confTableWidget) return;
 
     QString filter = ui->conf_lineEdit_2 ? ui->conf_lineEdit_2->text().trimmed().toLower() : QString();
+<<<<<<< Updated upstream
 
     QSqlQuery query(db);
     QString sql = "SELECT c.idconference, c.nom, c.lieu, c.datedebut, c.theme, "
@@ -200,18 +213,20 @@ void SmartMarket::loadConferenceTable()
         QMessageBox::critical(this, "Lecture conférences", "Echec SELECT : " + query.lastError().text());
         return;
     }
+=======
+    Conference c;
+    QSqlQueryModel *model = c.rechercher(filter);
+>>>>>>> Stashed changes
 
     confTableWidget->setRowCount(0);
-    int row = 0;
-    while (query.next()) {
-        confTableWidget->insertRow(row);
-        confTableWidget->setItem(row, 0, new QTableWidgetItem(query.value(0).toString()));
-        confTableWidget->setItem(row, 1, new QTableWidgetItem(query.value(1).toString()));
-        confTableWidget->setItem(row, 2, new QTableWidgetItem(query.value(2).toString()));
-        confTableWidget->setItem(row, 3, new QTableWidgetItem(query.value(3).toDate().toString("yyyy-MM-dd")));
-        confTableWidget->setItem(row, 4, new QTableWidgetItem(query.value(4).toString()));
-        confTableWidget->setItem(row, 5, new QTableWidgetItem(query.value(5).toString()));
-        row++;
+    for (int i = 0; i < model->rowCount(); ++i) {
+        confTableWidget->insertRow(i);
+        confTableWidget->setItem(i, 0, new QTableWidgetItem(model->index(i, 0).data().toString()));
+        confTableWidget->setItem(i, 1, new QTableWidgetItem(model->index(i, 1).data().toString()));
+        confTableWidget->setItem(i, 2, new QTableWidgetItem(model->index(i, 2).data().toString()));
+        confTableWidget->setItem(i, 3, new QTableWidgetItem(model->index(i, 3).data().toDate().toString("yyyy-MM-dd")));
+        confTableWidget->setItem(i, 4, new QTableWidgetItem(model->index(i, 4).data().toString()));
+        confTableWidget->setItem(i, 5, new QTableWidgetItem(model->index(i, 5).data().toString()));
     }
 
     loadParticipantTable();
@@ -220,9 +235,9 @@ void SmartMarket::loadConferenceTable()
 void SmartMarket::loadParticipantTable()
 {
     QTableWidget *participantTableWidget = ui->conf_tableWidget_2;
-    if (!participantTableWidget)
-        return;
+    if (!participantTableWidget) return;
 
+<<<<<<< Updated upstream
     QSqlDatabase db = QSqlDatabase::database();
     if (!db.isValid() || !db.isOpen()) {
         if (!db.open()) {
@@ -236,16 +251,359 @@ void SmartMarket::loadParticipantTable()
         QMessageBox::critical(this, "Lecture participants", "Echec SELECT participant : " + query.lastError().text());
         return;
     }
+=======
+    Participant p;
+    QSqlQueryModel *model = p.afficher();
+>>>>>>> Stashed changes
 
     participantTableWidget->setRowCount(0);
-    int row = 0;
-    while (query.next()) {
-        participantTableWidget->insertRow(row);
-        participantTableWidget->setItem(row, 0, new QTableWidgetItem(query.value(0).toString()));
-        participantTableWidget->setItem(row, 1, new QTableWidgetItem(query.value(1).toString()));
-        participantTableWidget->setItem(row, 2, new QTableWidgetItem(query.value(2).toString()));
-        row++;
+    participantTableWidget->setColumnCount(4);
+    participantTableWidget->setHorizontalHeaderLabels({"ID", "Nom", "Id Conferences", "UID RFID"});
+
+    for (int i = 0; i < model->rowCount(); ++i) {
+        participantTableWidget->insertRow(i);
+        participantTableWidget->setItem(i, 0, new QTableWidgetItem(model->index(i, 0).data().toString()));
+        participantTableWidget->setItem(i, 1, new QTableWidgetItem(model->index(i, 1).data().toString()));
+        participantTableWidget->setItem(i, 2, new QTableWidgetItem(model->index(i, 2).data().toString()));
+        participantTableWidget->setItem(i, 3, new QTableWidgetItem(model->index(i, 3).data().toString()));
     }
+<<<<<<< Updated upstream
+=======
+
+    updateConferenceParticipantsChart();
+}
+
+void SmartMarket::updateConferenceParticipantsChart()
+{
+    if (!ui->conf_graphicsView1 || !ui->conf_tableWidget_7)
+        return;
+
+    const QSize viewSize = ui->conf_graphicsView1->viewport()->size();
+    const int sceneW = viewSize.width() > 0 ? viewSize.width() : 560;
+    const int sceneH = viewSize.height() > 0 ? viewSize.height() : 340;
+
+    if (QGraphicsScene *oldScene = ui->conf_graphicsView1->scene()) {
+        ui->conf_graphicsView1->setScene(nullptr);
+        delete oldScene;
+    }
+
+    QGraphicsScene *scene = new QGraphicsScene(this);
+    ui->conf_graphicsView1->setScene(scene);
+    scene->setSceneRect(0, 0, sceneW, sceneH);
+    scene->setBackgroundBrush(Qt::white);
+
+    const int rows = ui->conf_tableWidget_7->rowCount();
+    if (rows == 0) {
+        QGraphicsTextItem *text = scene->addText("Aucune conférence trouvée");
+        text->setPos(sceneW / 2 - 90, sceneH / 2);
+        return;
+    }
+
+    QVector<QString> names;
+    QVector<int> counts;
+    QVector<double> percentages;
+    int totalCount = 0;
+    for (int r = 0; r < rows; ++r) {
+        const QString name = ui->conf_tableWidget_7->item(r, 1) ? ui->conf_tableWidget_7->item(r, 1)->text() : QString();
+        const int count = ui->conf_tableWidget_7->item(r, 5) ? ui->conf_tableWidget_7->item(r, 5)->text().toInt() : 0;
+        names.append(name);
+        counts.append(count);
+        totalCount += count;
+    }
+
+    if (totalCount <= 0) {
+        QGraphicsTextItem *text = scene->addText("Aucun participant renseigné");
+        text->setPos(sceneW / 2 - 100, sceneH / 2);
+        return;
+    }
+
+    for (int count : counts) {
+        const double ratio = (100.0 * count) / totalCount;
+        percentages.append(qBound(0.0, ratio, 100.0));
+    }
+
+    const int leftMargin = 60;
+    const int rightMargin = 40;
+    const int topMargin = 30;
+    const int bottomMargin = 130;
+    const int originX = leftMargin;
+    const int originY = sceneH - bottomMargin;
+    const int axisMaxY = topMargin;
+    const int axisMaxX = sceneW - rightMargin;
+
+    QPen axisPen(Qt::black);
+    axisPen.setWidth(2);
+    scene->addLine(originX, axisMaxY, originX, originY, axisPen);
+    scene->addLine(originX, originY, axisMaxX, originY, axisPen);
+
+    const double availableWidth = axisMaxX - originX;
+    const int barCount = counts.size();
+    const int minBarWidth = 18;
+    const int spacing = 12;
+    int barWidth = static_cast<int>((availableWidth - spacing * (barCount - 1)) / barCount);
+    barWidth = qMax(minBarWidth, barWidth);
+    const int totalBarsWidth = barCount * barWidth + spacing * (barCount - 1);
+    const int startX = originX + qMax(0, static_cast<int>((availableWidth - totalBarsWidth) / 2));
+
+    const double availableHeight = originY - axisMaxY - 10;
+    const double scaleY = availableHeight / 100.0;
+
+    QFont tickFont("Segoe UI", 9);
+    QPen tickPen(Qt::black);
+    tickPen.setWidth(1);
+
+    const int tickCount = 4;
+    const double tickStep = 100.0 / tickCount;
+    for (int t = 0; t <= tickCount; ++t) {
+        const double value = tickStep * t;
+        const double yTick = originY - value * scaleY;
+        scene->addLine(originX - 6, yTick, originX, yTick, tickPen);
+        QGraphicsTextItem *tickLabel = scene->addText(QString::number(static_cast<int>(value)) + "%");
+        tickLabel->setFont(tickFont);
+        tickLabel->setDefaultTextColor(Qt::black);
+        tickLabel->setPos(originX - 55, yTick - 8);
+    }
+
+    const QList<QColor> palette = {
+        QColor("#e6194b"), QColor("#f58231"), QColor("#ffe119"), QColor("#bfef45"),
+        QColor("#3cb44b"), QColor("#42d4f4"), QColor("#4363d8"), QColor("#911eb4"),
+        QColor("#f032e6"), QColor("#fabebe"), QColor("#9a6324"), QColor("#808000")
+    };
+
+    QPen barPen(Qt::black);
+    for (int i = 0; i < barCount; ++i) {
+        const int barHeight = static_cast<int>(percentages[i] * scaleY);
+        const int x = startX + i * (barWidth + spacing);
+        const int y = originY - barHeight;
+        QBrush brush(palette[i % palette.size()], Qt::SolidPattern);
+        scene->addRect(x, y, barWidth, barHeight, barPen, brush);
+
+        const QString percentLabel = formatPercentage(counts[i], totalCount);
+        QGraphicsTextItem *percentItem = scene->addText(percentLabel);
+        percentItem->setFont(tickFont);
+        percentItem->setDefaultTextColor(Qt::black);
+        percentItem->setPos(x, qMax(axisMaxY, y - 38));
+
+        const int xCenter = x + barWidth / 2;
+        scene->addLine(xCenter, originY, xCenter, originY + 6, tickPen);
+
+        QString displayName = names[i];
+        if (displayName.size() > 16)
+            displayName = displayName.left(14) + "...";
+        QGraphicsTextItem *nameItem = scene->addText(displayName);
+        nameItem->setFont(tickFont);
+        nameItem->setDefaultTextColor(Qt::black);
+        nameItem->setPos(xCenter - 10, originY + 15);
+        nameItem->setRotation(-45);
+    }
+}
+
+void SmartMarket::updateConferenceDaysChart()
+{
+    if (!ui->conf_graphicsView1_2 || !ui->conf_tableWidget_7)
+        return;
+
+    const QSize viewSize = ui->conf_graphicsView1_2->viewport()->size();
+    const int sceneW = viewSize.width() > 0 ? viewSize.width() : 560;
+    const int sceneH = viewSize.height() > 0 ? viewSize.height() : 340;
+
+    if (QGraphicsScene *oldScene = ui->conf_graphicsView1_2->scene()) {
+        ui->conf_graphicsView1_2->setScene(nullptr);
+        delete oldScene;
+    }
+
+    QGraphicsScene *scene = new QGraphicsScene(this);
+    ui->conf_graphicsView1_2->setScene(scene);
+    scene->setSceneRect(0, 0, sceneW, sceneH);
+    scene->setBackgroundBrush(Qt::white);
+
+    const int rows = ui->conf_tableWidget_7->rowCount();
+    if (rows == 0) {
+        QGraphicsTextItem *text = scene->addText("Aucune conférence trouvée");
+        text->setPos(sceneW / 2 - 90, sceneH / 2);
+        return;
+    }
+
+    QMap<QString, int> dayCountsMap;
+    QStringList dayOrder;
+    for (int r = 0; r < rows; ++r) {
+        const QString dayLabel = ui->conf_tableWidget_7->item(r, 3) ? ui->conf_tableWidget_7->item(r, 3)->text() : QString();
+        if (!dayCountsMap.contains(dayLabel))
+            dayOrder.append(dayLabel);
+        dayCountsMap[dayLabel] += 1;
+    }
+
+    QVector<QString> days;
+    QVector<int> counts;
+    QVector<double> percentages;
+    int totalCount = 0;
+    for (const QString &d : dayOrder) {
+        const int value = dayCountsMap.value(d);
+        days.append(d);
+        counts.append(value);
+        totalCount += value;
+    }
+
+    if (totalCount <= 0) {
+        QGraphicsTextItem *text = scene->addText("Aucun jour planifié");
+        text->setPos(sceneW / 2 - 80, sceneH / 2);
+        return;
+    }
+
+    for (int count : counts) {
+        const double ratio = (100.0 * count) / totalCount;
+        percentages.append(qBound(0.0, ratio, 100.0));
+    }
+
+    const int leftMargin = 60;
+    const int rightMargin = 40;
+    const int topMargin = 30;
+    const int bottomMargin = 120;
+    const int originX = leftMargin;
+    const int originY = sceneH - bottomMargin;
+    const int axisMaxY = topMargin;
+    const int axisMaxX = sceneW - rightMargin;
+
+    QPen axisPen(Qt::black);
+    axisPen.setWidth(2);
+    scene->addLine(originX, axisMaxY, originX, originY, axisPen);
+    scene->addLine(originX, originY, axisMaxX, originY, axisPen);
+
+    QFont tickFont("Segoe UI", 9);
+    QPen tickPen(Qt::black);
+    tickPen.setWidth(1);
+
+    const int tickCount = 4;
+    const double tickStep = 100.0 / tickCount;
+    const double availableHeight = originY - axisMaxY - 10;
+    const double scaleY = availableHeight / 100.0;
+
+    for (int t = 0; t <= tickCount; ++t) {
+        const double value = tickStep * t;
+        const double yTick = originY - value * scaleY;
+        scene->addLine(originX - 6, yTick, originX, yTick, tickPen);
+        QGraphicsTextItem *tickLbl = scene->addText(QString::number(static_cast<int>(value)) + "%");
+        tickLbl->setFont(tickFont);
+        tickLbl->setDefaultTextColor(Qt::black);
+        tickLbl->setPos(originX - 45, yTick - 8);
+    }
+
+    const double availableWidth = axisMaxX - originX;
+    const int barCount = counts.size();
+    const int minBarWidth = 18;
+    const int spacing = 12;
+    int barWidth = static_cast<int>((availableWidth - spacing * (barCount - 1)) / barCount);
+    barWidth = qMax(minBarWidth, barWidth);
+    const int totalBarsWidth = barCount * barWidth + spacing * (barCount - 1);
+    const int startX = originX + qMax(0, static_cast<int>((availableWidth - totalBarsWidth) / 2));
+
+    const QList<QColor> palette = {
+        QColor("#4e79a7"), QColor("#f28e2c"), QColor("#e15759"), QColor("#76b7b2"),
+        QColor("#59a14f"), QColor("#edc949"), QColor("#af7aa1"), QColor("#ff9da7"),
+        QColor("#9c755f"), QColor("#bab0ab")
+    };
+
+    QPen barPen(Qt::black);
+    for (int i = 0; i < barCount; ++i) {
+        const int barHeight = static_cast<int>(percentages[i] * scaleY);
+        const int x = startX + i * (barWidth + spacing);
+        const int y = originY - barHeight;
+        QBrush brush(palette[i % palette.size()], Qt::SolidPattern);
+        scene->addRect(x, y, barWidth, barHeight, barPen, brush);
+
+        const QString percentLabel = formatPercentage(counts[i], totalCount);
+        QGraphicsTextItem *percentItem = scene->addText(percentLabel);
+        percentItem->setFont(tickFont);
+        percentItem->setDefaultTextColor(Qt::black);
+        percentItem->setPos(x, qMax(axisMaxY, y - 38));
+
+        const int xCenter = x + barWidth / 2;
+        scene->addLine(xCenter, originY, xCenter, originY + 6, tickPen);
+
+        QString displayName = days[i];
+        if (displayName.size() > 16)
+            displayName = displayName.left(14) + "...";
+        QGraphicsTextItem *dayLbl = scene->addText(displayName);
+        dayLbl->setFont(tickFont);
+        dayLbl->setDefaultTextColor(Qt::black);
+        dayLbl->setPos(xCenter - 10, originY + 15);
+        dayLbl->setRotation(-45);
+    }
+}
+
+void SmartMarket::updateConferenceCalendar()
+{
+    if (!ui->conf_calendarWidget || !ui->conf_tableWidget_7)
+        return;
+
+    const QList<QDate> selectedDates = ui->conf_calendarWidget->selectedDate().isValid()
+        ? QList<QDate>{ui->conf_calendarWidget->selectedDate()}
+        : QList<QDate>();
+
+    ui->conf_calendarWidget->setDateTextFormat(QDate(), QTextCharFormat());
+
+    const int rows = ui->conf_tableWidget_7->rowCount();
+    QTextCharFormat fmt;
+    fmt.setForeground(Qt::white);
+    fmt.setBackground(QBrush(Qt::red));
+    fmt.setFontWeight(QFont::Bold);
+
+    for (int r = 0; r < rows; ++r) {
+        const QString dateStr = ui->conf_tableWidget_7->item(r, 3)
+            ? ui->conf_tableWidget_7->item(r, 3)->text()
+            : QString();
+
+        const QDate d = QDate::fromString(dateStr, "yyyy-MM-dd");
+        if (d.isValid())
+            ui->conf_calendarWidget->setDateTextFormat(d, fmt);
+    }
+
+    if (!selectedDates.isEmpty())
+        ui->conf_calendarWidget->setSelectedDate(selectedDates.first());
+}
+
+void SmartMarket::on_conf_calendarWidget_selectionChanged()
+{
+    if (!ui->conf_calendarWidget || !ui->conf_tableWidget_7)
+        return;
+
+    const QDate selected = ui->conf_calendarWidget->selectedDate();
+    if (!selected.isValid())
+        return;
+
+    QStringList lines;
+    const int rows = ui->conf_tableWidget_7->rowCount();
+
+    for (int r = 0; r < rows; ++r) {
+        const QString dateStr = ui->conf_tableWidget_7->item(r, 3)
+            ? ui->conf_tableWidget_7->item(r, 3)->text()
+            : QString();
+
+        const QDate d = QDate::fromString(dateStr, "yyyy-MM-dd");
+        if (d != selected)
+            continue;
+
+        const QString nom = ui->conf_tableWidget_7->item(r, 1)
+            ? ui->conf_tableWidget_7->item(r, 1)->text()
+            : "(sans nom)";
+
+        const QString lieu = ui->conf_tableWidget_7->item(r, 2)
+            ? ui->conf_tableWidget_7->item(r, 2)->text()
+            : "";
+
+        const QString participants = ui->conf_tableWidget_7->item(r, 5)
+            ? ui->conf_tableWidget_7->item(r, 5)->text()
+            : "";
+
+        lines << nom + (lieu.isEmpty() ? "" : " - " + lieu)
+                    + (participants.isEmpty() ? "" : " | Participants: " + participants);
+    }
+
+    if (lines.isEmpty())
+        QMessageBox::information(this, "Calendrier", "Aucune conférence prévue ce jour.");
+    else
+        QMessageBox::information(this, "Calendrier", lines.join("\n"));
+>>>>>>> Stashed changes
 }
 
 bool SmartMarket::tableExists(QSqlDatabase &db, const QString &tableName)
@@ -277,7 +635,8 @@ bool SmartMarket::createConferenceTables(QSqlDatabase &db)
         QString ddl = "CREATE TABLE participant ("
                       "id NUMBER(10) PRIMARY KEY, "
                       "nom VARCHAR2(255), "
-                      "idconference NUMBER(10))";
+                      "idconference NUMBER(10), "
+                      "uid_rfid VARCHAR2(32))";
         if (!q.exec(ddl))
             return false;
 
@@ -292,9 +651,161 @@ bool SmartMarket::createConferenceTables(QSqlDatabase &db)
 bool SmartMarket::ensureConferenceTables(QSqlDatabase &db)
 {
     if (tableExists(db, "conference") && tableExists(db, "participant"))
+        return ensureParticipantUidColumn(db);
+
+    return createConferenceTables(db) && ensureParticipantUidColumn(db);
+}
+
+bool SmartMarket::ensureParticipantUidColumn(QSqlDatabase &db)
+{
+    QSqlQuery probe(db);
+    if (probe.exec("SELECT uid_rfid FROM SELIM.participant WHERE 1=0"))
         return true;
 
-    return createConferenceTables(db);
+    QSqlQuery alter(db);
+    if (!alter.exec("ALTER TABLE SELIM.participant ADD uid_rfid VARCHAR2(32)"))
+        return false;
+
+    QSqlQuery idx(db);
+    idx.exec("CREATE UNIQUE INDEX idx_participant_uid_rfid ON SELIM.participant(uid_rfid)");
+    return true;
+}
+
+void SmartMarket::initializeArduinoAccess()
+{
+    arduinoBridge = new ArduinoBridge(this);
+    connect(arduinoBridge, &ArduinoBridge::uidScanned, this, &SmartMarket::handleArduinoUid);
+    connect(arduinoBridge, &ArduinoBridge::rawLineReceived, this, [](const QString &line) {
+        qDebug() << "Arduino RX:" << line;
+    });
+    connect(arduinoBridge, &ArduinoBridge::statusChanged, this, [this](const QString &status) {
+        qDebug() << "Arduino:" << status;
+        if (statusBar())
+            statusBar()->showMessage(status, 5000);
+    });
+    connect(arduinoBridge, &ArduinoBridge::errorOccurred, this, [](const QString &error) {
+        qWarning() << "Arduino error:" << error;
+    });
+
+    const QString forcedPort = qEnvironmentVariable("SMARTMARKET_ARDUINO_PORT").trimmed();
+
+    bool baudOk = false;
+    const int forcedBaud = qEnvironmentVariable("SMARTMARKET_ARDUINO_BAUD").trimmed().toInt(&baudOk);
+
+    QList<qint32> baudCandidates;
+    if (baudOk && forcedBaud > 0) {
+        baudCandidates << forcedBaud;
+    } else {
+        baudCandidates << 9600 << 115200;
+    }
+
+    QStringList portCandidates;
+    if (!forcedPort.isEmpty()) {
+        portCandidates << forcedPort;
+    } else {
+        const QList<QSerialPortInfo> ports = QSerialPortInfo::availablePorts();
+        QStringList preferredPorts;
+        QStringList fallbackPorts;
+        QStringList bluetoothPorts;
+
+        for (const QSerialPortInfo &info : ports) {
+            const QString details =
+                (info.portName() + " " + info.description() + " " + info.manufacturer()).toLower();
+
+            if (details.contains("bluetooth")) {
+                bluetoothPorts << info.portName();
+                continue;
+            }
+
+            if (details.contains("usb") || details.contains("arduino") ||
+                details.contains("ch340") || details.contains("cp210") ||
+                details.contains("ftdi")) {
+                preferredPorts << info.portName();
+            } else {
+                fallbackPorts << info.portName();
+            }
+        }
+
+        portCandidates << preferredPorts << fallbackPorts << bluetoothPorts;
+    }
+
+    bool connected = false;
+    QString lastAttempt;
+    for (const QString &portName : portCandidates) {
+        for (qint32 baudRate : baudCandidates) {
+            if (arduinoBridge->connectPort(portName, baudRate)) {
+                connected = true;
+                qInfo() << "Arduino connecte sur" << portName << "@" << baudRate;
+                if (statusBar())
+                    statusBar()->showMessage(QString("Arduino connecte: %1 @ %2").arg(portName).arg(baudRate), 6000);
+                break;
+            }
+
+            lastAttempt = QString("%1 @ %2 -> %3")
+                              .arg(portName)
+                              .arg(baudRate)
+                              .arg(arduinoBridge->lastError());
+        }
+
+        if (connected)
+            break;
+    }
+
+    if (!connected) {
+        qWarning() << "Arduino non connecte. Derniere tentative:" << lastAttempt;
+        if (statusBar()) {
+            statusBar()->showMessage(
+                "Arduino indisponible - definir SMARTMARKET_ARDUINO_PORT et SMARTMARKET_ARDUINO_BAUD", 9000);
+        }
+    }
+}
+
+void SmartMarket::handleArduinoUid(const QString &uid)
+{
+    QSqlDatabase db = QSqlDatabase::database();
+    if ((!db.isValid() || !db.isOpen()) && !db.open()) {
+        if (arduinoBridge)
+            arduinoBridge->sendCommand("DENY");
+        return;
+    }
+
+    if (!ensureParticipantUidColumn(db)) {
+        if (arduinoBridge)
+            arduinoBridge->sendCommand("DENY");
+        return;
+    }
+
+    QSqlQuery q(db);
+    q.prepare("SELECT p.nom, p.idconference, NVL(c.lieu, '') "
+              "FROM SELIM.participant p "
+              "LEFT JOIN SELIM.conference c ON c.idconference = p.idconference "
+              "WHERE UPPER(TRIM(p.uid_rfid)) = :uid");
+    q.bindValue(":uid", uid.toUpper());
+
+    if (!q.exec()) {
+        if (arduinoBridge)
+            arduinoBridge->sendCommand("DENY");
+        return;
+    }
+
+    if (q.next()) {
+        const QString nom = q.value(0).toString();
+        const QString confId = q.value(1).toString();
+        const QString lieu = q.value(2).toString();
+        if (arduinoBridge)
+            arduinoBridge->sendCommand("OPEN");
+
+        const QString accessMsg = QString("Acces autorise: %1 | Conference: %2 | Lieu: %3")
+                                      .arg(nom, confId, lieu.isEmpty() ? "N/A" : lieu);
+        qInfo() << accessMsg;
+        if (statusBar())
+            statusBar()->showMessage(accessMsg, 6000);
+    } else {
+        if (arduinoBridge)
+            arduinoBridge->sendCommand("DENY");
+        if (statusBar())
+            statusBar()->showMessage("Badge inconnu - acces refuse", 6000);
+    }
 }
 
 // ================================================================
@@ -302,6 +813,7 @@ bool SmartMarket::ensureConferenceTables(QSqlDatabase &db)
 // ================================================================
 void SmartMarket::initPublicationTable()
 {
+<<<<<<< Updated upstream
     QSqlQuery testQ;
     if (!testQ.exec("SELECT COUNT(*) FROM SELIM.PUBLICATION")) {
         QMessageBox::critical(this, "Erreur BDD",
@@ -372,6 +884,11 @@ void SmartMarket::initPublicationTable()
     while (publicationModel->canFetchMore())
         publicationModel->fetchMore();
 
+=======
+    Publication p;
+    publicationModel = p.afficher();
+    
+>>>>>>> Stashed changes
     ui->tableView->setModel(publicationModel);
     ui->tableView->horizontalHeader()->setStretchLastSection(true);
     ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
@@ -380,6 +897,10 @@ void SmartMarket::initPublicationTable()
     ui->tableView->setAlternatingRowColors(true);
     ui->tableView->setSortingEnabled(true);
     ui->tableView->show();
+
+    // Explicit connections for sorting
+    connect(ui->btnSortPubAsc, &QPushButton::clicked, this, &SmartMarket::on_btnSortPubAsc_clicked);
+    connect(ui->btnSortPubDesc, &QPushButton::clicked, this, &SmartMarket::on_btnSortPubDesc_clicked);
 }
 
 // ================================================================
@@ -387,10 +908,9 @@ void SmartMarket::initPublicationTable()
 // ================================================================
 void SmartMarket::refreshAll()
 {
-    publicationModel->setFilter("");
-    publicationModel->select();
-    while (publicationModel->canFetchMore())
-        publicationModel->fetchMore();
+    Publication p;
+    publicationModel = p.afficher();
+    ui->tableView->setModel(publicationModel);
     ui->tableView->reset();
     refreshCharts();
 }
@@ -400,42 +920,74 @@ void SmartMarket::refreshAll()
 // ================================================================
 void SmartMarket::createCharts()
 {
-    if (!ui->chartWidget->layout()) {
+    if (ui->chartWidget && !ui->chartWidget->layout()) {
         QVBoxLayout *l = new QVBoxLayout(ui->chartWidget);
-        l->setContentsMargins(0,0,0,0);
+        l->setContentsMargins(0, 0, 0, 0);
     }
-    if (!ui->domainChartWidget->layout()) {
+    if (ui->domainChartWidget && !ui->domainChartWidget->layout()) {
         QVBoxLayout *l = new QVBoxLayout(ui->domainChartWidget);
-        l->setContentsMargins(0,0,0,0);
+        l->setContentsMargins(0, 0, 0, 0);
     }
     refreshCharts();
 }
 
 void SmartMarket::refreshCharts()
 {
-    if (pieChartView) {
+    if (pieChartView && ui->chartWidget && ui->chartWidget->layout()) {
         ui->chartWidget->layout()->removeWidget(pieChartView);
-        delete pieChartView; pieChartView = nullptr;
+        pieChartView->deleteLater();
+        pieChartView = nullptr;
     }
-    if (barChartView) {
+    if (barChartView && ui->domainChartWidget && ui->domainChartWidget->layout()) {
         ui->domainChartWidget->layout()->removeWidget(barChartView);
-        delete barChartView; barChartView = nullptr;
+        barChartView->deleteLater();
+        barChartView = nullptr;
     }
 
+    if (!ui->chartWidget || !ui->domainChartWidget)
+        return;
+
     QSqlQuery qStat;
+<<<<<<< Updated upstream
     qStat.exec("SELECT STATUT, COUNT(*) FROM SELIM.PUBLICATION GROUP BY STATUT");
     QPieSeries *pie = new QPieSeries();
+=======
+    if (!qStat.exec("SELECT NVL(STATUT, 'Inconnu'), COUNT(*) FROM SELIM.PUBLICATION GROUP BY NVL(STATUT, 'Inconnu')")) {
+        QMessageBox::warning(this, "Graphiques", "Impossible de charger les statuts : " + qStat.lastError().text());
+        return;
+    }
+
+    struct StatRow { QString label; int count; };
+    QList<StatRow> statRows;
+    int statTotal = 0;
+>>>>>>> Stashed changes
     while (qStat.next()) {
-        QString s = qStat.value(0).toString();
-        pie->append(s.isEmpty() ? "Inconnu" : s, qStat.value(1).toInt());
+        StatRow row;
+        row.label = qStat.value(0).toString().trimmed();
+        if (row.label.isEmpty())
+            row.label = "Inconnu";
+        row.count = qStat.value(1).toInt();
+        statRows << row;
+        statTotal += row.count;
     }
-    for (auto *sl : pie->slices()) {
+
+    QPieSeries *pie = new QPieSeries();
+    pie->setHoleSize(0.0);
+    pie->setPieSize(0.80);
+    for (const StatRow &row : statRows) {
+        pie->append(row.label, row.count);
+    }
+
+    for (QPieSlice *sl : pie->slices()) {
+        const double percent = (statTotal > 0) ? (sl->value() * 100.0 / statTotal) : 0.0;
         sl->setLabelVisible(true);
-        sl->setLabel(QString("%1 (%2)").arg(sl->label()).arg((int)sl->value()));
+        sl->setLabelPosition(QPieSlice::LabelOutside);
+        sl->setLabel(QString("%1 (%2%)").arg(sl->label()).arg(QString::number(percent, 'f', 1)));
     }
+
     QChart *pc = new QChart();
     pc->addSeries(pie);
-    pc->setTitle("Repartition par statut");
+    pc->setTitle("Répartition par statut (pourcentages)");
     pc->legend()->setAlignment(Qt::AlignRight);
     pc->setBackgroundVisible(false);
     pc->setAnimationOptions(QChart::AllAnimations);
@@ -444,35 +996,43 @@ void SmartMarket::refreshCharts()
     ui->chartWidget->layout()->addWidget(pieChartView);
 
     QSqlQuery qDom;
-    qDom.exec(
+    if (!qDom.exec(
         "SELECT CASE WHEN TRIM(NVL(DOMAINE,'') ) = '' THEN 'Inconnu' ELSE DOMAINE END AS DOMAINE, "
         "COUNT(*) AS CNT "
         "FROM SELIM.PUBLICATION "
         "GROUP BY CASE WHEN TRIM(NVL(DOMAINE,'')) = '' THEN 'Inconnu' ELSE DOMAINE END "
         "ORDER BY CNT DESC, DOMAINE"
-    );
+    )) {
+        QMessageBox::warning(this, "Graphiques", "Impossible de charger les domaines : " + qDom.lastError().text());
+        return;
+    }
+
     QStringList doms;
     QList<int> cnts;
-    int maxCount = 0;
+    int domTotal = 0;
     while (qDom.next()) {
         QString d = qDom.value(0).toString();
         doms << d;
         int count = qDom.value(1).toInt();
         cnts << count;
-        maxCount = qMax(maxCount, count);
+        domTotal += count;
     }
 
     QBarSet *bs = new QBarSet("Publications");
     bs->setColor(QColor("#1E40AF"));
-    for (int c : cnts) *bs << c;
+    for (int c : cnts) {
+        const double percent = (domTotal > 0) ? (c * 100.0 / domTotal) : 0.0;
+        *bs << percent;
+    }
     QBarSeries *bseries = new QBarSeries();
     bseries->append(bs);
     bseries->setLabelsVisible(true);
+    bseries->setLabelsFormat("@value%");
     bseries->setLabelsPosition(QAbstractBarSeries::LabelsOutsideEnd);
 
     QChart *bc = new QChart();
     bc->addSeries(bseries);
-    bc->setTitle("Publications par domaine");
+    bc->setTitle("Publications par domaine (pourcentages)");
     bc->setAnimationOptions(QChart::SeriesAnimations);
     bc->setBackgroundVisible(false);
     QBarCategoryAxis *axX = new QBarCategoryAxis();
@@ -480,8 +1040,8 @@ void SmartMarket::refreshCharts()
     bc->addAxis(axX, Qt::AlignBottom);
     bseries->attachAxis(axX);
     QValueAxis *axY = new QValueAxis();
-    axY->setLabelFormat("%d");
-    axY->setRange(0, qMax(1, maxCount + 1));
+    axY->setLabelFormat("%d%%");
+    axY->setRange(0, 100);
     bc->addAxis(axY, Qt::AlignLeft);
     bseries->attachAxis(axY);
     bc->legend()->setVisible(false);
@@ -507,7 +1067,11 @@ void SmartMarket::on_pushButton_15_clicked()
         QMessageBox::warning(this, "Attention", "Adresse email invalide.");
         return;
     }
+<<<<<<< Updated upstream
     if (email.compare("Selim.ASCHI@esprit.tn", Qt::CaseInsensitive) == 0
+=======
+    if (email.compare("selim@a.t", Qt::CaseInsensitive) == 0
+>>>>>>> Stashed changes
         && password == "selim")
     {
         ui->stackedWidgetMain->setCurrentIndex(1);
@@ -545,21 +1109,11 @@ void SmartMarket::on_pushButton_19_clicked()
     QString source  = ui->lineEdit_17->text().trimmed();
     QString contenu = ui->lineEdit_18->toPlainText().trimmed();
     QString domaine = ui->comboBox_5->currentText().trimmed();
-    QString date    = ui->dateEdit_5->date().toString("yyyy-MM-dd");
+    QDate date      = ui->dateEdit_5->date();
 
     if (titre.isEmpty() || source.isEmpty() || domaine.isEmpty()) {
-        QMessageBox::warning(this, "Attention",
-                             "Remplissez obligatoirement : Titre, Source, Domaine.");
+        QMessageBox::warning(this, "Attention", "Remplissez obligatoirement : Titre, Source, Domaine.");
         return;
-    }
-    if (titre.length() > 20) {
-        QMessageBox::warning(this, "Attention", "Titre : max 20 caracteres."); return;
-    }
-    if (source.length() > 20) {
-        QMessageBox::warning(this, "Attention", "Source : max 20 caracteres."); return;
-    }
-    if (domaine.length() > 20) {
-        QMessageBox::warning(this, "Attention", "Domaine : max 20 caracteres."); return;
     }
 
     QSqlQuery seqQ;
@@ -567,6 +1121,7 @@ void SmartMarket::on_pushButton_19_clicked()
     int newId = 1;
     if (seqQ.next()) newId = seqQ.value(0).toInt();
 
+<<<<<<< Updated upstream
     QSqlQuery q;
     q.prepare(
         "INSERT INTO SELIM.PUBLICATION "
@@ -580,17 +1135,19 @@ void SmartMarket::on_pushButton_19_clicked()
     q.bindValue(":domaine", domaine);
     q.bindValue(":date",    date);
     q.bindValue(":contenu", contenu);
+=======
+    Publication p(newId, titre, source, domaine, date, "Non evaluee", contenu);
+>>>>>>> Stashed changes
 
-    if (q.exec()) {
-        QMessageBox::information(this, "Succes",
-                                 QString("Publication ajoutee ! ID : %1").arg(newId));
+    if (p.ajouter()) {
+        QMessageBox::information(this, "Succes", QString("Publication ajoutee ! ID : %1").arg(newId));
         ui->lineEdit_16->clear();
         ui->lineEdit_17->clear();
         ui->lineEdit_18->clear();
         ui->lineEdit_19->clear();
         refreshAll();
     } else {
-        QMessageBox::critical(this, "Erreur BDD", "Echec ajout :\n" + q.lastError().text());
+        QMessageBox::critical(this, "Erreur BDD", "Echec ajout.");
     }
 }
 
@@ -603,7 +1160,7 @@ void SmartMarket::on_pushButton_20_clicked()
     QString source  = ui->lineEdit_17->text().trimmed();
     QString contenu = ui->lineEdit_18->toPlainText().trimmed();
     QString domaine = ui->comboBox_5->currentText().trimmed();
-    QString date    = ui->dateEdit_5->date().toString("yyyy-MM-dd");
+    QDate date      = ui->dateEdit_5->date();
     QString idStr   = ui->lineEdit_19->text().trimmed();
 
     if (idStr.isEmpty()) {
@@ -613,16 +1170,8 @@ void SmartMarket::on_pushButton_20_clicked()
     if (!ok || id <= 0) {
         QMessageBox::warning(this, "Attention", "L ID doit etre un entier positif."); return;
     }
-    if (titre.isEmpty() || source.isEmpty()) {
-        QMessageBox::warning(this, "Attention", "Remplissez Titre et Source."); return;
-    }
-    if (titre.length() > 20) {
-        QMessageBox::warning(this, "Attention", "Titre : max 20 caracteres."); return;
-    }
-    if (domaine.length() > 20) {
-        QMessageBox::warning(this, "Attention", "Domaine : max 20 caracteres."); return;
-    }
 
+<<<<<<< Updated upstream
     QSqlQuery chk;
     chk.prepare("SELECT COUNT(*) FROM SELIM.PUBLICATION WHERE IDPUBLICATION=:id");
     chk.bindValue(":id", id); chk.exec();
@@ -647,13 +1196,19 @@ void SmartMarket::on_pushButton_20_clicked()
     if (q.exec()) {
         QMessageBox::information(this, "Succes",
                                  QString("Publication ID %1 modifiee !").arg(id));
+=======
+    Publication p(id, titre, source, domaine, date, "Non evaluee", contenu);
+
+    if (p.modifier()) {
+        QMessageBox::information(this, "Succes", QString("Publication ID %1 modifiee !").arg(id));
+>>>>>>> Stashed changes
         ui->lineEdit_16->clear();
         ui->lineEdit_17->clear();
         ui->lineEdit_18->clear();
         ui->lineEdit_19->clear();
         refreshAll();
     } else {
-        QMessageBox::critical(this, "Erreur BDD", "Echec modification :\n" + q.lastError().text());
+        QMessageBox::critical(this, "Erreur BDD", "Echec modification.");
     }
 }
 
@@ -671,6 +1226,7 @@ void SmartMarket::on_pushButton_8_clicked()
         QMessageBox::warning(this, "Attention", "L ID doit etre un entier positif."); return;
     }
 
+<<<<<<< Updated upstream
     QSqlQuery chk;
     chk.prepare("SELECT TITRE FROM SELIM.PUBLICATION WHERE IDPUBLICATION=:id");
     chk.bindValue(":id", id); chk.exec();
@@ -691,10 +1247,15 @@ void SmartMarket::on_pushButton_8_clicked()
     if (q.exec()) {
         QMessageBox::information(this, "Succes",
                                  QString("Publication ID %1 supprimee !").arg(id));
+=======
+    Publication p;
+    if (p.supprimer(id)) {
+        QMessageBox::information(this, "Succes", QString("Publication ID %1 supprimee !").arg(id));
+>>>>>>> Stashed changes
         ui->lineEdit_9->clear();
         refreshAll();
     } else {
-        QMessageBox::critical(this, "Erreur BDD", "Echec suppression :\n" + q.lastError().text());
+        QMessageBox::critical(this, "Erreur BDD", "Echec suppression.");
     }
 }
 
@@ -708,22 +1269,22 @@ void SmartMarket::on_pushButton_9_clicked()
     QString domaine = ui->comboBox_2->currentText().trimmed();
     QString statut  = ui->lineEdit_22->text().trimmed();
 
-    QString filter;
-    if (!titre.isEmpty())
-        filter += QString("UPPER(TITRE) LIKE UPPER('%%%1%%') AND ").arg(titre);
-    if (!source.isEmpty())
-        filter += QString("UPPER(SOURCE) LIKE UPPER('%%%1%%') AND ").arg(source);
-    if (!domaine.isEmpty() && domaine.toUpper() != "TOUS")
-        filter += QString("UPPER(DOMAINE) = UPPER('%1') AND ").arg(domaine);
-    if (!statut.isEmpty())
-        filter += QString("UPPER(STATUT) LIKE UPPER('%%%1%%') AND ").arg(statut);
-    if (filter.endsWith(" AND "))
-        filter.chop(5);
+    Publication p;
+    publicationModel = p.rechercher(titre, source, domaine, statut);
+    ui->tableView->setModel(publicationModel);
 
-    publicationModel->setFilter(filter);
-    publicationModel->select();
-    while (publicationModel->canFetchMore())
-        publicationModel->fetchMore();
+    // Save filter for exports
+    lastPubFilter = "";
+    if (!titre.isEmpty())
+        lastPubFilter += QString("UPPER(TITRE) LIKE UPPER('%%%1%%') AND ").arg(titre);
+    if (!source.isEmpty())
+        lastPubFilter += QString("UPPER(SOURCE) LIKE UPPER('%%%1%%') AND ").arg(source);
+    if (!domaine.isEmpty() && domaine.toUpper() != "TOUS")
+        lastPubFilter += QString("UPPER(DOMAINE) = UPPER('%1') AND ").arg(domaine);
+    if (!statut.isEmpty())
+        lastPubFilter += QString("UPPER(STATUT) LIKE UPPER('%%%1%%') AND ").arg(statut);
+    if (lastPubFilter.endsWith(" AND "))
+        lastPubFilter.chop(5);
 
     if (publicationModel->rowCount() == 0)
         QMessageBox::information(this, "Recherche", "Aucune publication trouvee.");
@@ -739,10 +1300,28 @@ void SmartMarket::on_pushButton_5_clicked()
     ui->lineEdit_22->clear();
     ui->lineEdit_23->clear();
     ui->comboBox_2->setCurrentIndex(0);
-    publicationModel->setFilter("");
-    publicationModel->select();
-    while (publicationModel->canFetchMore())
-        publicationModel->fetchMore();
+    
+    lastPubFilter = "";
+    Publication p;
+    publicationModel = p.afficher();
+    ui->tableView->setModel(publicationModel);
+}
+
+// ================================================================
+// TRI PUBLICATIONS
+// ================================================================
+void SmartMarket::on_btnSortPubAsc_clicked()
+{
+    Publication p;
+    publicationModel = p.trier("DATEPUBLICATION", "ASC");
+    ui->tableView->setModel(publicationModel);
+}
+
+void SmartMarket::on_btnSortPubDesc_clicked()
+{
+    Publication p;
+    publicationModel = p.trier("DATEPUBLICATION", "DESC");
+    ui->tableView->setModel(publicationModel);
 }
 
 // ================================================================
@@ -758,9 +1337,8 @@ void SmartMarket::on_pushButton_21_clicked()
     }
 
     if (excel) {
-        QMessageBox::information(this, "Export Excel",
-                                 "Export Excel : fonctionnalite reservee a une prochaine version.\n"
-                                 "Utilisez le format PDF disponible maintenant.");
+        bool toutesPublications = ui->radioButton_5->isChecked();
+        exporterExcel(toutesPublications);
         return;
     }
 
@@ -788,11 +1366,10 @@ void SmartMarket::exporterPDF(bool toutesPublications)
 
     // Si on exporte seulement les publications filtrées
     if (!toutesPublications) {
-        QString currentFilter = publicationModel->filter();
-        if (!currentFilter.isEmpty())
-            sql += " WHERE " + currentFilter;
+        if (!lastPubFilter.isEmpty())
+            sql += " WHERE " + lastPubFilter;
     }
-    sql += " ORDER BY IDPUBLICATION";
+    sql += " ORDER BY DATEPUBLICATION DESC";
 
     if (!q.exec(sql)) {
         QMessageBox::critical(this, "Erreur BDD",
@@ -824,7 +1401,7 @@ void SmartMarket::exporterPDF(bool toutesPublications)
     }
 
     // ── Créer le PDF via QPrinter ────────────────────────────────
-    QPrinter printer(QPrinter::HighResolution);
+    QPrinter printer(QPrinter::ScreenResolution);
     printer.setOutputFormat(QPrinter::PdfFormat);
     printer.setOutputFileName(filePath);
     printer.setPageSize(QPageSize(QPageSize::A4));
@@ -839,8 +1416,8 @@ void SmartMarket::exporterPDF(bool toutesPublications)
         return;
     }
 
-    // Facteur de mise à l'échelle pour haute résolution
-    const double scale = printer.resolution() / 96.0;
+    // Echelle fixe pour garder des tailles de texte lisibles et stables.
+    const double scale = 1.0;
     const int pageW    = painter.device()->width();
     const int pageH    = painter.device()->height();
     const int marginX  = (int)(15 * scale * 3.78);  // mm → pixels approx
@@ -848,12 +1425,14 @@ void SmartMarket::exporterPDF(bool toutesPublications)
     const int contentW = pageW - 2 * marginX;
 
     // Polices
-    QFont titleFont("Arial", (int)(16 * scale));
+    QFont titleFont("Arial", 16);
     titleFont.setBold(true);
-    QFont headerFont("Arial", (int)(9 * scale));
+    QFont headerFont("Arial", 9);
     headerFont.setBold(true);
-    QFont bodyFont("Arial", (int)(8 * scale));
-    QFont metaFont("Arial", (int)(7 * scale));
+    QFont sectionFont("Arial", 11);
+    sectionFont.setBold(true);
+    QFont bodyFont("Arial", 8);
+    QFont metaFont("Arial", 7);
 
     // Couleurs
     QColor colorHeader(15, 42, 68);      // #0F2A44 — bleu marine
@@ -869,9 +1448,9 @@ void SmartMarket::exporterPDF(bool toutesPublications)
     for (int i = 0; i < COL_COUNT; ++i)
         colW[i] = (int)(contentW * proportions[i]);
 
-    const int rowH     = (int)(28 * scale);
-    const int headerH  = (int)(36 * scale);
-    const int titleH   = (int)(55 * scale);
+    const int rowH     = 28;
+    const int headerH  = 36;
+    const int titleH   = 55;
 
     // ── Fonction lambda pour dessiner l'en-tête de tableau ──────
     auto drawTableHeader = [&](int y) {
@@ -884,8 +1463,8 @@ void SmartMarket::exporterPDF(bool toutesPublications)
             // Texte
             painter.setFont(headerFont);
             painter.setPen(colorTitle);
-            painter.drawText(QRect(x + (int)(4*scale), y,
-                                   colW[i] - (int)(8*scale), headerH),
+            painter.drawText(QRect(x + 4, y,
+                             colW[i] - 8, headerH),
                              Qt::AlignVCenter | Qt::AlignLeft, headers[i]);
             x += colW[i];
         }
@@ -908,9 +1487,9 @@ void SmartMarket::exporterPDF(bool toutesPublications)
             painter.setPen(colorText);
             QFontMetrics fm(bodyFont);
             QString txt = fm.elidedText(vals[i], Qt::ElideRight,
-                                        colW[i] - (int)(10*scale));
-            painter.drawText(QRect(x + (int)(4*scale), y,
-                                   colW[i] - (int)(8*scale), rowH),
+                                colW[i] - 10);
+            painter.drawText(QRect(x + 4, y,
+                             colW[i] - 8, rowH),
                              Qt::AlignVCenter | Qt::AlignLeft, txt);
             x += colW[i];
         }
@@ -932,17 +1511,17 @@ void SmartMarket::exporterPDF(bool toutesPublications)
             painter.drawText(QRect(marginX, currentY, contentW, titleH),
                              Qt::AlignCenter,
                              "RAPPORT DES PUBLICATIONS — SmartMarket");
-            currentY += titleH + (int)(8 * scale);
+            currentY += titleH + 8;
 
             // Méta-info
             painter.setFont(metaFont);
             painter.setPen(Qt::darkGray);
-            painter.drawText(marginX, currentY + (int)(14*scale),
+            painter.drawText(marginX, currentY + 14,
                              QString("Genere le : %1   |   Total : %2 publication(s)   |   Filtre : %3")
                                  .arg(QDateTime::currentDateTime().toString("dd/MM/yyyy HH:mm"))
                                  .arg(rows.size())
                                  .arg(toutesPublications ? "Toutes" : "Filtrées"));
-            currentY += (int)(30 * scale);
+            currentY += 30;
             firstPage = false;
         }
 
@@ -954,13 +1533,13 @@ void SmartMarket::exporterPDF(bool toutesPublications)
         bool alternate = false;
         while (rowIdx < rows.size()) {
             // Espace restant ?
-            if (currentY + rowH > pageH - marginY - (int)(20*scale)) {
+            if (currentY + rowH > pageH - marginY - 20) {
                 // Pied de page
                 painter.setFont(metaFont);
                 painter.setPen(Qt::gray);
                 painter.drawText(
-                    QRect(marginX, pageH - marginY - (int)(20*scale),
-                          contentW, (int)(20*scale)),
+                  QRect(marginX, pageH - marginY - 20,
+                      contentW, 20),
                     Qt::AlignCenter,
                     QString("Page %1  —  SmartMarket").arg(pageNumber));
 
@@ -983,8 +1562,8 @@ void SmartMarket::exporterPDF(bool toutesPublications)
     painter.setFont(metaFont);
     painter.setPen(Qt::gray);
     painter.drawText(
-        QRect(marginX, pageH - marginY - (int)(20*scale),
-              contentW, (int)(20*scale)),
+          QRect(marginX, pageH - marginY - 20,
+              contentW, 20),
         Qt::AlignCenter,
         QString("Page %1  —  SmartMarket").arg(pageNumber));
 
@@ -993,6 +1572,182 @@ void SmartMarket::exporterPDF(bool toutesPublications)
     QMessageBox::information(this, "Export PDF",
                              QString("PDF genere avec succes !\n%1\n\n"
                                      "%2 publication(s) exportee(s).")
+                                 .arg(filePath).arg(rows.size()));
+}
+
+void SmartMarket::exporterExcel(bool toutesPublications)
+{
+    QString filePath = QFileDialog::getSaveFileName(
+        this,
+        "Enregistrer le fichier Excel",
+        QDir::homePath() + "/publications_" + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".xls",
+        "Fichiers Excel 97-2003 (*.xls)"
+    );
+    if (filePath.isEmpty())
+        return;
+
+    QSqlQuery q;
+    QString sql = "SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, "
+                  "TO_CHAR(DATEPUBLICATION,'DD/MM/YYYY'), STATUT, CONTENU "
+                  "FROM SELIM.PUBLICATION";
+
+    if (!toutesPublications) {
+        if (!lastPubFilter.isEmpty())
+            sql += " WHERE " + lastPubFilter;
+    }
+    sql += " ORDER BY DATEPUBLICATION DESC";
+
+    if (!q.exec(sql)) {
+        QMessageBox::critical(this, "Erreur BDD",
+                              "Impossible de recuperer les donnees :\n" + q.lastError().text());
+        return;
+    }
+
+    struct PubRow {
+        QString id, titre, source, domaine, date, statut, contenu;
+    };
+
+    QList<PubRow> rows;
+    while (q.next()) {
+        PubRow r;
+        r.id      = q.value(0).toString();
+        r.titre   = q.value(1).toString();
+        r.source  = q.value(2).toString();
+        r.domaine = q.value(3).toString();
+        r.date    = q.value(4).toString();
+        r.statut  = q.value(5).toString();
+        r.contenu = q.value(6).toString();
+        rows << r;
+    }
+
+    if (rows.isEmpty()) {
+        QMessageBox::warning(this, "Export Excel", "Aucune publication a exporter.");
+        return;
+    }
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+        QMessageBox::critical(this, "Export Excel", "Impossible d'ouvrir le fichier en ecriture : " + filePath);
+        return;
+    }
+
+    QXmlStreamWriter xml(&file);
+    xml.setAutoFormatting(true);
+    xml.writeStartDocument("1.0");
+    xml.writeProcessingInstruction("mso-application", "progid=\"Excel.Sheet\"");
+
+    xml.writeStartElement("Workbook");
+    xml.writeAttribute("xmlns", "urn:schemas-microsoft-com:office:spreadsheet");
+    xml.writeAttribute("xmlns:o", "urn:schemas-microsoft-com:office:office");
+    xml.writeAttribute("xmlns:x", "urn:schemas-microsoft-com:office:excel");
+    xml.writeAttribute("xmlns:ss", "urn:schemas-microsoft-com:office:spreadsheet");
+
+    xml.writeStartElement("Styles");
+
+    xml.writeStartElement("Style");
+    xml.writeAttribute("ss:ID", "Title");
+    xml.writeStartElement("Font");
+    xml.writeAttribute("ss:Bold", "1");
+    xml.writeAttribute("ss:Size", "16");
+    xml.writeAttribute("ss:Color", "#0F2A44");
+    xml.writeEndElement();
+    xml.writeEndElement();
+
+    xml.writeStartElement("Style");
+    xml.writeAttribute("ss:ID", "Meta");
+    xml.writeStartElement("Font");
+    xml.writeAttribute("ss:Size", "10");
+    xml.writeAttribute("ss:Color", "#4B5563");
+    xml.writeEndElement();
+    xml.writeEndElement();
+
+    xml.writeStartElement("Style");
+    xml.writeAttribute("ss:ID", "Header");
+    xml.writeStartElement("Font");
+    xml.writeAttribute("ss:Bold", "1");
+    xml.writeAttribute("ss:Color", "#FFFFFF");
+    xml.writeEndElement();
+    xml.writeStartElement("Interior");
+    xml.writeAttribute("ss:Color", "#0F2A44");
+    xml.writeAttribute("ss:Pattern", "Solid");
+    xml.writeEndElement();
+    xml.writeEndElement();
+
+    xml.writeStartElement("Style");
+    xml.writeAttribute("ss:ID", "Row");
+    xml.writeStartElement("Font");
+    xml.writeAttribute("ss:Size", "9");
+    xml.writeEndElement();
+    xml.writeEndElement();
+
+    xml.writeEndElement(); // Styles
+
+    xml.writeStartElement("Worksheet");
+    xml.writeAttribute("ss:Name", "Publications");
+    xml.writeStartElement("Table");
+
+    const QString headers[] = {"ID", "Titre", "Source", "Domaine", "Date", "Statut", "Contenu"};
+
+    xml.writeStartElement("Row");
+    xml.writeStartElement("Cell");
+    xml.writeAttribute("ss:StyleID", "Title");
+    xml.writeAttribute("ss:MergeAcross", "6");
+    xml.writeStartElement("Data");
+    xml.writeAttribute("ss:Type", "String");
+    xml.writeCharacters("RAPPORT DES PUBLICATIONS — SmartMarket");
+    xml.writeEndElement();
+    xml.writeEndElement();
+    xml.writeEndElement();
+
+    xml.writeStartElement("Row");
+    xml.writeStartElement("Cell");
+    xml.writeAttribute("ss:StyleID", "Meta");
+    xml.writeAttribute("ss:MergeAcross", "6");
+    xml.writeStartElement("Data");
+    xml.writeAttribute("ss:Type", "String");
+    xml.writeCharacters(QString("Genere le : %1   |   Total : %2 publication(s)   |   Filtre : %3")
+                            .arg(QDateTime::currentDateTime().toString("dd/MM/yyyy HH:mm"))
+                            .arg(rows.size())
+                            .arg(toutesPublications ? "Toutes" : "Filtrées"));
+    xml.writeEndElement();
+    xml.writeEndElement();
+    xml.writeEndElement();
+
+    xml.writeStartElement("Row");
+    for (const QString &header : headers) {
+        xml.writeStartElement("Cell");
+        xml.writeAttribute("ss:StyleID", "Header");
+        xml.writeStartElement("Data");
+        xml.writeAttribute("ss:Type", "String");
+        xml.writeCharacters(header);
+        xml.writeEndElement();
+        xml.writeEndElement();
+    }
+    xml.writeEndElement();
+
+    for (const PubRow &row : rows) {
+        xml.writeStartElement("Row");
+        const QString values[] = {row.id, row.titre, row.source, row.domaine, row.date, row.statut, row.contenu};
+        for (const QString &value : values) {
+            xml.writeStartElement("Cell");
+            xml.writeAttribute("ss:StyleID", "Row");
+            xml.writeStartElement("Data");
+            xml.writeAttribute("ss:Type", "String");
+            xml.writeCharacters(value);
+            xml.writeEndElement();
+            xml.writeEndElement();
+        }
+        xml.writeEndElement();
+    }
+
+    xml.writeEndElement(); // Table
+    xml.writeEndElement(); // Worksheet
+    xml.writeEndElement(); // Workbook
+    xml.writeEndDocument();
+    file.close();
+
+    QMessageBox::information(this, "Export Excel",
+                             QString("Fichier Excel genere avec succes !\n%1\n\n%2 publication(s) exportee(s).")
                                  .arg(filePath).arg(rows.size()));
 }
 
@@ -1436,6 +2191,26 @@ void SmartMarket::openConferenceModule()
 }
 
 // Conference CRUD Operations
+<<<<<<< Updated upstream
+=======
+void SmartMarket::on_conf_pushButton_26_clicked()
+{
+    const int id = ui->conf_lineEdit_26 ? ui->conf_lineEdit_26->text().toInt() : 0;
+    const QString nom = ui->conf_lineEdit_27 ? ui->conf_lineEdit_27->text().trimmed() : QString();
+    const QString lieu = ui->conf_lineEdit_24 ? ui->conf_lineEdit_24->text().trimmed() : QString();
+    const QDate date = ui->conf_dateEdit_6 ? ui->conf_dateEdit_6->date() : QDate();
+    const QString theme = ui->conf_lineEdit_25 ? ui->conf_lineEdit_25->text().trimmed() : QString();
+
+    Conference c(id, nom, lieu, date, theme);
+    if (c.ajouter()) {
+        QMessageBox::information(this, "Succès", "Conférence ajoutée.");
+        loadConferenceTable();
+    } else {
+        QMessageBox::critical(this, "Erreur", "Echec ajout conférence.");
+    }
+}
+
+>>>>>>> Stashed changes
 void SmartMarket::addConference()
 {
     QString id = ui->conf_lineEdit_26->text().trimmed();
@@ -1444,6 +2219,7 @@ void SmartMarket::addConference()
     QString theme = ui->conf_lineEdit_25->text().trimmed();
     QDate date = ui->conf_dateEdit_6->date();
 
+<<<<<<< Updated upstream
     if (id.isEmpty() || nom.isEmpty() || lieu.isEmpty() || theme.isEmpty()) {
         QMessageBox::warning(this, "Champs manquants", "Veuillez remplir tous les champs.");
         return;
@@ -1473,6 +2249,22 @@ void SmartMarket::addConference()
         ui->conf_lineEdit_25->clear();
     } else {
         QMessageBox::critical(this, "Erreur", "Échec de l'ajout: " + query.lastError().text());
+=======
+void SmartMarket::on_conf_pushButton_27_clicked()
+{
+    const int id = ui->conf_lineEdit_31 ? ui->conf_lineEdit_31->text().toInt() : 0;
+    const QString nom = ui->conf_lineEdit_28 ? ui->conf_lineEdit_28->text().trimmed() : QString();
+    const QString lieu = ui->conf_lineEdit_29 ? ui->conf_lineEdit_29->text().trimmed() : QString();
+    const QDate date = ui->conf_dateEdit_4 ? ui->conf_dateEdit_4->date() : QDate();
+    const QString theme = ui->conf_lineEdit_30 ? ui->conf_lineEdit_30->text().trimmed() : QString();
+
+    Conference c(id, nom, lieu, date, theme);
+    if (c.modifier()) {
+        QMessageBox::information(this, "Succès", "Conférence modifiée.");
+        loadConferenceTable();
+    } else {
+        QMessageBox::critical(this, "Erreur", "Echec modification conférence.");
+>>>>>>> Stashed changes
     }
 }
 
@@ -1513,6 +2305,7 @@ void SmartMarket::modifyConference()
 
 void SmartMarket::deleteConference()
 {
+<<<<<<< Updated upstream
     QString id = ui->conf_lineEdit_8->text().trimmed();
 
     if (id.isEmpty()) {
@@ -1535,18 +2328,48 @@ void SmartMarket::deleteConference()
 
     if (query.exec()) {
         QMessageBox::information(this, "Succès", "Conférence supprimée avec succès.");
+=======
+    int id = ui->conf_lineEdit_8->text().toInt();
+    Conference c;
+    if (c.supprimer(id)) {
+        QMessageBox::information(this, "Succès", "Conférence supprimée.");
+>>>>>>> Stashed changes
         loadConferenceTable();
-        ui->conf_lineEdit_8->clear();
     } else {
-        QMessageBox::critical(this, "Erreur", "Échec de la suppression: " + query.lastError().text());
+        QMessageBox::critical(this, "Erreur", "Echec suppression conférence.");
     }
 }
 
+<<<<<<< Updated upstream
+=======
+void SmartMarket::on_conf_pushButton_19_clicked()
+{
+    const int id = ui->conf_lineEdit_21 ? ui->conf_lineEdit_21->text().toInt() : 0;
+    const QString nom = ui->conf_lineEdit_20 ? ui->conf_lineEdit_20->text().trimmed() : QString();
+    const int confId = ui->conf_lineEdit_22 ? ui->conf_lineEdit_22->text().toInt() : 0;
+
+    Participant p(id, nom, confId, "");
+    
+    QInputDialog uidDialog(this);
+    if (uidDialog.exec() == QDialog::Accepted) {
+        p.setUidRfid(uidDialog.textValue().trimmed().toUpper());
+        if (p.ajouter()) {
+            QMessageBox::information(this, "Succès", "Participant ajouté.");
+            loadParticipantTable();
+            loadConferenceTable();
+        } else {
+             QMessageBox::critical(this, "Erreur", "Echec ajout participant.");
+        }
+    }
+}
+
+>>>>>>> Stashed changes
 void SmartMarket::addParticipant()
 {
     QString nom = ui->conf_lineEdit_20->text().trimmed();
     QString idConf = ui->conf_lineEdit_22->text().trimmed();
 
+<<<<<<< Updated upstream
     if (nom.isEmpty() || idConf.isEmpty()) {
         QMessageBox::warning(this, "Champs manquants", "Veuillez remplir tous les champs.");
         return;
@@ -1579,6 +2402,26 @@ void SmartMarket::addParticipant()
         ui->conf_lineEdit_22->clear();
     } else {
         QMessageBox::critical(this, "Erreur", "Échec de l'ajout: " + query.lastError().text());
+=======
+void SmartMarket::on_conf_pushButton_10_clicked()
+{
+    const int id = ui->conf_lineEdit_23 ? ui->conf_lineEdit_23->text().toInt() : 0;
+    const QString nom = ui->conf_lineEdit_15 ? ui->conf_lineEdit_15->text().trimmed() : QString();
+    const int confId = ui->conf_lineEdit_14 ? ui->conf_lineEdit_14->text().toInt() : 0;
+
+    Participant p(id, nom, confId, "");
+    
+    QInputDialog uidDialog(this);
+    if (uidDialog.exec() == QDialog::Accepted) {
+        p.setUidRfid(uidDialog.textValue().trimmed().toUpper());
+        if (p.modifier()) {
+            QMessageBox::information(this, "Succès", "Participant modifié.");
+            loadParticipantTable();
+            loadConferenceTable();
+        } else {
+             QMessageBox::critical(this, "Erreur", "Echec modification participant.");
+        }
+>>>>>>> Stashed changes
     }
 }
 
@@ -1588,6 +2431,7 @@ void SmartMarket::modifyParticipant()
     QString nom = ui->conf_lineEdit_14->text().trimmed();
     QString idConf = ui->conf_lineEdit_15->text().trimmed();
 
+<<<<<<< Updated upstream
     if (id.isEmpty()) {
         QMessageBox::warning(this, "ID manquant", "Veuillez saisir l'ID du participant à modifier.");
         return;
@@ -1611,6 +2455,19 @@ void SmartMarket::modifyParticipant()
     } else {
         QMessageBox::critical(this, "Erreur", "Échec de la modification: " + query.lastError().text());
     }
+=======
+void SmartMarket::on_conf_pushButton_12_clicked()
+{
+    int id = ui->conf_lineEdit_13 ? ui->conf_lineEdit_13->text().toInt() : 0;
+    Participant p;
+    if (p.supprimer(id)) {
+        QMessageBox::information(this, "Suppression", "Participant supprimé.");
+        loadParticipantTable();
+        loadConferenceTable();
+    } else {
+        QMessageBox::critical(this, "Erreur", "Echec suppression participant.");
+    }
+>>>>>>> Stashed changes
 }
 
 void SmartMarket::deleteParticipant()
@@ -1656,15 +2513,294 @@ void SmartMarket::sortConferencesByDateDesc()
     table->sortItems(3, Qt::DescendingOrder); // Column 3 is date
 }
 
+<<<<<<< Updated upstream
 void SmartMarket::exportConferencesToPDF()
 {
     // Basic PDF export implementation
     QMessageBox::information(this, "Export PDF", "Fonctionnalité d'export PDF à implémenter.");
+=======
+void SmartMarket::on_conf_pushButton_5_clicked()
+{
+    if (!ui->conf_tableWidget_7 || !ui->conf_tableWidget_2 || !ui->conf_graphicsView1 || !ui->conf_graphicsView1_2)
+    {
+        QMessageBox::warning(this, "Export PDF", "Composants manquants pour l'export (tables ou graphiques).");
+        return;
+    }
+
+    QString filePath = QFileDialog::getSaveFileName(
+        this,
+        "Enregistrer le PDF",
+        QDir::homePath() + "/conferences_" + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".pdf",
+        "Fichiers PDF (*.pdf)"
+    );
+    if (filePath.isEmpty())
+        return;
+
+    QPrinter printer(QPrinter::ScreenResolution);
+    printer.setOutputFormat(QPrinter::PdfFormat);
+    printer.setOutputFileName(filePath);
+    printer.setPageSize(QPageSize(QPageSize::A4));
+    printer.setPageOrientation(QPageLayout::Landscape);
+    printer.setPageMargins(QMarginsF(15, 15, 15, 15), QPageLayout::Millimeter);
+
+    QPainter painter;
+    if (!painter.begin(&printer))
+    {
+        QMessageBox::critical(this, "Export PDF", "Impossible d'ouvrir le PDF en écriture : " + filePath);
+        return;
+    }
+
+    const double scale = 1.0;
+    const int pageW = painter.device()->width();
+    const int pageH = painter.device()->height();
+    const int marginX = 15 * 3.78;
+    const int marginY = 15 * 3.78;
+    const int contentW = pageW - 2 * marginX;
+
+    QFont titleFont("Arial", 16);
+    titleFont.setBold(true);
+    QFont headerFont("Arial", 9);
+    headerFont.setBold(true);
+    QFont sectionFont("Arial", 11);
+    sectionFont.setBold(true);
+    QFont bodyFont("Arial", 8);
+    QFont metaFont("Arial", 7);
+
+    QColor colorHeader(15, 42, 68);
+    QColor colorAlt(240, 245, 255);
+    QColor colorBorder(180, 200, 230);
+    QColor colorTitle(255, 255, 255);
+    QColor colorText(30, 30, 30);
+
+    const int COL_COUNT_CONF = 6;
+    int confColW[COL_COUNT_CONF];
+    double confProps[] = {0.08, 0.26, 0.18, 0.16, 0.18, 0.14};
+    for (int i = 0; i < COL_COUNT_CONF; ++i)
+        confColW[i] = static_cast<int>(contentW * confProps[i]);
+
+    const int COL_COUNT_PART = 4;
+    int partColW[COL_COUNT_PART];
+    double partProps[] = {0.10, 0.38, 0.22, 0.30};
+    for (int i = 0; i < COL_COUNT_PART; ++i)
+        partColW[i] = static_cast<int>(contentW * partProps[i]);
+
+    const int rowH = 24;
+    const int headerH = 30;
+    const int titleH = 48;
+    const int chartH = 220;
+    const int chartGap = 18;
+
+    auto drawHeader = [&](const QString &title, const QString &subtitle, int &currentY) {
+        painter.fillRect(marginX, currentY, contentW, titleH, colorHeader);
+        painter.setFont(titleFont);
+        painter.setPen(colorTitle);
+        painter.drawText(QRect(marginX + 12, currentY, contentW - 24, titleH - 18), Qt::AlignLeft | Qt::AlignVCenter, title);
+        painter.setFont(metaFont);
+        painter.drawText(QRect(marginX + 12, currentY + 20, contentW - 24, 18), Qt::AlignLeft | Qt::AlignVCenter, subtitle);
+        currentY += titleH + 8;
+    };
+
+    auto drawTableHeader = [&](int y, const QStringList &headers, const int *widths, int cols) {
+        int x = marginX;
+        painter.setFont(headerFont);
+        for (int i = 0; i < cols; ++i) {
+            painter.fillRect(x, y, widths[i], headerH, colorHeader);
+            painter.setPen(colorTitle);
+            painter.drawText(QRect(x + 4, y, widths[i] - 8, headerH), Qt::AlignVCenter | Qt::AlignLeft, headers[i]);
+            x += widths[i];
+        }
+    };
+
+    auto drawTableRow = [&](int y, QTableWidget *table, int row, const int *widths, int cols) {
+        int x = marginX;
+        const QColor rowBg = (row % 2 == 0) ? Qt::white : colorAlt;
+        painter.setFont(bodyFont);
+        for (int c = 0; c < cols; ++c) {
+            const QString text = table->item(row, c) ? table->item(row, c)->text() : QString();
+            QFontMetrics fm(bodyFont);
+            const QString clipped = fm.elidedText(text, Qt::ElideRight, widths[c] - 10);
+
+            painter.fillRect(x, y, widths[c], rowH, rowBg);
+            painter.setPen(QPen(colorBorder, 1));
+            painter.drawRect(x, y, widths[c], rowH);
+            painter.setPen(colorText);
+            painter.drawText(QRect(x + 4, y, widths[c] - 8, rowH), Qt::AlignVCenter | Qt::AlignLeft, clipped);
+            x += widths[c];
+        }
+    };
+
+    auto renderChart = [&](QGraphicsView *view, const QString &title, int targetWidth, int targetHeight) -> QImage {
+        QRectF sceneRect = view->scene()->itemsBoundingRect();
+        if (sceneRect.isEmpty() || !sceneRect.isValid())
+            sceneRect = view->scene()->sceneRect();
+        if (sceneRect.isEmpty() || !sceneRect.isValid())
+            sceneRect = QRectF(QPointF(0, 0), view->viewport()->size());
+        sceneRect = sceneRect.adjusted(-8, -8, 8, 8);
+
+        QImage img(QSize(qMax(1, targetWidth * 2), qMax(1, targetHeight * 2)), QImage::Format_ARGB32_Premultiplied);
+        img.fill(Qt::white);
+        QPainter chartPainter(&img);
+        chartPainter.setRenderHint(QPainter::Antialiasing);
+        chartPainter.setRenderHint(QPainter::TextAntialiasing);
+        view->scene()->render(&chartPainter, QRectF(QPointF(0, 0), QSizeF(img.size())), sceneRect);
+        chartPainter.end();
+        return img.scaled(targetWidth, targetHeight, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    };
+
+    auto newPageIfNeeded = [&](int &currentY, int blockHeight) {
+        if (currentY + blockHeight > pageH - marginY) {
+            printer.newPage();
+            currentY = marginY;
+        }
+    };
+
+    int currentY = marginY;
+    drawHeader("RAPPORT DES CONFERENCES", QString("Genere le : %1   |   Export PDF propre").arg(QDateTime::currentDateTime().toString("dd/MM/yyyy HH:mm")), currentY);
+
+    painter.setPen(Qt::black);
+    painter.setFont(headerFont);
+
+    newPageIfNeeded(currentY, titleH + headerH + (ui->conf_tableWidget_7->rowCount() * rowH) + 2 * chartH + 120);
+
+    painter.setFont(headerFont);
+    painter.drawText(QRect(marginX, currentY, contentW, 18), Qt::AlignLeft | Qt::AlignVCenter, "Conférences");
+    currentY += 22;
+    drawTableHeader(currentY, {"ID", "Nom", "Lieu", "Date", "Thème", "Participants"}, confColW, COL_COUNT_CONF);
+    currentY += headerH;
+    for (int r = 0; r < ui->conf_tableWidget_7->rowCount(); ++r) {
+        if (currentY + rowH > pageH - marginY) {
+            printer.newPage();
+            currentY = marginY;
+            painter.drawText(QRect(marginX, currentY, contentW, 18), Qt::AlignLeft | Qt::AlignVCenter, "Conférences (suite)");
+            currentY += 22;
+            drawTableHeader(currentY, {"ID", "Nom", "Lieu", "Date", "Thème", "Participants"}, confColW, COL_COUNT_CONF);
+            currentY += headerH;
+        }
+        drawTableRow(currentY, ui->conf_tableWidget_7, r, confColW, COL_COUNT_CONF);
+        currentY += rowH;
+    }
+
+    currentY += 18;
+    if (currentY + headerH + (ui->conf_tableWidget_2->rowCount() * rowH) + chartH + 60 > pageH - marginY) {
+        printer.newPage();
+        currentY = marginY;
+    }
+
+    painter.drawText(QRect(marginX, currentY, contentW, 18), Qt::AlignLeft | Qt::AlignVCenter, "Participants");
+    currentY += 22;
+    drawTableHeader(currentY, {"ID", "Nom", "Id Conférence", "UID RFID"}, partColW, COL_COUNT_PART);
+    currentY += headerH;
+    for (int r = 0; r < ui->conf_tableWidget_2->rowCount(); ++r) {
+        if (currentY + rowH > pageH - marginY) {
+            printer.newPage();
+            currentY = marginY;
+            painter.drawText(QRect(marginX, currentY, contentW, 18), Qt::AlignLeft | Qt::AlignVCenter, "Participants (suite)");
+            currentY += 22;
+            drawTableHeader(currentY, {"ID", "Nom", "Id Conférence", "UID RFID"}, partColW, COL_COUNT_PART);
+            currentY += headerH;
+        }
+        drawTableRow(currentY, ui->conf_tableWidget_2, r, partColW, COL_COUNT_PART);
+        currentY += rowH;
+    }
+
+    currentY += 20;
+    if (currentY + chartH + chartGap > pageH - marginY) {
+        printer.newPage();
+        currentY = marginY;
+    }
+
+    painter.setFont(sectionFont);
+    painter.setPen(Qt::black);
+    painter.drawText(QRect(marginX, currentY, contentW, 18), Qt::AlignLeft | Qt::AlignVCenter, "Participants par conférence");
+    currentY += 24;
+    QImage chart1 = renderChart(ui->conf_graphicsView1, "Participants par conférence", contentW, chartH);
+    painter.drawImage(QRect(marginX, currentY, contentW, chartH), chart1);
+    currentY += chartH + chartGap;
+
+    if (currentY + 24 + chartH > pageH - marginY) {
+        printer.newPage();
+        currentY = marginY;
+    }
+
+    painter.drawText(QRect(marginX, currentY, contentW, 18), Qt::AlignLeft | Qt::AlignVCenter, "Conférences par date");
+    currentY += 24;
+    QImage chart2 = renderChart(ui->conf_graphicsView1_2, "Conférences par date", contentW, chartH);
+    painter.drawImage(QRect(marginX, currentY, contentW, chartH), chart2);
+
+    painter.end();
+
+    QMessageBox::information(this, "Export PDF", "PDF généré : " + filePath);
+}
+
+void SmartMarket::exportConferencesToPDF()
+{
+    on_conf_pushButton_5_clicked();
+}
+
+int SmartMarket::applyConferenceFilterToTable()
+{
+    if (!ui->conf_tableWidget_7) return 0;
+
+    QString filter = ui->conf_lineEdit_2 ? ui->conf_lineEdit_2->text().trimmed() : QString();
+    Conference c;
+    QSqlQueryModel *model = c.rechercher(filter);
+
+    ui->conf_tableWidget_7->setRowCount(0);
+    for (int i = 0; i < model->rowCount(); ++i) {
+        ui->conf_tableWidget_7->insertRow(i);
+        for (int j = 0; j < model->columnCount(); ++j) {
+            ui->conf_tableWidget_7->setItem(i, j, new QTableWidgetItem(model->index(i, j).data().toString()));
+        }
+    }
+
+    if (model->rowCount() == 0)
+        QMessageBox::information(this, "Filtrage", "Aucune conférence pour ce filtre.");
+
+    updateConferenceParticipantsChart();
+    updateConferenceDaysChart();
+    updateConferenceCalendar();
+
+    return model->rowCount();
+}
+
+void SmartMarket::on_conf_pushButton_21_clicked()
+{
+    const int rows = applyConferenceFilterToTable();
+    if (rows <= 0)
+        return;
+
+    // Reuse the same polished PDF rendering used by pushButton_5.
+    on_conf_pushButton_5_clicked();
+>>>>>>> Stashed changes
 }
 
 void SmartMarket::filterConferences()
 {
+<<<<<<< Updated upstream
     loadConferenceTable(); // Re-filter based on current filter text
+=======
+    applyConferenceFilterToTable();
+}
+
+void SmartMarket::on_conf_pushButton_20_clicked()
+{
+    if (!ui->conf_tableWidget_2) return;
+
+    QString filter = ui->conf_lineEdit ? ui->conf_lineEdit->text().trimmed() : QString();
+    Participant p;
+    QSqlQueryModel *model = p.rechercher(filter);
+
+    ui->conf_tableWidget_2->setRowCount(0);
+    for (int i = 0; i < model->rowCount(); ++i) {
+        ui->conf_tableWidget_2->insertRow(i);
+        for (int j = 0; j < model->columnCount(); ++j) {
+            ui->conf_tableWidget_2->setItem(i, j, new QTableWidgetItem(model->index(i, j).data().toString()));
+        }
+    }
+
+    if (model->rowCount() == 0)
+        QMessageBox::information(this, "Filtrage", "Aucun participant pour ce filtre.");
+>>>>>>> Stashed changes
 }
 
 void SmartMarket::filterParticipants()
