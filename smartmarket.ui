@@ -58,7 +58,7 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
      </rect>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="pageLogin">
      <widget class="QGroupBox" name="groupBox_11_login">
@@ -732,6 +732,19 @@ QTableView::item:selected {
 
 
 </string>
+        </property>
+       </widget>
+       <widget class="QGroupBox" name="groupBox_sort_pub">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>340</y>
+          <width>641</width>
+          <height>81</height>
+         </rect>
+        </property>
+        <property name="title">
+         <string>Tri des publications</string>
         </property>
        </widget>
        <widget class="QGroupBox" name="groupBox_12">
@@ -1417,6 +1430,32 @@ QComboBox QAbstractItemView {
          </property>
         </column>
        </widget>
+       <widget class="QPushButton" name="btnSortPubDesc">
+        <property name="geometry">
+         <rect>
+          <x>660</x>
+          <y>20</y>
+          <width>171</width>
+          <height>41</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Tri Décroissant </string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="btnSortPubAsc">
+        <property name="geometry">
+         <rect>
+          <x>900</x>
+          <y>20</y>
+          <width>171</width>
+          <height>41</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Tri Croissant </string>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="tab_4">
        <attribute name="title">
@@ -2016,7 +2055,7 @@ QStatusBar {
       <property name="geometry">
        <rect>
         <x>200</x>
-        <y>-10</y>
+        <y>-20</y>
         <width>1091</width>
         <height>721</height>
        </rect>
@@ -2219,7 +2258,7 @@ QStatusBar {
 </string>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="elideMode">
        <enum>Qt::TextElideMode::ElideNone</enum>
@@ -2247,7 +2286,7 @@ QStatusBar {
            <y>50</y>
            <width>151</width>
            <height>26</height>
-          </rect>
+         </rect>
          </property>
          <property name="styleSheet">
           <string notr="true">QLineEdit {
@@ -2275,7 +2314,7 @@ QStatusBar {
            <y>80</y>
            <width>121</width>
            <height>41</height>
-          </rect>
+         </rect>
          </property>
          <property name="text">
           <string>Delete</string>
@@ -2288,7 +2327,7 @@ QStatusBar {
            <y>30</y>
            <width>291</width>
            <height>20</height>
-          </rect>
+         </rect>
          </property>
          <property name="text">
           <string>id a supprimer :</string>
@@ -2402,7 +2441,7 @@ QStatusBar {
            <y>30</y>
            <width>110</width>
            <height>24</height>
-          </rect>
+         </rect>
          </property>
          <property name="text">
           <string>nom</string>
@@ -2415,7 +2454,7 @@ QStatusBar {
            <y>60</y>
            <width>110</width>
            <height>24</height>
-          </rect>
+         </rect>
          </property>
          <property name="text">
           <string>lieu</string>
@@ -2428,7 +2467,7 @@ QStatusBar {
            <y>-10</y>
            <width>241</width>
            <height>41</height>
-          </rect>
+         </rect>
          </property>
          <property name="text">
           <string>filtrage par:</string>
@@ -2441,7 +2480,7 @@ QStatusBar {
            <y>30</y>
            <width>110</width>
            <height>24</height>
-          </rect>
+         </rect>
          </property>
          <property name="text">
           <string>date</string>
@@ -2454,7 +2493,7 @@ QStatusBar {
            <y>60</y>
            <width>110</width>
            <height>24</height>
-          </rect>
+         </rect>
          </property>
          <property name="text">
           <string>theme</string>
@@ -3089,9 +3128,9 @@ QStatusBar {
      <widget class="QGroupBox" name="conf_groupBox_11">
       <property name="geometry">
        <rect>
-        <x>0</x>
+        <x>10</x>
         <y>-30</y>
-        <width>211</width>
+        <width>201</width>
         <height>771</height>
        </rect>
       </property>
@@ -3170,72 +3209,72 @@ QStatusBar {
        <property name="geometry">
         <rect>
          <x>50</x>
-         <y>370</y>
-         <width>101</width>
-         <height>91</height>
-        </rect>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">image:
+          <y>370</y>
+          <width>101</width>
+          <height>91</height>
+         </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">image:
  url(:/ressouces/reviewer icon.png)</string>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-      <widget class="QLabel" name="conf_label_32">
-       <property name="geometry">
-        <rect>
-         <x>20</x>
-         <y>500</y>
-         <width>151</width>
-         <height>101</height>
-        </rect>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">image: url(:/ressouces/conference icon.png)</string>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-      <widget class="QLabel" name="conf_label_33">
-       <property name="geometry">
-        <rect>
-         <x>20</x>
-         <y>620</y>
-         <width>151</width>
-         <height>101</height>
-        </rect>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">image:
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+       <widget class="QLabel" name="conf_label_32">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>500</y>
+          <width>151</width>
+          <height>101</height>
+         </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">image: url(:/ressouces/conference icon.png)</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+       <widget class="QLabel" name="conf_label_33">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>620</y>
+          <width>151</width>
+          <height>101</height>
+         </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">image:
  url(:/ressouces/equipement icon.png)</string>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-      <widget class="QLabel" name="conf_label_4">
-       <property name="geometry">
-        <rect>
-         <x>-30</x>
-         <y>30</y>
-         <width>251</width>
-         <height>171</height>
-        </rect>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">image: url(:/ressouces/imagetouse.png-removebg-preview (1).png)</string>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+       <widget class="QLabel" name="conf_label_4">
+        <property name="geometry">
+         <rect>
+          <x>-30</x>
+          <y>30</y>
+          <width>251</width>
+          <height>171</height>
+         </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">image: url(:/ressouces/imagetouse.png-removebg-preview (1).png)</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
       </widget>
      </widget>
     </widget>
    </widget>
-  </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>

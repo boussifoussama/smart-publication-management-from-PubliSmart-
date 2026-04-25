@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/bossi/OneDrive/Desktop/New folder (13)/smart-publication-management-from-PubliSmart-",
-      "program": "c:/Users/bossi/OneDrive/Desktop/New folder (13)/smart-publication-management-from-PubliSmart-/build/Debug/outDebug",
+      "cwd": "c:/Users/bossi/OneDrive/Desktop/New folder (14)/smart-publication-management-from-PubliSmart-",
+      "program": "c:/Users/bossi/OneDrive/Desktop/New folder (14)/smart-publication-management-from-PubliSmart-/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
