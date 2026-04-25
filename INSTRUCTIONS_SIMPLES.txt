@@ -126,8 +126,8 @@ PAGE PUBLICATION (gardez VOS noms) :
 🔐 IDENTIFIANTS DE TEST
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Email    : oussama@esprit.tn
-Password : oussama
+Email    : selim@esprit.tn
+Password : selim
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

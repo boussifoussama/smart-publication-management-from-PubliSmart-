@@ -1525,8 +1525,8 @@ void SmartMarket::on_pushButton_15_clicked()
         QMessageBox::warning(this, "Attention", "Adresse email invalide.");
         return;
     }
-    if (email.compare("oussama@esprit.tn", Qt::CaseInsensitive) == 0
-        && password == "oussama")
+    if (email.compare("selim@esprit.tn", Qt::CaseInsensitive) == 0
+        && password == "selim")
     {
         ui->stackedWidgetMain->setCurrentIndex(1);
         initPublicationTable();

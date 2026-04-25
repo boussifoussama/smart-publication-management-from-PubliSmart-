@@ -6,6 +6,9 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QStringList>
+#include "publication.h"
+#include "conference.h"
+#include "participant.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class SmartMarket; }
@@ -14,6 +17,7 @@ QT_END_NAMESPACE
 class QChartView;
 class QTableWidget;
 class QLineEdit;
+class ArduinoBridge;
 
 class SmartMarket : public QMainWindow
 {
@@ -57,6 +61,7 @@ private slots:
 
     // Conference UI slots
     void on_conf_pushButton_5_clicked();
+    void on_conf_pushButton_8_clicked();
     void on_conf_pushButton_21_clicked();
     void on_conf_pushButton_20_clicked();
     void on_conf_pushButton_19_clicked();
@@ -65,9 +70,14 @@ private slots:
     void on_conf_pushButton_26_clicked();
     void on_conf_pushButton_27_clicked();
 
+    // Publication sorting
+    void on_btnSortPubAsc_clicked();
+    void on_btnSortPubDesc_clicked();
+
 private:
     Ui::SmartMarket *ui;
-    QSqlTableModel  *publicationModel;
+    QSqlQueryModel  *publicationModel;
+    QString         lastPubFilter;
     QChartView      *pieChartView;
     QChartView      *barChartView;
     QNetworkAccessManager *networkManager;
@@ -81,6 +91,7 @@ private:
     QTableWidget *confTableWidget;
     QTableWidget *participantTableWidget;
     QLineEdit *confFilterLineEdit;
+    ArduinoBridge *arduinoBridge;
     int conferencePageIndex;
 
     static const QStringList DOMAINES;
@@ -96,7 +107,10 @@ private:
     void on_conf_calendarWidget_selectionChanged();
     bool ensureConferenceTables(QSqlDatabase &db);
     bool createConferenceTables(QSqlDatabase &db);
+    bool ensureParticipantUidColumn(QSqlDatabase &db);
     bool tableExists(QSqlDatabase &db, const QString &tableName);
+    void initializeArduinoAccess();
+    void handleArduinoUid(const QString &uid);
     void showConferencePage();
     void refreshAll();
     void createCharts();
@@ -112,6 +126,7 @@ private:
     void sortConferencesByDateAsc();
     void sortConferencesByDateDesc();
     void exportConferencesToPDF();
+    int applyConferenceFilterToTable();
     void filterConferences();
     void filterParticipants();
 
@@ -125,6 +140,7 @@ private:
 
     // Export PDF helper
     void exporterPDF(bool toutesPublications);
+    void exporterExcel(bool toutesPublications);
 };
 
 #endif // SMARTMARKET_H

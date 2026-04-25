@@ -69,8 +69,8 @@ SmartMarket/
 ## 🔐 IDENTIFIANTS DE TEST
 
 **Pour se connecter :**
-- Email : `oussama@esprit.tn` (insensible à la casse)
-- Mot de passe : `oussama`
+- Email : `selim@esprit.tn` (insensible à la casse)
+- Mot de passe : `selim`
 
 ---
 

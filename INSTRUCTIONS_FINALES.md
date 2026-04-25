@@ -142,8 +142,8 @@ SmartMarket (QStackedWidget principal)
 ## 🔐 IDENTIFIANTS DE TEST
 
 ```
-Email    : oussama@esprit.tn
-Password : oussama
+Email    : selim@esprit.tn
+Password : selim
 ```
 
 ---
@@ -238,7 +238,7 @@ QProcess::startDetached(program);
 void SmartMarket::on_btnLoginEntrer_clicked()
 {
     // Validation
-    if(email == "oussama@esprit.tn" && password == "oussama")
+    if(email == "selim@esprit.tn" && password == "selim")
     {
         // Navigation vers la page Publication
         ui->stackedWidgetMain->setCurrentIndex(1);

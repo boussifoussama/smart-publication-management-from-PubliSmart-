@@ -1,16 +1,24 @@
-QT       += core gui charts
+QT       += core gui charts serialport
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++17
 
 SOURCES += \
+    arduino.cpp \
+    conference.cpp \
     connection.cpp \
     main.cpp \
+    participant.cpp \
+    publication.cpp \
     smartmarket.cpp
 
 HEADERS += \
+    arduino.h \
+    conference.h \
     connection.h \
+    participant.h \
+    publication.h \
     smartmarket.h
 
 FORMS += \
