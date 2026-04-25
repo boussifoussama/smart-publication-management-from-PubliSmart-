@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/bossi/OneDrive/Desktop/New folder (14)/smart-publication-management-from-PubliSmart-",
-      "program": "c:/Users/bossi/OneDrive/Desktop/New folder (14)/smart-publication-management-from-PubliSmart-/build/Debug/outDebug",
+      "cwd": "c:/Users/bossi/OneDrive/Desktop/New folder (16)/smart-publication-management-from-PubliSmart-",
+      "program": "c:/Users/bossi/OneDrive/Desktop/New folder (16)/smart-publication-management-from-PubliSmart-/build/Desktop_Qt_6_7_3_MinGW_64_bit-Debug/debug/SmartMarket.exe",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

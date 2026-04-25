@@ -48,34 +48,16 @@ QString ArduinoBridge::lastError() const
     return serial.errorString();
 }
 
-/**
- * @brief Transmet une commande texte via le port série vers l'Arduino.
- * 
- * Cette méthode gère l'aspect "Output" du côté PC. Elle est utilisée pour
- * envoyer les messages "OPEN" ou "DENY" qui seront interprétés par l'Arduino
- * pour actionner le servomoteur.
- * 
- * @param command La chaîne de caractères à envoyer (ex: "OPEN")
- * @return true si l'envoi a réussi, false sinon
- */
 bool ArduinoBridge::sendCommand(const QString &command)
 {
-    // Vérification de la connexion avant l'envoi
     if (!serial.isOpen())
         return false;
 
-    // Conversion de la commande en format UTF-8
     QByteArray payload = command.toUtf8();
-    
-    // Ajout d'un caractère de fin de ligne (\n) si absent,
-    // car l'Arduino utilise \n pour détecter la fin d'une commande.
     if (!payload.endsWith('\n'))
         payload.append('\n');
 
-    // Écriture effective sur le port série (Sortie vers le matériel)
     const qint64 written = serial.write(payload);
-    
-    // On retourne vrai si tous les octets ont été envoyés
     return written == payload.size();
 }
 

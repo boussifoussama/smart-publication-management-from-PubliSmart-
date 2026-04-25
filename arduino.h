@@ -15,10 +15,6 @@ public:
     void disconnectPort();
     bool isConnected() const;
     QString lastError() const;
-    /**
-     * @brief Envoie une commande brute à l'Arduino (ex: "OPEN", "DENY").
-     * C'est le point de sortie principal pour piloter le servomoteur depuis l'application.
-     */
     bool sendCommand(const QString &command);
 
 signals:

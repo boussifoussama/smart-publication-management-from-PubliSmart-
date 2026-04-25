@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-
+# Script pour générer le fichier smartmarket.ui complet avec les styles EXACTS de l'original
 
 # Ce script crée un fichier UI qui combine:
 # - Page 0: Login (avec EXACTEMENT le style original)
 # - Page 1: Publication (avec EXACTEMENT le style original)
 
-print("smartmarket.ui avec vos styles EXACTS...")
+print("🎨 Génération du fichier smartmarket.ui avec vos styles EXACTS...")
 
 with open('smartmarket.ui', 'w', encoding='utf-8') as f:
     f.write('''<?xml version="1.0" encoding="UTF-8"?>
@@ -280,7 +280,7 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
     </widget>
 ''')
 
-   
+    print("✅ Page Login créée avec style EXACT")
     
     # Fermer le fichier pour l'instant
     f.write('''
@@ -302,4 +302,5 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
  <connections/>
 </ui>''')
 
-
+print("✅ Fichier UI créé (Page Login)")
+print("\nℹ️  La page Publication sera ajoutée séparément...")

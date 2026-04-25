@@ -59,8 +59,6 @@ private slots:
     void onSimilariteReply(QNetworkReply *reply);
     void onCompletudReply(QNetworkReply *reply);
 
-<<<<<<< Updated upstream
-=======
     // Conference UI slots
     void on_conf_pushButton_5_clicked();
     void on_conf_pushButton_8_clicked();
@@ -76,7 +74,6 @@ private slots:
     void on_btnSortPubAsc_clicked();
     void on_btnSortPubDesc_clicked();
 
->>>>>>> Stashed changes
 private:
     Ui::SmartMarket *ui;
     QSqlQueryModel  *publicationModel;
@@ -104,6 +101,10 @@ private:
     void setupConferencePage();
     void loadConferenceTable();
     void loadParticipantTable();
+    void updateConferenceParticipantsChart();
+    void updateConferenceDaysChart();
+    void updateConferenceCalendar();
+    void on_conf_calendarWidget_selectionChanged();
     bool ensureConferenceTables(QSqlDatabase &db);
     bool createConferenceTables(QSqlDatabase &db);
     bool ensureParticipantUidColumn(QSqlDatabase &db);

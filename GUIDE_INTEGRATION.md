@@ -194,11 +194,7 @@ RESOURCES += \
 ## 🔐 IDENTIFIANTS DE TEST
 
 **Login:**
-<<<<<<< Updated upstream
-- Email: `Selim.ASCHI@esprit.tn` (insensible à la casse)
-=======
 - Email: `selim@esprit.tn` (insensible à la casse)
->>>>>>> Stashed changes
 - Mot de passe: `selim`
 
 ## 📝 CHECKLIST AVANT COMPILATION

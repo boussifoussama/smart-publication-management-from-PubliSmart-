@@ -126,11 +126,7 @@ PAGE PUBLICATION (gardez VOS noms) :
 🔐 IDENTIFIANTS DE TEST
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-<<<<<<< Updated upstream
-Email    : Selim.ASCHI@esprit.tn
-=======
 Email    : selim@esprit.tn
->>>>>>> Stashed changes
 Password : selim
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

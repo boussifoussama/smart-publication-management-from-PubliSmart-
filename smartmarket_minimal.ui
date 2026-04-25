@@ -1,0 +1,1279 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SmartMarket</class>
+ <widget class="QMainWindow" name="SmartMarket">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1298</width>
+    <height>768</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>SmartMarket - Système de Gestion</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   
+   <!-- STACKED WIDGET PRINCIPAL -->
+   <widget class="QStackedWidget" name="stackedWidgetMain">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>1298</width>
+      <height>730</height>
+     </rect>
+    </property>
+    <property name="currentIndex">
+     <number>0</number>
+    </property>
+    
+    <!-- PAGE 0: LOGIN -->
+    <widget class="QWidget" name="pageLogin">
+     
+     <!-- Partie gauche Login -->
+     <widget class="QGroupBox" name="groupBoxLoginLeft">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>640</width>
+        <height>730</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: #071526; border: none;</string>
+      </property>
+      <property name="title">
+       <string></string>
+      </property>
+      
+      <!-- Logo -->
+      <widget class="QLabel" name="labelLogo">
+       <property name="geometry">
+        <rect>
+         <x>70</x>
+         <y>50</y>
+         <width>500</width>
+         <height>150</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">font: 900 48pt "Segoe UI"; color: white;</string>
+       </property>
+       <property name="text">
+        <string>SmartMarket</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+      
+      <!-- Se connecter -->
+      <widget class="QLabel" name="labelSeConnecter">
+       <property name="geometry">
+        <rect>
+         <x>50</x>
+         <y>220</y>
+         <width>200</width>
+         <height>30</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">font: 900 14pt "Segoe UI"; color: white;</string>
+       </property>
+       <property name="text">
+        <string>Se connecter :</string>
+       </property>
+      </widget>
+      
+      <!-- Email -->
+      <widget class="QLabel" name="labelEmail">
+       <property name="geometry">
+        <rect>
+         <x>100</x>
+         <y>270</y>
+         <width>120</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: white;</string>
+       </property>
+       <property name="text">
+        <string>Adresse mail :</string>
+       </property>
+      </widget>
+      
+      <widget class="QLineEdit" name="lineEditLoginEmail">
+       <property name="geometry">
+        <rect>
+         <x>230</x>
+         <y>265</y>
+         <width>350</width>
+         <height>30</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QLineEdit { color: black; background-color: white; border: 2px solid #555; border-radius: 5px; padding: 5px; }</string>
+       </property>
+      </widget>
+      
+      <!-- Password -->
+      <widget class="QLabel" name="labelPassword">
+       <property name="geometry">
+        <rect>
+         <x>100</x>
+         <y>320</y>
+         <width>120</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">color: white;</string>
+       </property>
+       <property name="text">
+        <string>Mot de passe :</string>
+       </property>
+      </widget>
+      
+      <widget class="QLineEdit" name="lineEditLoginPassword">
+       <property name="geometry">
+        <rect>
+         <x>230</x>
+         <y>315</y>
+         <width>350</width>
+         <height>30</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QLineEdit { color: black; background-color: white; border: 2px solid #555; border-radius: 5px; padding: 5px; }</string>
+       </property>
+       <property name="echoMode">
+        <enum>QLineEdit::Password</enum>
+       </property>
+      </widget>
+      
+      <!-- Bouton Entrer -->
+      <widget class="QPushButton" name="btnLoginEntrer">
+       <property name="geometry">
+        <rect>
+         <x>230</x>
+         <y>380</y>
+         <width>180</width>
+         <height>50</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Entrer</string>
+       </property>
+      </widget>
+      
+      <!-- Mot de passe oublié -->
+      <widget class="QLabel" name="labelMdpOublie">
+       <property name="geometry">
+        <rect>
+         <x>50</x>
+         <y>480</y>
+         <width>550</width>
+         <height>30</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">font: 900 10pt "Segoe UI"; color: white;</string>
+       </property>
+       <property name="text">
+        <string>Mot de passe oublié ? Entrez votre email :</string>
+       </property>
+      </widget>
+      
+      <widget class="QLineEdit" name="lineEditLoginMotDePasseOublie">
+       <property name="geometry">
+        <rect>
+         <x>230</x>
+         <y>520</y>
+         <width>350</width>
+         <height>30</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QLineEdit { color: black; background-color: white; border: 2px solid #555; border-radius: 5px; padding: 5px; }</string>
+       </property>
+      </widget>
+      
+      <widget class="QPushButton" name="btnLoginEnvoyer">
+       <property name="geometry">
+        <rect>
+         <x>230</x>
+         <y>580</y>
+         <width>180</width>
+         <height>50</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Envoyer</string>
+       </property>
+      </widget>
+      
+     </widget>
+     
+     <!-- Partie droite (image) -->
+     <widget class="QGroupBox" name="groupBoxLoginRight">
+      <property name="geometry">
+       <rect>
+        <x>640</x>
+        <y>0</y>
+        <width>658</width>
+        <height>730</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: white; border: none;</string>
+      </property>
+      <property name="title">
+       <string></string>
+      </property>
+      
+      <widget class="QLabel" name="labelBienvenue">
+       <property name="geometry">
+        <rect>
+         <x>50</x>
+         <y>250</y>
+         <width>558</width>
+         <height>230</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">font: 900 36pt "Segoe UI"; color: #0B1F33;</string>
+       </property>
+       <property name="text">
+        <string>Bienvenue
+
+Gestion intelligente 
+de la recherche scientifique</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </widget>
+     
+    </widget>
+    
+    <!-- PAGE 1: PUBLICATION -->
+    <widget class="QWidget" name="pagePublication">
+     
+     <!-- Sidebar -->
+     <widget class="QGroupBox" name="groupBox_11">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>210</width>
+        <height>730</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">background-color: #071526; border: none;</string>
+       </property>
+      <property name="title">
+       <string></string>
+      </property>
+      
+      <!-- Logo petit -->
+      <widget class="QLabel" name="labelLogoSidebar">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>20</y>
+         <width>170</width>
+         <height>80</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">font: 900 18pt "Segoe UI"; color: white;</string>
+       </property>
+       <property name="text">
+        <string>SmartMarket</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+      
+      <!-- Boutons navigation -->
+      <widget class="QPushButton" name="btnSidebarPublications">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>200</y>
+         <width>170</width>
+         <height>50</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color: rgba(255,255,255,0.25); color: white; text-align: left; padding-left: 15px; border-radius: 10px;</string>
+       </property>
+       <property name="text">
+        <string>📄 Publications</string>
+       </property>
+      </widget>
+      
+      <widget class="QPushButton" name="btnSidebarReviewers">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>270</y>
+         <width>170</width>
+         <height>50</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color: transparent; color: white; text-align: left; padding-left: 15px; border-radius: 10px;</string>
+       </property>
+       <property name="text">
+        <string>👤 Reviewers</string>
+       </property>
+      </widget>
+      
+      <widget class="QPushButton" name="btnSidebarConferences">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>340</y>
+         <width>170</width>
+         <height>50</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color: transparent; color: white; text-align: left; padding-left: 15px; border-radius: 10px;</string>
+       </property>
+       <property name="text">
+        <string>🎤 Conférences</string>
+       </property>
+      </widget>
+      
+      <widget class="QPushButton" name="btnSidebarEquipements">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>410</y>
+         <width>170</width>
+         <height>50</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">background-color: transparent; color: white; text-align: left; padding-left: 15px; border-radius: 10px;</string>
+       </property>
+       <property name="text">
+        <string>🔧 Équipements</string>
+       </property>
+      </widget>
+      
+     </widget>
+     
+     <!-- Zone principale avec TabWidget -->
+     <widget class="QTabWidget" name="tabWidgetPublication">
+      <property name="geometry">
+       <rect>
+        <x>210</x>
+        <y>10</y>
+        <width>1080</width>
+        <height>710</height>
+       </rect>
+      </property>
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      
+      <!-- ONGLET 1: LISTE DES PUBLICATIONS -->
+      <widget class="QWidget" name="tabListePublications">
+       <attribute name="title">
+        <string>Liste des publications</string>
+       </attribute>
+       
+       <!-- Tableau principal -->
+       <widget class="QTableView" name="tableViewPublications">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>10</y>
+          <width>640</width>
+          <height>160</height>
+         </rect>
+        </property>
+       </widget>
+       
+       <!-- Groupe Supprimer -->
+       <widget class="QGroupBox" name="groupBoxSupprimer">
+        <property name="geometry">
+         <rect>
+          <x>660</x>
+          <y>10</y>
+          <width>400</width>
+          <height>120</height>
+         </rect>
+        </property>
+        <property name="title">
+         <string>Supprimer une publication</string>
+        </property>
+        
+        <widget class="QLabel" name="labelSupprimerId">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>30</y>
+           <width>250</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>ID de la publication à supprimer :</string>
+         </property>
+        </widget>
+        
+        <widget class="QLineEdit" name="lineEditPubSupprimer">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>55</y>
+           <width>280</width>
+           <height>25</height>
+          </rect>
+         </property>
+        </widget>
+        
+        <widget class="QPushButton" name="btnSupprimerPublication">
+         <property name="geometry">
+          <rect>
+           <x>300</x>
+           <y>50</y>
+           <width>90</width>
+           <height>35</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Effacer</string>
+         </property>
+        </widget>
+        
+       </widget>
+       
+       <!-- Groupe Ajout/Modification -->
+       <widget class="QGroupBox" name="groupBoxAjout">
+        <property name="geometry">
+         <rect>
+          <x>660</x>
+          <y>140</y>
+          <width>400</width>
+          <height>400</height>
+         </rect>
+        </property>
+        <property name="title">
+         <string>Ajout ou modification de publication</string>
+        </property>
+        
+        <!-- Titre -->
+        <widget class="QLabel" name="labelPubTitre">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>35</y>
+           <width>60</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Titre :</string>
+         </property>
+        </widget>
+        
+        <widget class="QLineEdit" name="lineEditPubTitre">
+         <property name="geometry">
+          <rect>
+           <x>100</x>
+           <y>30</y>
+           <width>280</width>
+           <height>25</height>
+          </rect>
+         </property>
+        </widget>
+        
+        <!-- Source -->
+        <widget class="QLabel" name="labelPubSource">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>70</y>
+           <width>60</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Source :</string>
+         </property>
+        </widget>
+        
+        <widget class="QLineEdit" name="lineEditPubSource">
+         <property name="geometry">
+          <rect>
+           <x>100</x>
+           <y>65</y>
+           <width>280</width>
+           <height>25</height>
+          </rect>
+         </property>
+        </widget>
+        
+        <!-- Créateur -->
+        <widget class="QLabel" name="labelPubCreateur">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>105</y>
+           <width>100</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Nom créateur :</string>
+         </property>
+        </widget>
+        
+        <widget class="QLineEdit" name="lineEditPubCreateur">
+         <property name="geometry">
+          <rect>
+           <x>120</x>
+           <y>100</y>
+           <width>260</width>
+           <height>25</height>
+          </rect>
+         </property>
+        </widget>
+        
+        <!-- Domaine -->
+        <widget class="QLabel" name="labelPubDomaine">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>140</y>
+           <width>80</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Domaine :</string>
+         </property>
+        </widget>
+        
+        <widget class="QComboBox" name="comboBoxPubDomaine">
+         <property name="geometry">
+          <rect>
+           <x>100</x>
+           <y>135</y>
+           <width>280</width>
+           <height>25</height>
+          </rect>
+         </property>
+         <item>
+          <property name="text">
+           <string>SVT</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Informatique</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Physique</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Math</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Chimie</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Biologie</string>
+          </property>
+         </item>
+        </widget>
+        
+        <!-- Date -->
+        <widget class="QLabel" name="labelPubDate">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>175</y>
+           <width>130</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Date de publication :</string>
+         </property>
+        </widget>
+        
+        <widget class="QDateEdit" name="dateEditPubDate">
+         <property name="geometry">
+          <rect>
+           <x>150</x>
+           <y>170</y>
+           <width>230</width>
+           <height>25</height>
+          </rect>
+         </property>
+        </widget>
+        
+        <!-- ID Modif -->
+        <widget class="QLabel" name="labelPubIdModif">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>250</y>
+           <width>210</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>ID de la publication à modifier :</string>
+         </property>
+        </widget>
+        
+        <widget class="QLineEdit" name="lineEditPubIdModif">
+         <property name="geometry">
+          <rect>
+           <x>220</x>
+           <y>245</y>
+           <width>160</width>
+           <height>25</height>
+          </rect>
+         </property>
+        </widget>
+        
+        <widget class="QLabel" name="labelPubInfo">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>280</y>
+           <width>380</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">font-size: 10pt; color: gray; font-style: italic;</string>
+         </property>
+         <property name="text">
+          <string>(laissez vide pour ajouter une nouvelle publication)</string>
+         </property>
+        </widget>
+        
+        <!-- Boutons -->
+        <widget class="QPushButton" name="btnAjouterPublication">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>350</y>
+           <width>110</width>
+           <height>40</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Ajouter</string>
+         </property>
+        </widget>
+        
+        <widget class="QPushButton" name="btnModifierPublication">
+         <property name="geometry">
+          <rect>
+           <x>270</x>
+           <y>350</y>
+           <width>110</width>
+           <height>40</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Modifier</string>
+         </property>
+        </widget>
+        
+       </widget>
+       
+       <!-- Groupe Recherche -->
+       <widget class="QGroupBox" name="groupBoxRecherche">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>180</y>
+          <width>300</width>
+          <height>290</height>
+         </rect>
+        </property>
+        <property name="title">
+         <string>Critères de recherche</string>
+        </property>
+        
+        <!-- Titre -->
+        <widget class="QLabel" name="labelRechercheTitre">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>30</y>
+           <width>50</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Titre :</string>
+         </property>
+        </widget>
+        
+        <widget class="QLineEdit" name="lineEditRechercheTitre">
+         <property name="geometry">
+          <rect>
+           <x>100</x>
+           <y>25</y>
+           <width>185</width>
+           <height>25</height>
+          </rect>
+         </property>
+        </widget>
+        
+        <!-- Source -->
+        <widget class="QLabel" name="labelRechercheSource">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>65</y>
+           <width>50</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Source :</string>
+         </property>
+        </widget>
+        
+        <widget class="QLineEdit" name="lineEditRechercheSource">
+         <property name="geometry">
+          <rect>
+           <x>100</x>
+           <y>60</y>
+           <width>185</width>
+           <height>25</height>
+          </rect>
+         </property>
+        </widget>
+        
+        <!-- Domaine -->
+        <widget class="QLabel" name="labelRechercheDomaine">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>100</y>
+           <width>70</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Domaine :</string>
+         </property>
+        </widget>
+        
+        <widget class="QComboBox" name="comboBoxRechercheDomaine">
+         <property name="geometry">
+          <rect>
+           <x>100</x>
+           <y>95</y>
+           <width>185</width>
+           <height>25</height>
+          </rect>
+         </property>
+         <item>
+          <property name="text">
+           <string>Tous</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>SVT</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Informatique</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>Physique</string>
+          </property>
+         </item>
+        </widget>
+        
+        <!-- Score -->
+        <widget class="QLabel" name="labelRechercheScore">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>135</y>
+           <width>50</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Score :</string>
+         </property>
+        </widget>
+        
+        <widget class="QLineEdit" name="lineEditRechercheScore">
+         <property name="geometry">
+          <rect>
+           <x>100</x>
+           <y>130</y>
+           <width>185</width>
+           <height>25</height>
+          </rect>
+         </property>
+        </widget>
+        
+        <!-- Statut -->
+        <widget class="QLabel" name="labelRechercheStatut">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>170</y>
+           <width>50</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Statut :</string>
+         </property>
+        </widget>
+        
+        <widget class="QLineEdit" name="lineEditRechercheStatut">
+         <property name="geometry">
+          <rect>
+           <x>100</x>
+           <y>165</y>
+           <width>185</width>
+           <height>25</height>
+          </rect>
+         </property>
+        </widget>
+        
+        <!-- Boutons -->
+        <widget class="QPushButton" name="btnReinitialiser">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>240</y>
+           <width>130</width>
+           <height>40</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Réinitialiser</string>
+         </property>
+        </widget>
+        
+        <widget class="QPushButton" name="btnRechercherPublication">
+         <property name="geometry">
+          <rect>
+           <x>155</x>
+           <y>240</y>
+           <width>130</width>
+           <height>40</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Rechercher</string>
+         </property>
+        </widget>
+        
+       </widget>
+       
+       <!-- Tableau filtré -->
+       <widget class="QTableView" name="tableViewPublicationsFiltered">
+        <property name="geometry">
+         <rect>
+          <x>320</x>
+          <y>180</y>
+          <width>330</width>
+          <height>290</height>
+         </rect>
+        </property>
+       </widget>
+       
+       <!-- Groupe Export -->
+       <widget class="QGroupBox" name="groupBoxExport">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>480</y>
+          <width>450</width>
+          <height>180</height>
+         </rect>
+        </property>
+        <property name="title">
+         <string>Export des publications</string>
+        </property>
+        
+        <!-- Publications à exporter -->
+        <widget class="QGroupBox" name="groupBoxExportType">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>30</y>
+           <width>130</width>
+           <height>90</height>
+          </rect>
+         </property>
+         <property name="title">
+          <string>Publications</string>
+         </property>
+         
+         <widget class="QRadioButton" name="radioButtonExportToutes">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>25</y>
+            <width>110</width>
+            <height>24</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Toutes</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+         
+         <widget class="QRadioButton" name="radioButtonExportFiltrees">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>55</y>
+            <width>110</width>
+            <height>24</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Filtrées</string>
+          </property>
+         </widget>
+         
+        </widget>
+        
+        <!-- Format -->
+        <widget class="QGroupBox" name="groupBoxExportFormat">
+         <property name="geometry">
+          <rect>
+           <x>160</x>
+           <y>30</y>
+           <width>270</width>
+           <height>90</height>
+          </rect>
+         </property>
+         <property name="title">
+          <string>Format</string>
+         </property>
+         
+         <widget class="QRadioButton" name="radioButtonExportPDF">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>25</y>
+            <width>90</width>
+            <height>24</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>PDF</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+         
+         <widget class="QRadioButton" name="radioButtonExportExcel">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>55</y>
+            <width>90</width>
+            <height>24</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Excel</string>
+          </property>
+         </widget>
+         
+         <widget class="QCheckBox" name="checkBoxIncludeVides">
+          <property name="geometry">
+           <rect>
+            <x>110</x>
+            <y>55</y>
+            <width>150</width>
+            <height>24</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Inclure champs vides</string>
+          </property>
+         </widget>
+         
+        </widget>
+        
+        <!-- Bouton Export -->
+        <widget class="QPushButton" name="btnExporterPublication">
+         <property name="geometry">
+          <rect>
+           <x>160</x>
+           <y>130</y>
+           <width>130</width>
+           <height>40</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Exporter</string>
+         </property>
+        </widget>
+        
+       </widget>
+       
+      </widget>
+      
+      <!-- ONGLET 2: ANALYSE -->
+      <widget class="QWidget" name="tabAnalyse">
+       <attribute name="title">
+        <string>Détection de similarité et complétude</string>
+       </attribute>
+       
+       <!-- Groupe Similarité -->
+       <widget class="QGroupBox" name="groupBoxSimilarite">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>10</y>
+          <width>250</width>
+          <height>150</height>
+         </rect>
+        </property>
+        <property name="title">
+         <string>Comparer 2 publications</string>
+        </property>
+        
+        <widget class="QLabel" name="labelSimilariteId1">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>30</y>
+           <width>150</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>ID publication 1 :</string>
+         </property>
+        </widget>
+        
+        <widget class="QLineEdit" name="lineEditSimilariteId1">
+         <property name="geometry">
+          <rect>
+           <x>160</x>
+           <y>25</y>
+           <width>80</width>
+           <height>25</height>
+          </rect>
+         </property>
+        </widget>
+        
+        <widget class="QLabel" name="labelSimilariteId2">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>65</y>
+           <width>150</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>ID publication 2 :</string>
+         </property>
+        </widget>
+        
+        <widget class="QLineEdit" name="lineEditSimilariteId2">
+         <property name="geometry">
+          <rect>
+           <x>160</x>
+           <y>60</y>
+           <width>80</width>
+           <height>25</height>
+          </rect>
+         </property>
+        </widget>
+        
+        <widget class="QPushButton" name="btnChoisirSimilarite">
+         <property name="geometry">
+          <rect>
+           <x>60</x>
+           <y>100</y>
+           <width>130</width>
+           <height>40</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Comparer</string>
+         </property>
+        </widget>
+        
+       </widget>
+       
+       <!-- Progress Bar Similarité -->
+       <widget class="QProgressBar" name="progressBarSimilarite">
+        <property name="geometry">
+         <rect>
+          <x>270</x>
+          <y>70</y>
+          <width>150</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <property name="value">
+         <number>0</number>
+        </property>
+       </widget>
+       
+       <!-- Groupe Complétude -->
+       <widget class="QGroupBox" name="groupBoxCompletude">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>170</y>
+          <width>250</width>
+          <height>120</height>
+         </rect>
+        </property>
+        <property name="title">
+         <string>Vérifier la complétude</string>
+        </property>
+        
+        <widget class="QLabel" name="labelCompletudId">
+         <property name="geometry">
+          <rect>
+           <x>10</x>
+           <y>30</y>
+           <width>150</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>ID de la publication :</string>
+         </property>
+        </widget>
+        
+        <widget class="QLineEdit" name="lineEditCompletudId">
+         <property name="geometry">
+          <rect>
+           <x>160</x>
+           <y>25</y>
+           <width>80</width>
+           <height>25</height>
+          </rect>
+         </property>
+        </widget>
+        
+        <widget class="QPushButton" name="btnChoisirCompletude">
+         <property name="geometry">
+          <rect>
+           <x>60</x>
+           <y>65</y>
+           <width>130</width>
+           <height>40</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Vérifier</string>
+         </property>
+        </widget>
+        
+       </widget>
+       
+       <!-- Progress Bar Complétude -->
+       <widget class="QProgressBar" name="progressBarCompletude">
+        <property name="geometry">
+         <rect>
+          <x>270</x>
+          <y>220</y>
+          <width>150</width>
+          <height>25</height>
+         </rect>
+        </property>
+        <property name="value">
+         <number>0</number>
+        </property>
+       </widget>
+       
+       <!-- Widget pour Pie Chart -->
+       <widget class="QWidget" name="chartWidgetStatut" native="true">
+        <property name="geometry">
+         <rect>
+          <x>450</x>
+          <y>10</y>
+          <width>600</width>
+          <height>280</height>
+         </rect>
+        </property>
+       </widget>
+       
+       <!-- Widget pour Bar Chart -->
+       <widget class="QWidget" name="domainChartWidget" native="true">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>300</y>
+          <width>1050</width>
+          <height>380</height>
+         </rect>
+        </property>
+       </widget>
+       
+      </widget>
+      
+     </widget>
+     
+    </widget>
+    
+   </widget>
+   
+  </widget>
+  
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1298</width>
+     <height>25</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

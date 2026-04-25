@@ -32,8 +32,6 @@
 #include <QRegularExpression>
 #include <QProcess>
 #include <QFileInfo>
-<<<<<<< Updated upstream
-=======
 #include <QMap>
 #include <QGraphicsScene>
 #include <QGraphicsTextItem>
@@ -42,7 +40,6 @@
 #include <QPageLayout>
 #include <QStandardPaths>
 #include <QSerialPortInfo>
->>>>>>> Stashed changes
 
 // PDF export via Qt
 #include <QPrinter>
@@ -53,6 +50,7 @@
 #include <QFontMetrics>
 #include <QDateTime>
 #include <QXmlStreamWriter>
+#include <QTextCharFormat>
 
 #include <QtCharts/QChartView>
 #include <QtCharts/QPieSeries>
@@ -81,7 +79,7 @@ static QString formatPercentage(int value, int total)
     return QString::number(bounded, 'f', 1) + "%";
 }
 
-// ── Domaines ─────────────────────────────────────────────────────────────────
+// â”€â”€ Domaines â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const QStringList SmartMarket::DOMAINES = {
     "Informatique", "Mathematiques", "Physique", "Chimie", "Biologie",
     "Medecine", "Droit", "Economie", "Histoire", "Geographie",
@@ -160,27 +158,12 @@ void SmartMarket::setupConferencePage()
 
     // Connect conference table refresh/filtering
     connect(ui->conf_lineEdit_2, &QLineEdit::textChanged, this, &SmartMarket::loadConferenceTable);
-
-    // Connect CRUD buttons for conferences
-    connect(ui->conf_pushButton_26, &QPushButton::clicked, this, &SmartMarket::addConference);
-    connect(ui->conf_pushButton_27, &QPushButton::clicked, this, &SmartMarket::modifyConference);
-    connect(ui->conf_pushButton_8, &QPushButton::clicked, this, &SmartMarket::deleteConference);
-
-    // Connect CRUD buttons for participants
-    connect(ui->conf_pushButton_19, &QPushButton::clicked, this, &SmartMarket::addParticipant);
-    connect(ui->conf_pushButton_10, &QPushButton::clicked, this, &SmartMarket::modifyParticipant);
-    connect(ui->conf_pushButton_12, &QPushButton::clicked, this, &SmartMarket::deleteParticipant);
+        connect(ui->conf_calendarWidget, &QCalendarWidget::selectionChanged,
+            this, &SmartMarket::on_conf_calendarWidget_selectionChanged);
 
     // Connect sorting buttons
     connect(ui->conf_pushButton_17, &QPushButton::clicked, this, &SmartMarket::sortConferencesByDateAsc);
     connect(ui->conf_pushButton_18, &QPushButton::clicked, this, &SmartMarket::sortConferencesByDateDesc);
-
-    // Connect export button
-    connect(ui->conf_pushButton_5, &QPushButton::clicked, this, &SmartMarket::exportConferencesToPDF);
-
-    // Connect filtering
-    connect(ui->conf_pushButton_21, &QPushButton::clicked, this, &SmartMarket::filterConferences);
-    connect(ui->conf_pushButton_20, &QPushButton::clicked, this, &SmartMarket::filterParticipants);
 
     // Load initial data
     loadConferenceTable();
@@ -192,31 +175,8 @@ void SmartMarket::loadConferenceTable()
     if (!confTableWidget) return;
 
     QString filter = ui->conf_lineEdit_2 ? ui->conf_lineEdit_2->text().trimmed().toLower() : QString();
-<<<<<<< Updated upstream
-
-    QSqlQuery query(db);
-    QString sql = "SELECT c.idconference, c.nom, c.lieu, c.datedebut, c.theme, "
-                  "(SELECT COUNT(*) FROM SELIM.participant p WHERE p.idconference = c.idconference) AS nombreparticipants "
-                  "FROM SELIM.conference c";
-
-    if (!filter.isEmpty()) {
-        sql += " WHERE LOWER(c.nom) LIKE :f OR LOWER(c.lieu) LIKE :f OR LOWER(c.theme) LIKE :f";
-    }
-    sql += " ORDER BY c.idconference";
-
-    query.prepare(sql);
-    if (!filter.isEmpty()) {
-        query.bindValue(":f", "%" + filter + "%");
-    }
-
-    if (!query.exec()) {
-        QMessageBox::critical(this, "Lecture conférences", "Echec SELECT : " + query.lastError().text());
-        return;
-    }
-=======
     Conference c;
     QSqlQueryModel *model = c.rechercher(filter);
->>>>>>> Stashed changes
 
     confTableWidget->setRowCount(0);
     for (int i = 0; i < model->rowCount(); ++i) {
@@ -230,6 +190,9 @@ void SmartMarket::loadConferenceTable()
     }
 
     loadParticipantTable();
+    updateConferenceParticipantsChart();
+    updateConferenceDaysChart();
+    updateConferenceCalendar();
 }
 
 void SmartMarket::loadParticipantTable()
@@ -237,24 +200,8 @@ void SmartMarket::loadParticipantTable()
     QTableWidget *participantTableWidget = ui->conf_tableWidget_2;
     if (!participantTableWidget) return;
 
-<<<<<<< Updated upstream
-    QSqlDatabase db = QSqlDatabase::database();
-    if (!db.isValid() || !db.isOpen()) {
-        if (!db.open()) {
-            QMessageBox::critical(this, "Base de données", "Connexion BD indisponible : " + db.lastError().text());
-            return;
-        }
-    }
-
-    QSqlQuery query(db);
-    if (!query.exec("SELECT id, nom, idconference FROM SELIM.participant ORDER BY id")) {
-        QMessageBox::critical(this, "Lecture participants", "Echec SELECT participant : " + query.lastError().text());
-        return;
-    }
-=======
     Participant p;
     QSqlQueryModel *model = p.afficher();
->>>>>>> Stashed changes
 
     participantTableWidget->setRowCount(0);
     participantTableWidget->setColumnCount(4);
@@ -267,8 +214,6 @@ void SmartMarket::loadParticipantTable()
         participantTableWidget->setItem(i, 2, new QTableWidgetItem(model->index(i, 2).data().toString()));
         participantTableWidget->setItem(i, 3, new QTableWidgetItem(model->index(i, 3).data().toString()));
     }
-<<<<<<< Updated upstream
-=======
 
     updateConferenceParticipantsChart();
 }
@@ -368,7 +313,7 @@ void SmartMarket::updateConferenceParticipantsChart()
     }
 
     if (totalCount <= 0) {
-        QGraphicsTextItem *text = scene->addText("Aucun participant renseigné");
+        QGraphicsTextItem *text = scene->addText("Aucun participant renseignÃ©");
         text->setPos(sceneW / 2 - 100, sceneH / 2);
         return;
     }
@@ -501,7 +446,7 @@ void SmartMarket::updateConferenceDaysChart()
     }
 
     if (totalCount <= 0) {
-        QGraphicsTextItem *text = scene->addText("Aucun jour planifié");
+        QGraphicsTextItem *text = scene->addText("Aucun jour planifiÃ©");
         text->setPos(sceneW / 2 - 80, sceneH / 2);
         return;
     }
@@ -587,81 +532,6 @@ void SmartMarket::updateConferenceDaysChart()
     }
 }
 
-void SmartMarket::updateConferenceCalendar()
-{
-    if (!ui->conf_calendarWidget || !ui->conf_tableWidget_7)
-        return;
-
-    const QList<QDate> selectedDates = ui->conf_calendarWidget->selectedDate().isValid()
-        ? QList<QDate>{ui->conf_calendarWidget->selectedDate()}
-        : QList<QDate>();
-
-    ui->conf_calendarWidget->setDateTextFormat(QDate(), QTextCharFormat());
-
-    const int rows = ui->conf_tableWidget_7->rowCount();
-    QTextCharFormat fmt;
-    fmt.setForeground(Qt::white);
-    fmt.setBackground(QBrush(Qt::red));
-    fmt.setFontWeight(QFont::Bold);
-
-    for (int r = 0; r < rows; ++r) {
-        const QString dateStr = ui->conf_tableWidget_7->item(r, 3)
-            ? ui->conf_tableWidget_7->item(r, 3)->text()
-            : QString();
-
-        const QDate d = QDate::fromString(dateStr, "yyyy-MM-dd");
-        if (d.isValid())
-            ui->conf_calendarWidget->setDateTextFormat(d, fmt);
-    }
-
-    if (!selectedDates.isEmpty())
-        ui->conf_calendarWidget->setSelectedDate(selectedDates.first());
-}
-
-void SmartMarket::on_conf_calendarWidget_selectionChanged()
-{
-    if (!ui->conf_calendarWidget || !ui->conf_tableWidget_7)
-        return;
-
-    const QDate selected = ui->conf_calendarWidget->selectedDate();
-    if (!selected.isValid())
-        return;
-
-    QStringList lines;
-    const int rows = ui->conf_tableWidget_7->rowCount();
-
-    for (int r = 0; r < rows; ++r) {
-        const QString dateStr = ui->conf_tableWidget_7->item(r, 3)
-            ? ui->conf_tableWidget_7->item(r, 3)->text()
-            : QString();
-
-        const QDate d = QDate::fromString(dateStr, "yyyy-MM-dd");
-        if (d != selected)
-            continue;
-
-        const QString nom = ui->conf_tableWidget_7->item(r, 1)
-            ? ui->conf_tableWidget_7->item(r, 1)->text()
-            : "(sans nom)";
-
-        const QString lieu = ui->conf_tableWidget_7->item(r, 2)
-            ? ui->conf_tableWidget_7->item(r, 2)->text()
-            : "";
-
-        const QString participants = ui->conf_tableWidget_7->item(r, 5)
-            ? ui->conf_tableWidget_7->item(r, 5)->text()
-            : "";
-
-        lines << nom + (lieu.isEmpty() ? "" : " - " + lieu)
-                    + (participants.isEmpty() ? "" : " | Participants: " + participants);
-    }
-
-    if (lines.isEmpty())
-        QMessageBox::information(this, "Calendrier", "Aucune conférence prévue ce jour.");
-    else
-        QMessageBox::information(this, "Calendrier", lines.join("\n"));
->>>>>>> Stashed changes
-}
-
 bool SmartMarket::tableExists(QSqlDatabase &db, const QString &tableName)
 {
     const QStringList tables = db.tables(QSql::Tables);
@@ -715,15 +585,15 @@ bool SmartMarket::ensureConferenceTables(QSqlDatabase &db)
 bool SmartMarket::ensureParticipantUidColumn(QSqlDatabase &db)
 {
     QSqlQuery probe(db);
-    if (probe.exec("SELECT uid_rfid FROM SELIM.participant WHERE 1=0"))
+    if (probe.exec("SELECT uid_rfid FROM OUSSAMA.participant WHERE 1=0"))
         return true;
 
     QSqlQuery alter(db);
-    if (!alter.exec("ALTER TABLE SELIM.participant ADD uid_rfid VARCHAR2(32)"))
+    if (!alter.exec("ALTER TABLE OUSSAMA.participant ADD uid_rfid VARCHAR2(32)"))
         return false;
 
     QSqlQuery idx(db);
-    idx.exec("CREATE UNIQUE INDEX idx_participant_uid_rfid ON SELIM.participant(uid_rfid)");
+    idx.exec("CREATE UNIQUE INDEX idx_participant_uid_rfid ON OUSSAMA.participant(uid_rfid)");
     return true;
 }
 
@@ -833,8 +703,8 @@ void SmartMarket::handleArduinoUid(const QString &uid)
 
     QSqlQuery q(db);
     q.prepare("SELECT p.nom, p.idconference, NVL(c.lieu, '') "
-              "FROM SELIM.participant p "
-              "LEFT JOIN SELIM.conference c ON c.idconference = p.idconference "
+              "FROM OUSSAMA.participant p "
+              "LEFT JOIN OUSSAMA.conference c ON c.idconference = p.idconference "
               "WHERE UPPER(TRIM(p.uid_rfid)) = :uid");
     q.bindValue(":uid", uid.toUpper());
 
@@ -869,82 +739,9 @@ void SmartMarket::handleArduinoUid(const QString &uid)
 // ================================================================
 void SmartMarket::initPublicationTable()
 {
-<<<<<<< Updated upstream
-    QSqlQuery testQ;
-    if (!testQ.exec("SELECT COUNT(*) FROM SELIM.PUBLICATION")) {
-        QMessageBox::critical(this, "Erreur BDD",
-                              "Impossible d acces a SELIM.PUBLICATION :\n" + testQ.lastError().text());
-        return;
-    }
-    testQ.next();
-    int rowCount = testQ.value(0).toInt();
-    qDebug() << "Lignes en BDD :" << rowCount;
-
-    QSqlQuery insertQ;
-    insertQ.prepare(
-        "INSERT INTO SELIM.PUBLICATION "
-        "(IDPUBLICATION, TITRE, SOURCE, DOMAINE, DATEPUBLICATION, STATUT, CONTENU) "
-        "VALUES (:id, :titre, :source, :domaine, TO_DATE(:date,'YYYY-MM-DD'), :statut, :contenu)"
-    );
-
-    QList<QVariantList> sampleRows = {
-        {"Publication sans source", "", "Informatique", "2024-02-01", "Non evaluee", "Test d une publication avec source manquante."},
-        {"Publication sans contenu", "arXiv", "Mathematiques", "2024-03-12", "Evaluee", ""},
-        {"Article rejete", "IEEE", "Physique", "2023-12-05", "Rejetee", "Etude refusee pour manque de details."},
-        {"Article en attente", "Springer", "Chimie", "2024-01-20", "En attente", "Relecture en cours."},
-        {"Sans statut", "ACM", "Biologie", "2024-04-10", "", "Publication a verifier."}
-    };
-
-    QSqlQuery checkQ;
-    QSqlQuery seqQ;
-    seqQ.exec("SELECT NVL(MAX(IDPUBLICATION),0) FROM SELIM.PUBLICATION");
-    int nextId = 1;
-    if (seqQ.next()) nextId = seqQ.value(0).toInt() + 1;
-
-    for (const QVariantList &row : sampleRows) {
-        checkQ.prepare("SELECT COUNT(*) FROM SELIM.PUBLICATION WHERE TITRE = :titre");
-        checkQ.bindValue(":titre", row[0]);
-        if (checkQ.exec() && checkQ.next() && checkQ.value(0).toInt() == 0) {
-            insertQ.bindValue(":id", nextId);
-            insertQ.bindValue(":titre", row[0]);
-            insertQ.bindValue(":source", row[1]);
-            insertQ.bindValue(":domaine", row[2]);
-            insertQ.bindValue(":date", row[3]);
-            insertQ.bindValue(":statut", row[4]);
-            insertQ.bindValue(":contenu", row[5]);
-            if (!insertQ.exec()) {
-                qDebug() << "Echec insertion publication de test :" << insertQ.lastError().text();
-            } else {
-                qDebug() << "Publication de test ajoutee :" << row[0] << "id=" << nextId;
-                nextId++;
-            }
-        }
-    }
-
-    publicationModel->setTable("SELIM.PUBLICATION");
-    publicationModel->setEditStrategy(QSqlTableModel::OnManualSubmit);
-    publicationModel->setHeaderData(0, Qt::Horizontal, "ID");
-    publicationModel->setHeaderData(1, Qt::Horizontal, "Titre");
-    publicationModel->setHeaderData(2, Qt::Horizontal, "Source");
-    publicationModel->setHeaderData(3, Qt::Horizontal, "Domaine");
-    publicationModel->setHeaderData(4, Qt::Horizontal, "Date");
-    publicationModel->setHeaderData(5, Qt::Horizontal, "Statut");
-    publicationModel->setHeaderData(6, Qt::Horizontal, "Contenu");
-
-    bool ok = publicationModel->select();
-    if (!ok) {
-        QMessageBox::critical(this, "Erreur modele",
-                              "Echec select() :\n" + publicationModel->lastError().text());
-        return;
-    }
-    while (publicationModel->canFetchMore())
-        publicationModel->fetchMore();
-
-=======
     Publication p;
     publicationModel = p.afficher();
     
->>>>>>> Stashed changes
     ui->tableView->setModel(publicationModel);
     ui->tableView->horizontalHeader()->setStretchLastSection(true);
     ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
@@ -954,9 +751,15 @@ void SmartMarket::initPublicationTable()
     ui->tableView->setSortingEnabled(true);
     ui->tableView->show();
 
-    // Explicit connections for sorting
-    connect(ui->btnSortPubAsc, &QPushButton::clicked, this, &SmartMarket::on_btnSortPubAsc_clicked);
-    connect(ui->btnSortPubDesc, &QPushButton::clicked, this, &SmartMarket::on_btnSortPubDesc_clicked);
+    // Connect sorting buttons only if they exist in the currently loaded UI.
+    if (QPushButton *sortAscButton = findChild<QPushButton*>("btnSortPubAsc")) {
+        connect(sortAscButton, &QPushButton::clicked,
+                this, &SmartMarket::on_btnSortPubAsc_clicked, Qt::UniqueConnection);
+    }
+    if (QPushButton *sortDescButton = findChild<QPushButton*>("btnSortPubDesc")) {
+        connect(sortDescButton, &QPushButton::clicked,
+                this, &SmartMarket::on_btnSortPubDesc_clicked, Qt::UniqueConnection);
+    }
 }
 
 // ================================================================
@@ -1004,11 +807,7 @@ void SmartMarket::refreshCharts()
         return;
 
     QSqlQuery qStat;
-<<<<<<< Updated upstream
-    qStat.exec("SELECT STATUT, COUNT(*) FROM SELIM.PUBLICATION GROUP BY STATUT");
-    QPieSeries *pie = new QPieSeries();
-=======
-    if (!qStat.exec("SELECT NVL(STATUT, 'Inconnu'), COUNT(*) FROM SELIM.PUBLICATION GROUP BY NVL(STATUT, 'Inconnu')")) {
+    if (!qStat.exec("SELECT NVL(STATUT, 'Inconnu'), COUNT(*) FROM OUSSAMA.PUBLICATION GROUP BY NVL(STATUT, 'Inconnu')")) {
         QMessageBox::warning(this, "Graphiques", "Impossible de charger les statuts : " + qStat.lastError().text());
         return;
     }
@@ -1016,7 +815,6 @@ void SmartMarket::refreshCharts()
     struct StatRow { QString label; int count; };
     QList<StatRow> statRows;
     int statTotal = 0;
->>>>>>> Stashed changes
     while (qStat.next()) {
         StatRow row;
         row.label = qStat.value(0).toString().trimmed();
@@ -1043,7 +841,7 @@ void SmartMarket::refreshCharts()
 
     QChart *pc = new QChart();
     pc->addSeries(pie);
-    pc->setTitle("Répartition par statut (pourcentages)");
+    pc->setTitle("RÃ©partition par statut (pourcentages)");
     pc->legend()->setAlignment(Qt::AlignRight);
     pc->setBackgroundVisible(false);
     pc->setAnimationOptions(QChart::AllAnimations);
@@ -1055,7 +853,7 @@ void SmartMarket::refreshCharts()
     if (!qDom.exec(
         "SELECT CASE WHEN TRIM(NVL(DOMAINE,'') ) = '' THEN 'Inconnu' ELSE DOMAINE END AS DOMAINE, "
         "COUNT(*) AS CNT "
-        "FROM SELIM.PUBLICATION "
+        "FROM OUSSAMA.PUBLICATION "
         "GROUP BY CASE WHEN TRIM(NVL(DOMAINE,'')) = '' THEN 'Inconnu' ELSE DOMAINE END "
         "ORDER BY CNT DESC, DOMAINE"
     )) {
@@ -1123,12 +921,12 @@ void SmartMarket::on_pushButton_15_clicked()
         QMessageBox::warning(this, "Attention", "Adresse email invalide.");
         return;
     }
-<<<<<<< Updated upstream
-    if (email.compare("Selim.ASCHI@esprit.tn", Qt::CaseInsensitive) == 0
-=======
-    if (email.compare("selim@a.t", Qt::CaseInsensitive) == 0
->>>>>>> Stashed changes
-        && password == "selim")
+    const bool isSelimAccount = (email.compare("selim@esprit.tn", Qt::CaseInsensitive) == 0
+                                 && password == "selim");
+    const bool isLegacyAccount = (email.compare("0000@a.t", Qt::CaseInsensitive) == 0
+                                  && password == "0000");
+
+    if (isSelimAccount || isLegacyAccount)
     {
         ui->stackedWidgetMain->setCurrentIndex(1);
         initPublicationTable();
@@ -1173,27 +971,11 @@ void SmartMarket::on_pushButton_19_clicked()
     }
 
     QSqlQuery seqQ;
-    seqQ.exec("SELECT NVL(MAX(IDPUBLICATION),0)+1 FROM SELIM.PUBLICATION");
+    seqQ.exec("SELECT NVL(MAX(IDPUBLICATION),0)+1 FROM OUSSAMA.PUBLICATION");
     int newId = 1;
     if (seqQ.next()) newId = seqQ.value(0).toInt();
 
-<<<<<<< Updated upstream
-    QSqlQuery q;
-    q.prepare(
-        "INSERT INTO SELIM.PUBLICATION "
-        "(IDPUBLICATION, TITRE, SOURCE, DOMAINE, DATEPUBLICATION, STATUT, CONTENU) "
-        "VALUES (:id, :titre, :source, :domaine, "
-        "TO_DATE(:date,'YYYY-MM-DD'), 'Non evaluee', :contenu)"
-        );
-    q.bindValue(":id",      newId);
-    q.bindValue(":titre",   titre);
-    q.bindValue(":source",  source);
-    q.bindValue(":domaine", domaine);
-    q.bindValue(":date",    date);
-    q.bindValue(":contenu", contenu);
-=======
     Publication p(newId, titre, source, domaine, date, "Non evaluee", contenu);
->>>>>>> Stashed changes
 
     if (p.ajouter()) {
         QMessageBox::information(this, "Succes", QString("Publication ajoutee ! ID : %1").arg(newId));
@@ -1227,37 +1009,10 @@ void SmartMarket::on_pushButton_20_clicked()
         QMessageBox::warning(this, "Attention", "L ID doit etre un entier positif."); return;
     }
 
-<<<<<<< Updated upstream
-    QSqlQuery chk;
-    chk.prepare("SELECT COUNT(*) FROM SELIM.PUBLICATION WHERE IDPUBLICATION=:id");
-    chk.bindValue(":id", id); chk.exec();
-    if (chk.next() && chk.value(0).toInt() == 0) {
-        QMessageBox::warning(this, "Erreur", QString("ID %1 introuvable.").arg(id)); return;
-    }
-
-    QSqlQuery q;
-    q.prepare(
-        "UPDATE SELIM.PUBLICATION "
-        "SET TITRE=:titre, SOURCE=:source, DOMAINE=:domaine, "
-        "DATEPUBLICATION=TO_DATE(:date,'YYYY-MM-DD'), CONTENU=:contenu "
-        "WHERE IDPUBLICATION=:id"
-        );
-    q.bindValue(":titre",   titre);
-    q.bindValue(":source",  source);
-    q.bindValue(":domaine", domaine);
-    q.bindValue(":date",    date);
-    q.bindValue(":contenu", contenu);
-    q.bindValue(":id",      id);
-
-    if (q.exec()) {
-        QMessageBox::information(this, "Succes",
-                                 QString("Publication ID %1 modifiee !").arg(id));
-=======
     Publication p(id, titre, source, domaine, date, "Non evaluee", contenu);
 
     if (p.modifier()) {
         QMessageBox::information(this, "Succes", QString("Publication ID %1 modifiee !").arg(id));
->>>>>>> Stashed changes
         ui->lineEdit_16->clear();
         ui->lineEdit_17->clear();
         ui->lineEdit_18->clear();
@@ -1282,32 +1037,9 @@ void SmartMarket::on_pushButton_8_clicked()
         QMessageBox::warning(this, "Attention", "L ID doit etre un entier positif."); return;
     }
 
-<<<<<<< Updated upstream
-    QSqlQuery chk;
-    chk.prepare("SELECT TITRE FROM SELIM.PUBLICATION WHERE IDPUBLICATION=:id");
-    chk.bindValue(":id", id); chk.exec();
-    if (!chk.next()) {
-        QMessageBox::warning(this, "Erreur", QString("ID %1 introuvable.").arg(id)); return;
-    }
-    QString titre = chk.value(0).toString();
-
-    auto rep = QMessageBox::question(this, "Confirmation",
-                                     QString("Supprimer \"%1\" (ID %2) ?").arg(titre).arg(id),
-                                     QMessageBox::Yes | QMessageBox::No);
-    if (rep != QMessageBox::Yes) return;
-
-    QSqlQuery q;
-    q.prepare("DELETE FROM SELIM.PUBLICATION WHERE IDPUBLICATION=:id");
-    q.bindValue(":id", id);
-
-    if (q.exec()) {
-        QMessageBox::information(this, "Succes",
-                                 QString("Publication ID %1 supprimee !").arg(id));
-=======
     Publication p;
     if (p.supprimer(id)) {
         QMessageBox::information(this, "Succes", QString("Publication ID %1 supprimee !").arg(id));
->>>>>>> Stashed changes
         ui->lineEdit_9->clear();
         refreshAll();
     } else {
@@ -1381,23 +1113,6 @@ void SmartMarket::on_btnSortPubDesc_clicked()
 }
 
 // ================================================================
-// TRI PUBLICATIONS
-// ================================================================
-void SmartMarket::on_btnSortPubAsc_clicked()
-{
-    Publication p;
-    publicationModel = p.trier("DATEPUBLICATION", "ASC");
-    ui->tableView->setModel(publicationModel);
-}
-
-void SmartMarket::on_btnSortPubDesc_clicked()
-{
-    Publication p;
-    publicationModel = p.trier("DATEPUBLICATION", "DESC");
-    ui->tableView->setModel(publicationModel);
-}
-
-// ================================================================
 // EXPORT PDF â€” 100% FONCTIONNEL avec QPrinter + QPainter
 // ================================================================
 void SmartMarket::on_pushButton_21_clicked()
@@ -1435,7 +1150,7 @@ void SmartMarket::exporterPDF(bool toutesPublications)
     QSqlQuery q;
     QString sql = "SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, "
                   "TO_CHAR(DATEPUBLICATION,'DD/MM/YYYY'), STATUT, CONTENU "
-                  "FROM SELIM.PUBLICATION";
+                  "FROM OUSSAMA.PUBLICATION";
 
     // Si on exporte seulement les publications filtrÃ©es
     if (!toutesPublications) {
@@ -1473,7 +1188,7 @@ void SmartMarket::exporterPDF(bool toutesPublications)
         return;
     }
 
-    // ── Créer le PDF via QPrinter ────────────────────────────────
+    // â”€â”€ CrÃ©er le PDF via QPrinter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     QPrinter printer(QPrinter::ScreenResolution);
     printer.setOutputFormat(QPrinter::PdfFormat);
     printer.setOutputFileName(filePath);
@@ -1583,7 +1298,7 @@ void SmartMarket::exporterPDF(bool toutesPublications)
             painter.setPen(colorTitle);
             painter.drawText(QRect(marginX, currentY, contentW, titleH),
                              Qt::AlignCenter,
-                             "RAPPORT DES PUBLICATIONS — SmartMarket");
+                             "RAPPORT DES PUBLICATIONS â€” SmartMarket");
             currentY += titleH + 8;
 
             // MÃ©ta-info
@@ -1593,7 +1308,7 @@ void SmartMarket::exporterPDF(bool toutesPublications)
                              QString("Genere le : %1   |   Total : %2 publication(s)   |   Filtre : %3")
                                  .arg(QDateTime::currentDateTime().toString("dd/MM/yyyy HH:mm"))
                                  .arg(rows.size())
-                                 .arg(toutesPublications ? "Toutes" : "Filtrées"));
+                                 .arg(toutesPublications ? "Toutes" : "FiltrÃ©es"));
             currentY += 30;
             firstPage = false;
         }
@@ -1662,7 +1377,7 @@ void SmartMarket::exporterExcel(bool toutesPublications)
     QSqlQuery q;
     QString sql = "SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, "
                   "TO_CHAR(DATEPUBLICATION,'DD/MM/YYYY'), STATUT, CONTENU "
-                  "FROM SELIM.PUBLICATION";
+                  "FROM OUSSAMA.PUBLICATION";
 
     if (!toutesPublications) {
         if (!lastPubFilter.isEmpty())
@@ -1767,7 +1482,7 @@ void SmartMarket::exporterExcel(bool toutesPublications)
     xml.writeAttribute("ss:MergeAcross", "6");
     xml.writeStartElement("Data");
     xml.writeAttribute("ss:Type", "String");
-    xml.writeCharacters("RAPPORT DES PUBLICATIONS — SmartMarket");
+    xml.writeCharacters("RAPPORT DES PUBLICATIONS â€” SmartMarket");
     xml.writeEndElement();
     xml.writeEndElement();
     xml.writeEndElement();
@@ -1781,7 +1496,7 @@ void SmartMarket::exporterExcel(bool toutesPublications)
     xml.writeCharacters(QString("Genere le : %1   |   Total : %2 publication(s)   |   Filtre : %3")
                             .arg(QDateTime::currentDateTime().toString("dd/MM/yyyy HH:mm"))
                             .arg(rows.size())
-                            .arg(toutesPublications ? "Toutes" : "Filtrées"));
+                            .arg(toutesPublications ? "Toutes" : "FiltrÃ©es"));
     xml.writeEndElement();
     xml.writeEndElement();
     xml.writeEndElement();
@@ -1842,7 +1557,7 @@ void SmartMarket::on_pushButton_6_clicked()
     // RÃ©cupÃ©rer les deux publications
     QSqlQuery q;
     q.prepare("SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, CONTENU, STATUT "
-              "FROM SELIM.PUBLICATION WHERE IDPUBLICATION IN (:a, :b)");
+              "FROM OUSSAMA.PUBLICATION WHERE IDPUBLICATION IN (:a, :b)");
     q.bindValue(":a", id1.toInt());
     q.bindValue(":b", id2.toInt());
     q.exec();
@@ -2046,7 +1761,7 @@ void SmartMarket::on_pushButton_7_clicked()
     QSqlQuery q;
     q.prepare("SELECT TITRE, SOURCE, DOMAINE, "
               "TO_CHAR(DATEPUBLICATION,'DD/MM/YYYY'), STATUT, CONTENU "
-              "FROM SELIM.PUBLICATION WHERE IDPUBLICATION=:id");
+              "FROM OUSSAMA.PUBLICATION WHERE IDPUBLICATION=:id");
     q.bindValue(":id", idStr.toInt());
     q.exec();
 
@@ -2264,122 +1979,162 @@ void SmartMarket::openConferenceModule()
 }
 
 // Conference CRUD Operations
-<<<<<<< Updated upstream
-=======
 void SmartMarket::on_conf_pushButton_26_clicked()
 {
-    const int id = ui->conf_lineEdit_26 ? ui->conf_lineEdit_26->text().toInt() : 0;
-    const QString nom = ui->conf_lineEdit_27 ? ui->conf_lineEdit_27->text().trimmed() : QString();
-    const QString lieu = ui->conf_lineEdit_24 ? ui->conf_lineEdit_24->text().trimmed() : QString();
-    const QDate date = ui->conf_dateEdit_6 ? ui->conf_dateEdit_6->date() : QDate();
-    const QString theme = ui->conf_lineEdit_25 ? ui->conf_lineEdit_25->text().trimmed() : QString();
+    const QString idText = ui->conf_lineEdit_26->text().trimmed();
+    const QString nom = ui->conf_lineEdit_27->text().trimmed();
+    const QString lieu = ui->conf_lineEdit_24->text().trimmed();
+    const QDate date = ui->conf_dateEdit_6->date();
+    const QString theme = ui->conf_lineEdit_25->text().trimmed();
 
-    Conference c(id, nom, lieu, date, theme);
-    if (c.ajouter()) {
-        QMessageBox::information(this, "Succès", "Conférence ajoutée.");
-        loadConferenceTable();
-    } else {
-        QMessageBox::critical(this, "Erreur", "Echec ajout conférence.");
+    bool idOk = false;
+    const int id = idText.toInt(&idOk);
+
+    const int maxId = 9999999; // NUMBER(7)
+
+    if (!idOk || nom.isEmpty() || lieu.isEmpty() || !date.isValid())
+    {
+        QMessageBox::warning(this, "Saisie incomplete", "Veuillez renseigner ID (numerique), Nom, Lieu et Date.");
+        return;
     }
-}
 
->>>>>>> Stashed changes
-void SmartMarket::addConference()
-{
-    QString id = ui->conf_lineEdit_26->text().trimmed();
-    QString nom = ui->conf_lineEdit_27->text().trimmed();
-    QString lieu = ui->conf_lineEdit_24->text().trimmed();
-    QString theme = ui->conf_lineEdit_25->text().trimmed();
-    QDate date = ui->conf_dateEdit_6->date();
-
-<<<<<<< Updated upstream
-    if (id.isEmpty() || nom.isEmpty() || lieu.isEmpty() || theme.isEmpty()) {
-        QMessageBox::warning(this, "Champs manquants", "Veuillez remplir tous les champs.");
+    if (id < 0 || id > maxId)
+    {
+        QMessageBox::warning(this, "ID invalide", "ID doit etre un entier entre 0 et " + QString::number(maxId) + ".");
         return;
     }
 
     QSqlDatabase db = QSqlDatabase::database();
-    if (!db.isOpen() && !db.open()) {
-        QMessageBox::critical(this, "Base de données", "Connexion impossible.");
+    if (!db.isOpen() && !db.open())
+    {
+        QMessageBox::critical(this, "Base de donnees", "Connexion BD indisponible : " + db.lastError().text());
         return;
     }
 
-    QSqlQuery query(db);
-    query.prepare("INSERT INTO SELIM.conference (idconference, nom, lieu, datedebut, theme) VALUES (:id, :nom, :lieu, :date, :theme)");
-    query.bindValue(":id", id.toInt());
-    query.bindValue(":nom", nom);
-    query.bindValue(":lieu", lieu);
-    query.bindValue(":date", date);
-    query.bindValue(":theme", theme);
+    QSqlQuery q(db);
+    q.prepare("INSERT INTO OUSSAMA.conference (idconference, nom, lieu, datedebut, theme, nombreparticipants) "
+              "VALUES (:id, :nom, :lieu, :date, :theme, 0)");
+    q.bindValue(":id", id);
+    q.bindValue(":nom", nom);
+    q.bindValue(":lieu", lieu);
+    q.bindValue(":date", date);
+    q.bindValue(":theme", theme);
 
-    if (query.exec()) {
-        QMessageBox::information(this, "Succès", "Conférence ajoutée avec succès.");
-        loadConferenceTable();
-        // Clear fields
-        ui->conf_lineEdit_26->clear();
-        ui->conf_lineEdit_27->clear();
-        ui->conf_lineEdit_24->clear();
-        ui->conf_lineEdit_25->clear();
-    } else {
-        QMessageBox::critical(this, "Erreur", "Échec de l'ajout: " + query.lastError().text());
-=======
+    if (!q.exec())
+    {
+        QMessageBox::critical(this, "Insertion conference",
+                              "Echec INSERT : " + q.lastError().text() +
+                              "\nValeurs : ID=" + QString::number(id) +
+                              ", Nom=" + nom +
+                              ", Lieu=" + lieu +
+                              ", Date=" + date.toString("yyyy-MM-dd") +
+                              ", Theme=" + theme);
+        return;
+    }
+
+    QMessageBox::information(this, "Succes", "Conference ajoutee dans la base.");
+
+    loadConferenceTable();
+
+    ui->conf_lineEdit_26->clear();
+    ui->conf_lineEdit_27->clear();
+    ui->conf_lineEdit_24->clear();
+    ui->conf_dateEdit_6->setDate(QDate::currentDate());
+    ui->conf_lineEdit_25->clear();
+}
+
+void SmartMarket::addConference()
+{
+    on_conf_pushButton_26_clicked();
+}
+
 void SmartMarket::on_conf_pushButton_27_clicked()
 {
-    const int id = ui->conf_lineEdit_31 ? ui->conf_lineEdit_31->text().toInt() : 0;
-    const QString nom = ui->conf_lineEdit_28 ? ui->conf_lineEdit_28->text().trimmed() : QString();
-    const QString lieu = ui->conf_lineEdit_29 ? ui->conf_lineEdit_29->text().trimmed() : QString();
-    const QDate date = ui->conf_dateEdit_4 ? ui->conf_dateEdit_4->date() : QDate();
-    const QString theme = ui->conf_lineEdit_30 ? ui->conf_lineEdit_30->text().trimmed() : QString();
+    const QString idText = ui->conf_lineEdit_31->text().trimmed();
+    const QString nom = ui->conf_lineEdit_28->text().trimmed();
+    const QString lieu = ui->conf_lineEdit_29->text().trimmed();
+    const QDate date = ui->conf_dateEdit_4->date();
+    const QString theme = ui->conf_lineEdit_30->text().trimmed();
 
-    Conference c(id, nom, lieu, date, theme);
-    if (c.modifier()) {
-        QMessageBox::information(this, "Succès", "Conférence modifiée.");
-        loadConferenceTable();
-    } else {
-        QMessageBox::critical(this, "Erreur", "Echec modification conférence.");
->>>>>>> Stashed changes
+    bool idOk = false;
+    const int id = idText.toInt(&idOk);
+    const int maxId = 9999999; // NUMBER(7)
+
+    if (!idOk || nom.isEmpty() || lieu.isEmpty() || !date.isValid())
+    {
+        QMessageBox::warning(this, "Saisie incomplete", "Renseignez ID (numerique), Nom, Lieu et Date.");
+        return;
     }
+
+    if (id < 0 || id > maxId)
+    {
+        QMessageBox::warning(this, "ID invalide", "ID doit etre entre 0 et " + QString::number(maxId) + ".");
+        return;
+    }
+
+    QSqlDatabase db = QSqlDatabase::database();
+    if (!db.isOpen() && !db.open())
+    {
+        QMessageBox::critical(this, "Base de donnees", "Connexion BD indisponible : " + db.lastError().text());
+        return;
+    }
+
+    QSqlQuery q(db);
+    q.prepare("UPDATE OUSSAMA.conference "
+              "SET nom = :nom, lieu = :lieu, datedebut = :date, theme = :theme "
+              "WHERE idconference = :id");
+    q.bindValue(":nom", nom);
+    q.bindValue(":lieu", lieu);
+    q.bindValue(":date", date);
+    q.bindValue(":theme", theme);
+    q.bindValue(":id", id);
+
+    if (!q.exec())
+    {
+        QMessageBox::critical(this, "Mise a jour conference",
+                              "Echec UPDATE : " + q.lastError().text() +
+                              "\nValeurs : ID=" + QString::number(id) +
+                              ", Nom=" + nom +
+                              ", Lieu=" + lieu +
+                              ", Date=" + date.toString("yyyy-MM-dd") +
+                              ", Theme=" + theme);
+        return;
+    }
+
+    if (q.numRowsAffected() == 0)
+    {
+        QMessageBox::information(this, "Mise a jour", "Aucune conference trouvee avec cet ID.");
+    }
+    else
+    {
+        QMessageBox::information(this, "Mise a jour", "Conference mise a jour.");
+    }
+
+    loadConferenceTable();
+
+    ui->conf_lineEdit_31->clear();
+    ui->conf_lineEdit_28->clear();
+    ui->conf_lineEdit_29->clear();
+    ui->conf_dateEdit_4->setDate(QDate::currentDate());
+    ui->conf_lineEdit_30->clear();
 }
 
 void SmartMarket::modifyConference()
 {
-    QString id = ui->conf_lineEdit_31->text().trimmed();
-    QString nom = ui->conf_lineEdit_28->text().trimmed();
-    QString lieu = ui->conf_lineEdit_29->text().trimmed();
-    QString theme = ui->conf_lineEdit_30->text().trimmed();
-    QDate date = ui->conf_dateEdit_4->date();
-
-    if (id.isEmpty()) {
-        QMessageBox::warning(this, "ID manquant", "Veuillez saisir l'ID de la conférence à modifier.");
-        return;
-    }
-
-    QSqlDatabase db = QSqlDatabase::database();
-    if (!db.isOpen() && !db.open()) {
-        QMessageBox::critical(this, "Base de données", "Connexion impossible.");
-        return;
-    }
-
-    QSqlQuery query(db);
-    query.prepare("UPDATE SELIM.conference SET nom=:nom, lieu=:lieu, datedebut=:date, theme=:theme WHERE idconference=:id");
-    query.bindValue(":id", id.toInt());
-    query.bindValue(":nom", nom);
-    query.bindValue(":lieu", lieu);
-    query.bindValue(":date", date);
-    query.bindValue(":theme", theme);
-
-    if (query.exec()) {
-        QMessageBox::information(this, "Succès", "Conférence modifiée avec succès.");
-        loadConferenceTable();
-    } else {
-        QMessageBox::critical(this, "Erreur", "Échec de la modification: " + query.lastError().text());
-    }
+    on_conf_pushButton_27_clicked();
 }
 
 void SmartMarket::deleteConference()
 {
-<<<<<<< Updated upstream
-    QString id = ui->conf_lineEdit_8->text().trimmed();
+    int id = ui->conf_lineEdit_8->text().toInt();
+    Conference c;
+    if (c.supprimer(id)) {
+        QMessageBox::information(this, "SuccÃ¨s", "ConfÃ©rence supprimÃ©e.");
+        loadConferenceTable();
+    } else {
+        QMessageBox::critical(this, "Erreur", "Echec suppression confÃ©rence.");
+    }
+}
 
 void SmartMarket::on_conf_pushButton_8_clicked()
 {
@@ -2400,21 +2155,14 @@ void SmartMarket::on_conf_pushButton_8_clicked()
         return;
     }
 
-    QSqlQuery query(db);
-    query.prepare("DELETE FROM SELIM.conference WHERE idconference=:id");
-    query.bindValue(":id", id.toInt());
+    QSqlQuery q(db);
+    q.prepare("DELETE FROM OUSSAMA.conference WHERE idconference = :id");
+    q.bindValue(":id", id);
 
-    if (query.exec()) {
-        QMessageBox::information(this, "Succès", "Conférence supprimée avec succès.");
-=======
-    int id = ui->conf_lineEdit_8->text().toInt();
-    Conference c;
-    if (c.supprimer(id)) {
-        QMessageBox::information(this, "Succès", "Conférence supprimée.");
->>>>>>> Stashed changes
-        loadConferenceTable();
-    } else {
-        QMessageBox::critical(this, "Erreur", "Echec suppression conférence.");
+    if (!q.exec())
+    {
+        QMessageBox::critical(this, "Suppression conference", "Echec DELETE : " + q.lastError().text());
+        return;
     }
 
     // Note: numRowsAffected can return -1 depending on the driver.
@@ -2431,8 +2179,6 @@ void SmartMarket::on_conf_pushButton_8_clicked()
     ui->conf_lineEdit_8->clear();
 }
 
-<<<<<<< Updated upstream
-=======
 void SmartMarket::on_conf_pushButton_19_clicked()
 {
     const int id = ui->conf_lineEdit_21 ? ui->conf_lineEdit_21->text().toInt() : 0;
@@ -2445,7 +2191,7 @@ void SmartMarket::on_conf_pushButton_19_clicked()
     if (uidDialog.exec() == QDialog::Accepted) {
         p.setUidRfid(uidDialog.textValue().trimmed().toUpper());
         if (p.ajouter()) {
-            QMessageBox::information(this, "Succès", "Participant ajouté.");
+            QMessageBox::information(this, "SuccÃ¨s", "Participant ajoutÃ©.");
             loadParticipantTable();
             loadConferenceTable();
         } else {
@@ -2454,46 +2200,11 @@ void SmartMarket::on_conf_pushButton_19_clicked()
     }
 }
 
->>>>>>> Stashed changes
 void SmartMarket::addParticipant()
 {
-    QString nom = ui->conf_lineEdit_20->text().trimmed();
-    QString idConf = ui->conf_lineEdit_22->text().trimmed();
+    on_conf_pushButton_19_clicked();
+}
 
-<<<<<<< Updated upstream
-    if (nom.isEmpty() || idConf.isEmpty()) {
-        QMessageBox::warning(this, "Champs manquants", "Veuillez remplir tous les champs.");
-        return;
-    }
-
-    QSqlDatabase db = QSqlDatabase::database();
-    if (!db.isOpen() && !db.open()) {
-        QMessageBox::critical(this, "Base de données", "Connexion impossible.");
-        return;
-    }
-
-    // Get next ID
-    QSqlQuery idQuery(db);
-    idQuery.exec("SELECT NVL(MAX(id), 0) + 1 FROM SELIM.participant");
-    int nextId = 1;
-    if (idQuery.next()) {
-        nextId = idQuery.value(0).toInt();
-    }
-
-    QSqlQuery query(db);
-    query.prepare("INSERT INTO SELIM.participant (id, nom, idconference) VALUES (:id, :nom, :idconf)");
-    query.bindValue(":id", nextId);
-    query.bindValue(":nom", nom);
-    query.bindValue(":idconf", idConf.toInt());
-
-    if (query.exec()) {
-        QMessageBox::information(this, "Succès", "Participant ajouté avec succès.");
-        loadParticipantTable();
-        ui->conf_lineEdit_20->clear();
-        ui->conf_lineEdit_22->clear();
-    } else {
-        QMessageBox::critical(this, "Erreur", "Échec de l'ajout: " + query.lastError().text());
-=======
 void SmartMarket::on_conf_pushButton_10_clicked()
 {
     const int id = ui->conf_lineEdit_23 ? ui->conf_lineEdit_23->text().toInt() : 0;
@@ -2506,90 +2217,36 @@ void SmartMarket::on_conf_pushButton_10_clicked()
     if (uidDialog.exec() == QDialog::Accepted) {
         p.setUidRfid(uidDialog.textValue().trimmed().toUpper());
         if (p.modifier()) {
-            QMessageBox::information(this, "Succès", "Participant modifié.");
+            QMessageBox::information(this, "SuccÃ¨s", "Participant modifiÃ©.");
             loadParticipantTable();
             loadConferenceTable();
         } else {
              QMessageBox::critical(this, "Erreur", "Echec modification participant.");
         }
->>>>>>> Stashed changes
     }
 }
 
 void SmartMarket::modifyParticipant()
 {
-    QString id = ui->conf_lineEdit_23->text().trimmed();
-    QString nom = ui->conf_lineEdit_14->text().trimmed();
-    QString idConf = ui->conf_lineEdit_15->text().trimmed();
+    on_conf_pushButton_10_clicked();
+}
 
-<<<<<<< Updated upstream
-    if (id.isEmpty()) {
-        QMessageBox::warning(this, "ID manquant", "Veuillez saisir l'ID du participant à modifier.");
-        return;
-    }
-
-    QSqlDatabase db = QSqlDatabase::database();
-    if (!db.isOpen() && !db.open()) {
-        QMessageBox::critical(this, "Base de données", "Connexion impossible.");
-        return;
-    }
-
-    QSqlQuery query(db);
-    query.prepare("UPDATE SELIM.participant SET nom=:nom, idconference=:idconf WHERE id=:id");
-    query.bindValue(":id", id.toInt());
-    query.bindValue(":nom", nom);
-    query.bindValue(":idconf", idConf.toInt());
-
-    if (query.exec()) {
-        QMessageBox::information(this, "Succès", "Participant modifié avec succès.");
-        loadParticipantTable();
-    } else {
-        QMessageBox::critical(this, "Erreur", "Échec de la modification: " + query.lastError().text());
-    }
-=======
 void SmartMarket::on_conf_pushButton_12_clicked()
 {
     int id = ui->conf_lineEdit_13 ? ui->conf_lineEdit_13->text().toInt() : 0;
     Participant p;
     if (p.supprimer(id)) {
-        QMessageBox::information(this, "Suppression", "Participant supprimé.");
+        QMessageBox::information(this, "Suppression", "Participant supprimÃ©.");
         loadParticipantTable();
         loadConferenceTable();
     } else {
         QMessageBox::critical(this, "Erreur", "Echec suppression participant.");
     }
->>>>>>> Stashed changes
 }
 
 void SmartMarket::deleteParticipant()
 {
-    QString id = ui->conf_lineEdit_13->text().trimmed();
-
-    if (id.isEmpty()) {
-        QMessageBox::warning(this, "ID manquant", "Veuillez saisir l'ID du participant à supprimer.");
-        return;
-    }
-
-    if (QMessageBox::question(this, "Confirmation", "Êtes-vous sûr de vouloir supprimer ce participant?") != QMessageBox::Yes)
-        return;
-
-    QSqlDatabase db = QSqlDatabase::database();
-    if (!db.isOpen() && !db.open()) {
-        QMessageBox::critical(this, "Base de données", "Connexion impossible.");
-        return;
-    }
-
-    QSqlQuery query(db);
-    query.prepare("DELETE FROM SELIM.participant WHERE id=:id");
-    query.bindValue(":id", id.toInt());
-
-    if (query.exec()) {
-        QMessageBox::information(this, "Succès", "Participant supprimé avec succès.");
-        loadParticipantTable();
-        ui->conf_lineEdit_13->clear();
-    } else {
-        QMessageBox::critical(this, "Erreur", "Échec de la suppression: " + query.lastError().text());
-    }
+    on_conf_pushButton_12_clicked();
 }
 
 void SmartMarket::sortConferencesByDateAsc()
@@ -2604,12 +2261,6 @@ void SmartMarket::sortConferencesByDateDesc()
     table->sortItems(3, Qt::DescendingOrder); // Column 3 is date
 }
 
-<<<<<<< Updated upstream
-void SmartMarket::exportConferencesToPDF()
-{
-    // Basic PDF export implementation
-    QMessageBox::information(this, "Export PDF", "Fonctionnalité d'export PDF à implémenter.");
-=======
 void SmartMarket::on_conf_pushButton_5_clicked()
 {
     if (!ui->conf_tableWidget_7 || !ui->conf_tableWidget_2 || !ui->conf_graphicsView1 || !ui->conf_graphicsView1_2)
@@ -2754,17 +2405,17 @@ void SmartMarket::on_conf_pushButton_5_clicked()
     newPageIfNeeded(currentY, titleH + headerH + (ui->conf_tableWidget_7->rowCount() * rowH) + 2 * chartH + 120);
 
     painter.setFont(headerFont);
-    painter.drawText(QRect(marginX, currentY, contentW, 18), Qt::AlignLeft | Qt::AlignVCenter, "Conférences");
+    painter.drawText(QRect(marginX, currentY, contentW, 18), Qt::AlignLeft | Qt::AlignVCenter, "ConfÃ©rences");
     currentY += 22;
-    drawTableHeader(currentY, {"ID", "Nom", "Lieu", "Date", "Thème", "Participants"}, confColW, COL_COUNT_CONF);
+    drawTableHeader(currentY, {"ID", "Nom", "Lieu", "Date", "ThÃ¨me", "Participants"}, confColW, COL_COUNT_CONF);
     currentY += headerH;
     for (int r = 0; r < ui->conf_tableWidget_7->rowCount(); ++r) {
         if (currentY + rowH > pageH - marginY) {
             printer.newPage();
             currentY = marginY;
-            painter.drawText(QRect(marginX, currentY, contentW, 18), Qt::AlignLeft | Qt::AlignVCenter, "Conférences (suite)");
+            painter.drawText(QRect(marginX, currentY, contentW, 18), Qt::AlignLeft | Qt::AlignVCenter, "ConfÃ©rences (suite)");
             currentY += 22;
-            drawTableHeader(currentY, {"ID", "Nom", "Lieu", "Date", "Thème", "Participants"}, confColW, COL_COUNT_CONF);
+            drawTableHeader(currentY, {"ID", "Nom", "Lieu", "Date", "ThÃ¨me", "Participants"}, confColW, COL_COUNT_CONF);
             currentY += headerH;
         }
         drawTableRow(currentY, ui->conf_tableWidget_7, r, confColW, COL_COUNT_CONF);
@@ -2779,7 +2430,7 @@ void SmartMarket::on_conf_pushButton_5_clicked()
 
     painter.drawText(QRect(marginX, currentY, contentW, 18), Qt::AlignLeft | Qt::AlignVCenter, "Participants");
     currentY += 22;
-    drawTableHeader(currentY, {"ID", "Nom", "Id Conférence", "UID RFID"}, partColW, COL_COUNT_PART);
+    drawTableHeader(currentY, {"ID", "Nom", "Id ConfÃ©rence", "UID RFID"}, partColW, COL_COUNT_PART);
     currentY += headerH;
     for (int r = 0; r < ui->conf_tableWidget_2->rowCount(); ++r) {
         if (currentY + rowH > pageH - marginY) {
@@ -2787,7 +2438,7 @@ void SmartMarket::on_conf_pushButton_5_clicked()
             currentY = marginY;
             painter.drawText(QRect(marginX, currentY, contentW, 18), Qt::AlignLeft | Qt::AlignVCenter, "Participants (suite)");
             currentY += 22;
-            drawTableHeader(currentY, {"ID", "Nom", "Id Conférence", "UID RFID"}, partColW, COL_COUNT_PART);
+            drawTableHeader(currentY, {"ID", "Nom", "Id ConfÃ©rence", "UID RFID"}, partColW, COL_COUNT_PART);
             currentY += headerH;
         }
         drawTableRow(currentY, ui->conf_tableWidget_2, r, partColW, COL_COUNT_PART);
@@ -2802,9 +2453,9 @@ void SmartMarket::on_conf_pushButton_5_clicked()
 
     painter.setFont(sectionFont);
     painter.setPen(Qt::black);
-    painter.drawText(QRect(marginX, currentY, contentW, 18), Qt::AlignLeft | Qt::AlignVCenter, "Participants par conférence");
+    painter.drawText(QRect(marginX, currentY, contentW, 18), Qt::AlignLeft | Qt::AlignVCenter, "Participants par confÃ©rence");
     currentY += 24;
-    QImage chart1 = renderChart(ui->conf_graphicsView1, "Participants par conférence", contentW, chartH);
+    QImage chart1 = renderChart(ui->conf_graphicsView1, "Participants par confÃ©rence", contentW, chartH);
     painter.drawImage(QRect(marginX, currentY, contentW, chartH), chart1);
     currentY += chartH + chartGap;
 
@@ -2813,9 +2464,9 @@ void SmartMarket::on_conf_pushButton_5_clicked()
         currentY = marginY;
     }
 
-    painter.drawText(QRect(marginX, currentY, contentW, 18), Qt::AlignLeft | Qt::AlignVCenter, "Conférences par date");
+    painter.drawText(QRect(marginX, currentY, contentW, 18), Qt::AlignLeft | Qt::AlignVCenter, "ConfÃ©rences par date");
     currentY += 24;
-    QImage chart2 = renderChart(ui->conf_graphicsView1_2, "Conférences par date", contentW, chartH);
+    QImage chart2 = renderChart(ui->conf_graphicsView1_2, "ConfÃ©rences par date", contentW, chartH);
     painter.drawImage(QRect(marginX, currentY, contentW, chartH), chart2);
 
     painter.end();
@@ -2845,7 +2496,7 @@ int SmartMarket::applyConferenceFilterToTable()
     }
 
     if (model->rowCount() == 0)
-        QMessageBox::information(this, "Filtrage", "Aucune conférence pour ce filtre.");
+        QMessageBox::information(this, "Filtrage", "Aucune confÃ©rence pour ce filtre.");
 
     updateConferenceParticipantsChart();
     updateConferenceDaysChart();
@@ -2856,20 +2507,96 @@ int SmartMarket::applyConferenceFilterToTable()
 
 void SmartMarket::on_conf_pushButton_21_clicked()
 {
-    const int rows = applyConferenceFilterToTable();
-    if (rows <= 0)
+    if (!ui->conf_tableWidget_7)
         return;
 
-    // Reuse the same polished PDF rendering used by pushButton_5.
-    on_conf_pushButton_5_clicked();
->>>>>>> Stashed changes
+    const QString filterText = ui->conf_lineEdit_2 ? ui->conf_lineEdit_2->text().trimmed() : QString();
+    QString dateFilter;
+    if (ui->conf_radioButton_19 && ui->conf_radioButton_19->isChecked())
+    {
+        if (ui->dateEdit)
+            dateFilter = ui->dateEdit->date().toString("yyyy-MM-dd");
+        if (dateFilter.isEmpty())
+        {
+            QMessageBox::warning(this, "Filtrage", "Veuillez choisir une date pour filtrer.");
+            return;
+        }
+    }
+
+    // Determiner la colonne a filtrer selon le radio selectionne
+    QString whereClause;
+    if (ui->conf_radioButton_17 && ui->conf_radioButton_17->isChecked())
+        whereClause = "LOWER(c.nom) LIKE LOWER(:f)";
+    else if (ui->conf_radioButton_18 && ui->conf_radioButton_18->isChecked())
+        whereClause = "LOWER(c.lieu) LIKE LOWER(:f)";
+    else if (ui->conf_radioButton_19 && ui->conf_radioButton_19->isChecked())
+        whereClause = "TO_CHAR(c.datedebut, 'YYYY-MM-DD') = :d";
+    else if (ui->conf_radioButton_20 && ui->conf_radioButton_20->isChecked())
+        whereClause = "LOWER(c.theme) LIKE LOWER(:f)";
+
+    QSqlDatabase db = QSqlDatabase::database();
+    if (!db.isOpen() && !db.open())
+    {
+        QMessageBox::critical(this, "Base de donnees", "Connexion BD indisponible : " + db.lastError().text());
+        return;
+    }
+
+    QSqlQuery query(db);
+    QString sql = "SELECT c.idconference, c.nom, c.lieu, c.datedebut, c.theme, "
+                  "       (SELECT COUNT(*) FROM OUSSAMA.participant p WHERE p.idconference = c.idconference) AS nombreparticipants "
+                  "FROM OUSSAMA.conference c ";
+
+    const bool isDateFilter = ui->conf_radioButton_19 && ui->conf_radioButton_19->isChecked();
+
+    if (!whereClause.isEmpty() && ((isDateFilter && !dateFilter.isEmpty()) || (!isDateFilter && !filterText.isEmpty())))
+        sql += "WHERE " + whereClause + " ";
+
+    sql += "ORDER BY c.idconference";
+
+    query.prepare(sql);
+    if (!whereClause.isEmpty())
+    {
+        if (isDateFilter)
+        {
+            query.bindValue(":d", dateFilter);
+        }
+        else if (!filterText.isEmpty())
+        {
+            query.bindValue(":f", "%" + filterText + "%");
+        }
+    }
+
+    if (!query.exec())
+    {
+        QMessageBox::critical(this, "Filtrage conferences", "Echec SELECT : " + query.lastError().text());
+        return;
+    }
+
+    ui->conf_tableWidget_7->setRowCount(0);
+    int row = 0;
+    while (query.next())
+    {
+        ui->conf_tableWidget_7->insertRow(row);
+        ui->conf_tableWidget_7->setItem(row, 0, new QTableWidgetItem(query.value(0).toString()));
+        ui->conf_tableWidget_7->setItem(row, 1, new QTableWidgetItem(query.value(1).toString()));
+        ui->conf_tableWidget_7->setItem(row, 2, new QTableWidgetItem(query.value(2).toString()));
+        const QString dateStr = query.value(3).toDate().toString("yyyy-MM-dd");
+        ui->conf_tableWidget_7->setItem(row, 3, new QTableWidgetItem(dateStr));
+        ui->conf_tableWidget_7->setItem(row, 4, new QTableWidgetItem(query.value(4).toString()));
+        ui->conf_tableWidget_7->setItem(row, 5, new QTableWidgetItem(query.value(5).toString()));
+        ++row;
+    }
+
+    if (row == 0)
+        QMessageBox::information(this, "Filtrage", "Aucune conference pour ce filtre.");
+
+    updateConferenceParticipantsChart();
+    updateConferenceDaysChart();
+    updateConferenceCalendar();
 }
 
 void SmartMarket::filterConferences()
 {
-<<<<<<< Updated upstream
-    loadConferenceTable(); // Re-filter based on current filter text
-=======
     applyConferenceFilterToTable();
 }
 
@@ -2891,24 +2618,12 @@ void SmartMarket::on_conf_pushButton_20_clicked()
 
     if (model->rowCount() == 0)
         QMessageBox::information(this, "Filtrage", "Aucun participant pour ce filtre.");
->>>>>>> Stashed changes
 }
 
 void SmartMarket::filterParticipants()
 {
-    QString filter = ui->conf_lineEdit->text().trimmed().toLower();
-    QTableWidget *table = ui->conf_tableWidget_2;
-
-    for (int row = 0; row < table->rowCount(); ++row) {
-        bool match = false;
-        for (int col = 0; col < table->columnCount(); ++col) {
-            QTableWidgetItem *item = table->item(row, col);
-            if (item && item->text().toLower().contains(filter)) {
-                match = true;
-                break;
-            }
-        }
-        table->setRowHidden(row, !match && !filter.isEmpty());
-    }
+    on_conf_pushButton_20_clicked();
 }
+
+
 
