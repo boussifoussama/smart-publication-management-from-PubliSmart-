@@ -51,14 +51,14 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
    <widget class="QStackedWidget" name="stackedWidgetMain">
     <property name="geometry">
      <rect>
-      <x>0</x>
+      <x>-50</x>
       <y>0</y>
-      <width>1298</width>
+      <width>1341</width>
       <height>730</height>
      </rect>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>3</number>
     </property>
     <widget class="QWidget" name="pageLogin">
      <widget class="QGroupBox" name="groupBox_11_login">
@@ -613,7 +613,7 @@ QStatusBar {
 </string>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab_5">
        <attribute name="title">
@@ -2024,12 +2024,12 @@ QStatusBar {
 }
 
 /* ---------- SIDEBAR (si objectName = groupBox_11) ---------- */
-#conf_groupBox_11 {
+#conf_groupBox_11, #rev_groupBox_16, #revv_groupBox_12 {
     background-color: #071526;
     border: none;
 }
 
-#conf_groupBox_11 QPushButton {
+#conf_groupBox_11 QPushButton, #rev_groupBox_16 QPushButton, #revv_groupBox_12 QPushButton {
     background-color: transparent;
     color: #E5E7EB;
     padding: 18px 24px;
@@ -2038,7 +2038,7 @@ QStatusBar {
     font-weight: 700;
 }
 
-#conf_groupBox_11 QPushButton:hover {
+#conf_groupBox_11 QPushButton:hover, #rev_groupBox_16 QPushButton:hover, #revv_groupBox_12 QPushButton:hover {
     background-color: rgba(255,255,255,0.15);
 }
 
@@ -3273,6 +3273,931 @@ QStatusBar {
       </widget>
      </widget>
     </widget>
+    <widget class="QWidget" name="page_2">
+     <widget class="QTabWidget" name="revv_tabWidget_2">
+      <property name="geometry">
+       <rect>
+        <x>260</x>
+        <y>0</y>
+        <width>1091</width>
+        <height>721</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">/* =========================
+   TYPOGRAPHIE PREMIUM
+   ========================= */
+* {
+    font-family: &quot;Inter&quot;, &quot;Segoe UI&quot;, &quot;Roboto&quot;, &quot;Helvetica Neue&quot;, Arial, sans-serif;
+    font-size: 14px;
+    color: #374151;
+}
+
+/* =========================
+   FENÊTRE PRINCIPALE
+   ========================= */
+QMainWindow {
+    background-color: #F4F6F9;
+}
+
+/* =========================
+   TITRES &amp; LABELS
+   ========================= */
+QLabel {
+    font-weight: 500;
+    color: #1F2937;
+}
+
+QGroupBox {
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    border: 1px solid #E5E7EB;
+    margin-top: 24px;
+    padding: 18px;
+    font-weight: 600;
+    color: #0F2A44;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top center;
+    padding: 0 16px;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+/* =========================
+   ONGLET (TAB BAR)
+   ========================= */
+QTabWidget::pane {
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    border: 1px solid #E5E7EB;
+    margin-top: 10px;
+}
+
+QTabBar::tab {
+    background-color: #E5E7EB;
+    border-radius: 10px;
+    padding: 14px 28px;
+    margin-right: 8px;
+    font-weight: 500;
+    color: #374151;
+}
+
+QTabBar::tab:selected {
+    background-color: #0F2A44;
+    color: #FFFFFF;
+    font-weight: 700;
+}
+
+QTabBar::tab:hover:!selected {
+    background-color: #DBEAFE;
+    color: #1E3A8A;
+}
+
+/* =========================
+   INPUTS (ÉLÉGANTS)
+   ========================= */
+QLineEdit, QComboBox, QDateEdit {
+    background-color: #FFFFFF;
+    border-radius: 10px;
+    border: 1px solid #D1D5DB;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+QLineEdit:focus, QComboBox:focus, QDateEdit:focus {
+    border-color: #2563EB;
+    background-color: #F0F9FF;
+}
+
+/* =========================
+   BOUTONS PREMIUM
+   ========================= */
+QPushButton {
+    background-color: #0F2A44;
+    color: #FFFFFF;
+    border-radius: 10px;
+    padding: 12px 26px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+QPushButton:hover {
+    background-color: #163B63;
+}
+
+QPushButton:pressed {
+    background-color: #2563EB;
+}
+
+QPushButton:disabled {
+    background-color: #9CA3AF;
+    color: #E5E7EB;
+}
+
+/* =========================
+   TABLES (PRO DASHBOARD)
+   ========================= */
+QTableWidget {
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    border: 1px solid #E5E7EB;
+    gridline-color: #E5E7EB;
+    alternate-background-color: #F9FAFB;
+    selection-background-color: #DBEAFE;
+}
+
+QTableWidget::item {
+    padding: 14px;
+    font-weight: 500;
+}
+
+QHeaderView::section {
+    background-color: #0F2A44;
+    color: #FFFFFF;
+    padding: 14px;
+    font-weight: 700;
+    border: none;
+}
+
+/* =========================
+   SIDEBAR MODERNE
+   ========================= */
+#groupBox_11 {
+    background-color: #0F2A44;
+    border: none;
+}
+
+#groupBox_11 QPushButton {
+    background-color: transparent;
+    color: #FFFFFF;
+    padding: 16px 22px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+#groupBox_11 QPushButton:hover {
+    background-color: rgba(255,255,255,0.15);
+}
+
+#pushButton_13 {
+    background-color: rgba(255,255,255,0.25);
+    font-weight: 800;
+}
+
+/* =========================
+   PROGRESS BAR
+   ========================= */
+QProgressBar {
+    background-color: #FFFFFF;
+    border-radius: 10px;
+    border: 1px solid #D1D5DB;
+    text-align: center;
+    font-weight: 700;
+}
+
+QProgressBar::chunk {
+    background-color: #2563EB;
+    border-radius: 8px;
+}
+
+/* =========================
+   MENU &amp; STATUS
+   ========================= */
+QMenuBar {
+    background-color: #0F2A44;
+    color: #FFFFFF;
+    font-weight: 700;
+}
+
+QStatusBar {
+    background-color: #F4F6F9;
+    color: #6B7280;
+}
+</string>
+      </property>
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="revv_tab_6">
+       <attribute name="title">
+        <string/>
+       </attribute>
+       <widget class="QTableWidget" name="rev_tableWidget_3">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>70</y>
+          <width>391</width>
+          <height>281</height>
+         </rect>
+        </property>
+        <column>
+         <property name="text">
+          <string>ID</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Nom</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Email</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Spécialité</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Affiliation</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Nb Évaluations</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Score Fiabilité</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>ID pub</string>
+         </property>
+        </column>
+       </widget>
+       <widget class="QPushButton" name="rev_pushButton_19">
+        <property name="geometry">
+         <rect>
+          <x>900</x>
+          <y>110</y>
+          <width>154</width>
+          <height>43</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Exporter</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="rev_pushButton_12">
+        <property name="geometry">
+         <rect>
+          <x>730</x>
+          <y>60</y>
+          <width>151</width>
+          <height>41</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Add</string>
+        </property>
+       </widget>
+       <widget class="QComboBox" name="rev_comboBox_15">
+        <property name="geometry">
+         <rect>
+          <x>54</x>
+          <y>360</y>
+          <width>121</width>
+          <height>47</height>
+         </rect>
+        </property>
+        <item>
+         <property name="text">
+          <string>Croissant-decroissant</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Decroissant-croissant</string>
+         </property>
+        </item>
+       </widget>
+       <widget class="QPushButton" name="rev_pushButton_21">
+        <property name="geometry">
+         <rect>
+          <x>730</x>
+          <y>110</y>
+          <width>151</width>
+          <height>43</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Suprrimer</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="rev_pushButton_10">
+        <property name="geometry">
+         <rect>
+          <x>900</x>
+          <y>60</y>
+          <width>151</width>
+          <height>43</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Modifier</string>
+        </property>
+       </widget>
+       <widget class="QGroupBox" name="rev_groupBox_12">
+        <property name="geometry">
+         <rect>
+          <x>410</x>
+          <y>40</y>
+          <width>301</width>
+          <height>381</height>
+         </rect>
+        </property>
+        <property name="title">
+         <string/>
+        </property>
+        <widget class="QLineEdit" name="rev_lineEdit_18">
+         <property name="geometry">
+          <rect>
+           <x>180</x>
+           <y>40</y>
+           <width>111</width>
+           <height>41</height>
+          </rect>
+         </property>
+        </widget>
+        <widget class="QLineEdit" name="rev_lineEdit_19">
+         <property name="geometry">
+          <rect>
+           <x>180</x>
+           <y>80</y>
+           <width>111</width>
+           <height>41</height>
+          </rect>
+         </property>
+        </widget>
+        <widget class="QLineEdit" name="rev_lineEdit_20">
+         <property name="geometry">
+          <rect>
+           <x>180</x>
+           <y>120</y>
+           <width>111</width>
+           <height>41</height>
+          </rect>
+         </property>
+        </widget>
+        <widget class="QLabel" name="rev_label_34">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>40</y>
+           <width>63</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>ID:</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="rev_label_51">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>80</y>
+           <width>63</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Nom</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="rev_label_52">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>165</y>
+           <width>71</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Spécialité</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="rev_label_54">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>120</y>
+           <width>111</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Email:</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="rev_label_55">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>205</y>
+           <width>151</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Affiliation</string>
+         </property>
+        </widget>
+        <widget class="QLineEdit" name="rev_lineEdit_25">
+         <property name="geometry">
+          <rect>
+           <x>180</x>
+           <y>240</y>
+           <width>111</width>
+           <height>41</height>
+          </rect>
+         </property>
+        </widget>
+        <widget class="QLineEdit" name="rev_lineEdit_26">
+         <property name="geometry">
+          <rect>
+           <x>180</x>
+           <y>280</y>
+           <width>111</width>
+           <height>41</height>
+          </rect>
+         </property>
+        </widget>
+        <widget class="QLineEdit" name="rev_lineEdit_27">
+         <property name="geometry">
+          <rect>
+           <x>180</x>
+           <y>320</y>
+           <width>111</width>
+           <height>41</height>
+          </rect>
+         </property>
+        </widget>
+        <widget class="QLabel" name="rev_label_56">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>245</y>
+           <width>91</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Nb Evaluations</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="rev_label_57">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>290</y>
+           <width>63</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Score Fiabilité
+</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="rev_label_58">
+         <property name="geometry">
+          <rect>
+           <x>20</x>
+           <y>325</y>
+           <width>63</width>
+           <height>20</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>ID pub</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="rev_label_59">
+         <property name="geometry">
+          <rect>
+           <x>630</x>
+           <y>330</y>
+           <width>91</width>
+           <height>71</height>
+          </rect>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">image: url(:/new/prefix1/Downloads/publication icon.png);</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="pixmap">
+          <pixmap resource="resources.qrc">:/ressouces/publication icon.png</pixmap>
+         </property>
+        </widget>
+        <widget class="QLineEdit" name="lineEdit_2">
+         <property name="geometry">
+          <rect>
+           <x>180</x>
+           <y>200</y>
+           <width>113</width>
+           <height>41</height>
+          </rect>
+         </property>
+        </widget>
+        <widget class="QLineEdit" name="lineEdit_3">
+         <property name="geometry">
+          <rect>
+           <x>180</x>
+           <y>160</y>
+           <width>113</width>
+           <height>41</height>
+          </rect>
+         </property>
+        </widget>
+       </widget>
+       <widget class="QWidget" name="rev_widget_13" native="true">
+        <property name="geometry">
+         <rect>
+          <x>130</x>
+          <y>0</y>
+          <width>777</width>
+          <height>69</height>
+         </rect>
+        </property>
+        <layout class="QHBoxLayout" name="rev_horizontalLayout_12">
+         <item>
+          <widget class="QLabel" name="rev_label_10">
+           <property name="text">
+            <string>Id:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="rev_idsearch_3"/>
+         </item>
+         <item>
+          <widget class="QLabel" name="rev_label_11">
+           <property name="text">
+            <string>Nom</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="rev_lineEdit_7"/>
+         </item>
+         <item>
+          <widget class="QLabel" name="rev_label_24">
+           <property name="text">
+            <string>Spécialié</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="lineEdit"/>
+         </item>
+         <item>
+          <widget class="QPushButton" name="rev_pushButton_8">
+           <property name="text">
+            <string>Rechercher</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="rev_pushButton_3">
+           <property name="text">
+            <string>Reset</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+       <widget class="QComboBox" name="rev_comboBox_14">
+        <property name="geometry">
+         <rect>
+          <x>220</x>
+          <y>358</y>
+          <width>151</width>
+          <height>51</height>
+         </rect>
+        </property>
+        <item>
+         <property name="text">
+          <string>Croissant-decroissant</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Decroissant-croissant</string>
+         </property>
+        </item>
+       </widget>
+       <widget class="QFrame" name="rev_chartFramePie">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>420</y>
+          <width>551</width>
+          <height>231</height>
+         </rect>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>200</width>
+          <height>150</height>
+         </size>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::Shape::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Shadow::Raised</enum>
+        </property>
+       </widget>
+       <widget class="QFrame" name="rev_chartFrameLine">
+        <property name="geometry">
+         <rect>
+          <x>570</x>
+          <y>420</y>
+          <width>501</width>
+          <height>231</height>
+         </rect>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::Shape::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Shadow::Raised</enum>
+        </property>
+       </widget>
+       <widget class="QLabel" name="rev_label_61">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>380</y>
+          <width>41</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>nb</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="rev_label_62">
+        <property name="geometry">
+         <rect>
+          <x>180</x>
+          <y>380</y>
+          <width>41</width>
+          <height>20</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>sf</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="revv_pushButton_deadline">
+        <property name="geometry">
+         <rect>
+          <x>730</x>
+          <y>160</y>
+          <width>161</width>
+          <height>61</height>
+         </rect>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+    background-color: transparent;
+    color: #FCD34D;
+    padding: 18px 24px;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 700;
+}
+QPushButton:hover {
+    background-color: rgba(252,211,77,0.18);
+}</string>
+        </property>
+        <property name="text">
+         <string>⏰ Deadlines</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="revv_btn_arduino_start">
+        <property name="geometry">
+         <rect>
+          <x>730</x>
+          <y>230</y>
+          <width>181</width>
+          <height>41</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>🚀 Starter LCD</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="revv_btn_arduino_prev">
+        <property name="geometry">
+         <rect>
+          <x>710</x>
+          <y>290</y>
+          <width>101</width>
+          <height>41</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>◀ Prev</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="revv_btn_arduino_next">
+        <property name="geometry">
+         <rect>
+          <x>830</x>
+          <y>290</y>
+          <width>101</width>
+          <height>41</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Next ▶</string>
+        </property>
+       </widget>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="revv_groupBox_12">
+      <property name="geometry">
+       <rect>
+        <x>50</x>
+        <y>-30</y>
+        <width>211</width>
+        <height>771</height>
+       </rect>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">#revv_groupBox_12 {
+    background-color: #071526;
+    border: none;
+}
+
+#revv_groupBox_12 QPushButton {
+    background-color: transparent;
+    color: #E5E7EB;
+    padding: 18px 24px;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 700;
+}
+
+#revv_groupBox_12 QPushButton:hover {
+    background-color: rgba(255,255,255,0.15);
+}</string>
+      </property>
+      <property name="title">
+       <string>Official desktop app</string>
+      </property>
+      <widget class="QPushButton" name="revv_pushButton_22">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>330</y>
+         <width>161</width>
+         <height>51</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Publications</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="revv_pushButton_23">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>450</y>
+         <width>161</width>
+         <height>51</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Reviewers</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="revv_pushButton_24">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>580</y>
+         <width>161</width>
+         <height>51</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Conférences</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="revv_pushButton_25">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>700</y>
+         <width>161</width>
+         <height>51</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Equipements</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="revv_label_34">
+       <property name="geometry">
+        <rect>
+         <x>50</x>
+         <y>270</y>
+         <width>91</width>
+         <height>71</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">image: url(:/new/prefix1/Downloads/publication icon.png);</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+      <widget class="QLabel" name="revv_label_35">
+       <property name="geometry">
+        <rect>
+         <x>50</x>
+         <y>370</y>
+         <width>101</width>
+         <height>91</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">image: url(:/new/prefix1/Downloads/reviewer icon.png);</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+      <widget class="QLabel" name="revv_label_37">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>620</y>
+         <width>151</width>
+         <height>101</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">image: url(:/new/prefix1/Downloads/equipement icon.png);</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+      <widget class="QLabel" name="revv_label_7">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>30</y>
+         <width>251</width>
+         <height>171</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">image: url(:/new/prefix1/Downloads/imagetouse.png-removebg-preview.png);</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+      <widget class="QLabel" name="revv_label_36">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>490</y>
+         <width>151</width>
+         <height>101</height>
+        </rect>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">image: url(:/new/prefix1/Downloads/conference icon.png);</string>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </widget>
+    </widget>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -3287,6 +4212,8 @@ QStatusBar {
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

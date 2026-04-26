@@ -1,24 +1,27 @@
-#include "smartmarket.h"
 #include <QApplication>
-#include <QMessageBox>
+#include "smartmarket.h"
 #include "connection.h"
+#include <QMessageBox>
 
-int main(int argc, char *argv[])
+static int runApplication(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    // ✅ Connexion BDD EN PREMIER
     Connection c;
     bool test = c.createconnect();
+    
     SmartMarket w;
-
     if (!test) {
-        QMessageBox::warning(&w, "Erreur BDD",
+        QMessageBox::warning(nullptr, "Erreur BDD", 
                              "Connexion a la base de donnees echouee.\n"
-                             "L'application demarre quand meme.\n"
-                             "Verifiez votre source ODBC (Source_Projet2A), l'utilisateur et le mot de passe.");
+                             "L'application demarre quand meme.");
     }
-
+    
     w.show();
     return a.exec();
+}
+
+int main(int argc, char *argv[])
+{
+    return runApplication(argc, argv);
 }

@@ -1,16 +1,19 @@
-﻿#include "smartmarket.h"
+#include "smartmarket.h"
 #include "ui_smartmarket.h"
 #include "arduino.h"
 
 #include <QHeaderView>
 #include <QVBoxLayout>
 #include <QMessageBox>
+#include <QDialog>
+#include <QGroupBox>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QSqlTableModel>
 #include <QDebug>
 #include <QFile>
+#include <QDir>
 #include <QFileDialog>
 #include <QTextStream>
 #include <QJsonDocument>
@@ -24,10 +27,13 @@
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QLineEdit>
+#include <QComboBox>
 #include <QLabel>
 #include <QPushButton>
 #include <QHBoxLayout>
 #include <QInputDialog>
+#include <QSpinBox>
+#include <QDateEdit>
 #include <QUrl>
 #include <QRegularExpression>
 #include <QProcess>
@@ -40,6 +46,8 @@
 #include <QPageLayout>
 #include <QStandardPaths>
 #include <QSerialPortInfo>
+#include <QTimer>
+#include <QScrollBar>
 
 // PDF export via Qt
 #include <QPrinter>
@@ -79,6 +87,189 @@ static QString formatPercentage(int value, int total)
     return QString::number(bounded, 'f', 1) + "%";
 }
 
+static QString localReviewerAssistantReply(const QString &question)
+{
+    const QString q = question.trimmed().toLower();
+
+    if (q.isEmpty()) {
+        return "Posez une question courte, par exemple:\n✅ ajouter reviewer\n✅ meilleurs reviewers pour publication 42\n✅ suggerer reviewer pour informatique";
+    }
+
+    // ✅ NOUVEAU: SYSTEME DE RECOMMANDATION INTELLIGENTE REVIEWERS
+    // ✅ DETECTION AMELIOREE: TOUS LES CAS POSSIBLES
+    if (q.contains("meilleur") || q.contains("recommand") || q.contains("sugger") || 
+        q.contains("assigner") || q.contains("publication") || q.contains("reviewer") ||
+        q.contains("domaine") || q.contains("specialite") || q.contains("pour") ||
+        q.contains("quel") || q.contains("qui") || q.contains("lequel") ||
+        q.contains("meilleurs") || q.contains("recommander") || q.contains("suggerer"))
+    {
+        // Extraire ID publication si présent
+        QRegularExpression rxIdPub("publication\\s*(\\d+)");
+        QRegularExpressionMatch match = rxIdPub.match(q);
+        QString idPubStr = match.hasMatch() ? match.captured(1) : "";
+
+        // Extraire domaine si présent
+        const QStringList DOMAINES_LOCAL = {
+            "Informatique", "Mathematiques", "Physique", "Chimie", "Biologie",
+            "Medecine", "Droit", "Economie", "Histoire", "Geographie",
+            "Philosophie", "Litterature", "Arts", "Sport", "Autre"
+        };
+        
+        QString domaineRecherche;
+        for (const QString &d : DOMAINES_LOCAL) {
+            if (q.contains(d.toLower())) {
+                domaineRecherche = d;
+                break;
+            }
+        }
+
+        // Chercher tous les reviewers dans la base
+        Reviewer r;
+        QSqlQueryModel *model = r.afficher();
+
+        struct ReviewerScore {
+            int id;
+            QString nom;
+            QString email;
+            QString specialite;
+            int nbEval;
+            double score;
+            double matchingScore;
+        };
+
+        QList<ReviewerScore> liste;
+
+        for (int i = 0; i < model->rowCount(); ++i) {
+            ReviewerScore rs;
+            rs.id = model->index(i, 0).data().toInt();
+            rs.nom = model->index(i, 1).data().toString();
+            rs.email = model->index(i, 2).data().toString();
+            rs.specialite = model->index(i, 3).data().toString();
+            rs.nbEval = model->index(i, 5).data().toInt();
+            rs.score = model->index(i, 6).data().toDouble();
+
+            // Calcul du score de matching
+            double scoreMatching = 0.0;
+
+            // 🔹 60% du score: correspondance spécialité / domaine
+            if (!domaineRecherche.isEmpty() && !rs.specialite.isEmpty()) {
+                if (rs.specialite.toLower().contains(domaineRecherche.toLower()) ||
+                    domaineRecherche.toLower().contains(rs.specialite.toLower())) {
+                    scoreMatching += 60.0;
+                } else {
+                    scoreMatching += 20.0;
+                }
+            } else {
+                scoreMatching += 30.0;
+            }
+
+            // 🔹 30% du score: score fiabilité (max 10)
+            scoreMatching += (rs.score / 10.0) * 30.0;
+
+            // 🔹 10% du score: nombre d'évaluations (expérience)
+            scoreMatching += qMin(10.0, rs.nbEval / 5.0);
+
+            rs.matchingScore = scoreMatching;
+            liste.append(rs);
+        }
+
+        // Trier par score de matching DESC
+        std::sort(liste.begin(), liste.end(), [](const ReviewerScore &a, const ReviewerScore &b) {
+            return a.matchingScore > b.matchingScore;
+        });
+
+        // Construire la réponse
+        QString res;
+
+        if (!idPubStr.isEmpty()) {
+            res += QString("✅ RECOMMANDATION POUR PUBLICATION ID %1:\n\n").arg(idPubStr);
+        } else if (!domaineRecherche.isEmpty()) {
+            res += QString("✅ MEILLEURS REVIEWERS POUR DOMAINE \"%1\":\n\n").arg(domaineRecherche.toUpper());
+        } else {
+            res += "✅ CLASSEMENT GENERAL DES MEILLEURS REVIEWERS:\n\n";
+        }
+
+        // Prendre TOP 3
+        int limit = qMin(3, liste.size());
+        for (int i = 0; i < limit; ++i) {
+            const ReviewerScore &rev = liste[i];
+            res += QString("%1. 🥇 %2\n")
+                      .arg(i+1)
+                      .arg(rev.nom);
+            res += QString("   📧 Email: %1\n").arg(rev.email);
+            res += QString("   🎯 Spécialité: %1\n").arg(rev.specialite.isEmpty() ? "Non renseignée" : rev.specialite);
+            res += QString("   ⭐ Score Fiabilité: %1/10\n").arg(rev.score, 0, 'f', 1);
+            res += QString("   📊 Nb Evaluations: %1\n").arg(rev.nbEval);
+            res += QString("   💯 Score Matching: %1%\n\n").arg(qRound(rev.matchingScore));
+        }
+
+        if (liste.isEmpty()) {
+            res += "❌ Aucun reviewer trouvé dans la base de données.";
+        } else {
+            res += "💡 Conseil: Choisissez toujours un reviewer avec une spécialité correspondante et un score > 7.";
+        }
+
+        return res;
+    }
+
+    if (q.contains("ajout") || q.contains("add") || q.contains("creer")) {
+        return "Ajout reviewer:\n"
+               "1) Remplir ID (rev_lineEdit_18), Nom (rev_lineEdit_19), Email (rev_lineEdit_20).\n"
+               "2) Optionnel: Specialite (lineEdit_3), Affiliation (lineEdit_2), Nb Evaluations (rev_lineEdit_25), Score (rev_lineEdit_26), ID Publication (rev_lineEdit_27).\n"
+               "3) Cliquer sur Add.";
+    }
+
+    if (q.contains("modif") || q.contains("update") || q.contains("modifier")) {
+        return "Modification reviewer:\n"
+               "1) Entrer ID reviewer a modifier (rev_lineEdit_18).\n"
+               "2) Mettre les nouvelles valeurs (au minimum Nom + Email).\n"
+               "3) Cliquer sur Modifier.";
+    }
+
+    if (q.contains("suppr") || q.contains("delete") || q.contains("remove")) {
+        return "Suppression reviewer:\n"
+               "1) Entrer ID reviewer dans rev_lineEdit_18.\n"
+               "2) Cliquer sur Suprrimer puis confirmer.";
+    }
+
+    if (q.contains("recherche") || q.contains("search") || q.contains("filtre")) {
+        return "Recherche reviewer:\n"
+               "- ID: rev_idsearch_3\n"
+               "- Nom: rev_lineEdit_7\n"
+               "- Specialite: lineEdit\n"
+               "La table se filtre automatiquement pendant la saisie.";
+    }
+
+    if (q.contains("tri") || q.contains("sort")) {
+        return "Tri reviewer:\n"
+               "- Combo gauche: tri par Score Fiabilite\n"
+               "- Combo droite: tri par Nb Evaluations\n"
+               "Choisir Croissant ou Decroissant.";
+    }
+
+    if (q.contains("reset") || q.contains("reinit")) {
+        return "Reset recherche:\n"
+               "Cliquer sur le bouton Reset pour vider les champs de recherche et recharger toute la liste.";
+    }
+
+    if (q.contains("email")) {
+        return "Regle email:\n"
+               "L'email doit contenir '@' et '.' et avoir une longueur valide (ex: nom@domaine.com).";
+    }
+
+    if (q.contains("score")) {
+        return "Regle score fiabilite:\n"
+               "Le score doit etre entre 1 et 10.";
+    }
+
+    if (q.contains("publication") || q.contains("id pub")) {
+        return "ID Publication:\n"
+               "Remplir rev_lineEdit_27 avec un ID existant dans la table PUBLICATION.";
+    }
+
+    return "Posez votre question! Je peux vous aider sur:\n✅ Ajout / Modif / Suppression reviewer\n✅ Recherche et tri\n✅ ✨ RECOMMANDATION INTELLIGENTE des meilleurs reviewers\n✅ Calcul score matching publication / reviewer";
+}
+
 // â”€â”€ Domaines â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const QStringList SmartMarket::DOMAINES = {
     "Informatique", "Mathematiques", "Physique", "Chimie", "Biologie",
@@ -97,6 +288,9 @@ SmartMarket::SmartMarket(QWidget *parent)
     , barChartView(nullptr)
     , networkManager(new QNetworkAccessManager(this))
     , arduinoBridge(nullptr)
+    , deadlineTimer(nullptr)
+    , arduinoLcd(new Arduino2(this))
+    , m_currentArduinoIndex(-1)
 {
     ui->setupUi(this);
     ui->lineEdit_10->setEchoMode(QLineEdit::Password);
@@ -119,6 +313,57 @@ SmartMarket::SmartMarket(QWidget *parent)
     
     initDomaines();
     initializeArduinoAccess();
+
+    if (ui->rev_comboBox_14) {
+        connect(ui->rev_comboBox_14, qOverload<int>(&QComboBox::currentIndexChanged),
+                this, &SmartMarket::on_rev_comboBox_14_currentIndexChanged);
+    }
+    if (ui->rev_comboBox_15) {
+        connect(ui->rev_comboBox_15, qOverload<int>(&QComboBox::currentIndexChanged),
+                this, &SmartMarket::on_rev_comboBox_15_currentIndexChanged);
+    }
+    if (ui->rev_idsearch_3) {
+        connect(ui->rev_idsearch_3, &QLineEdit::textChanged,
+                this, [this](const QString &) { on_rev_pushButton_8_clicked(); });
+    }
+    if (ui->rev_lineEdit_7) {
+        connect(ui->rev_lineEdit_7, &QLineEdit::textChanged,
+                this, [this](const QString &) { on_rev_pushButton_8_clicked(); });
+    }
+    if (ui->lineEdit) {
+        connect(ui->lineEdit, &QLineEdit::textChanged,
+                this, [this](const QString &) { on_rev_pushButton_8_clicked(); });
+    }
+
+    // SETUP CHAT BOX REVIEWERS
+    setupReviewerChat();
+
+    // SETUP RECOMMANDATION INTELLIGENTE REVIEWERS
+    setupReviewerRecommendation();
+
+    // SETUP RAPPELS DEADLINES (Métier #4)
+    setupDeadlineTimer();
+
+    // Connexion du bouton "⏰ Deadlines" dans la sidebar Reviewers
+    // findChild est plus robuste que ui-> (fonctionne même sans recompil qmake)
+    QPushButton *btnDeadline = this->findChild<QPushButton*>("revv_pushButton_deadline");
+    if (btnDeadline) {
+        connect(btnDeadline, &QPushButton::clicked,
+                this, &SmartMarket::showDeadlineDialog);
+        qDebug() << "[Deadline] Bouton deadline connecté avec succès.";
+    } else {
+        qDebug() << "[Deadline] AVERTISSEMENT: bouton revv_pushButton_deadline introuvable!";
+    }
+
+    // Connexion des nouveaux boutons Arduino LCD
+    QPushButton *btnArdStart = this->findChild<QPushButton*>("revv_btn_arduino_start");
+    QPushButton *btnArdPrev  = this->findChild<QPushButton*>("revv_btn_arduino_prev");
+    QPushButton *btnArdNext  = this->findChild<QPushButton*>("revv_btn_arduino_next");
+
+    if (btnArdStart) connect(btnArdStart, &QPushButton::clicked, this, &SmartMarket::on_revv_btn_arduino_start_clicked);
+    if (btnArdPrev)  connect(btnArdPrev,  &QPushButton::clicked, this, &SmartMarket::on_revv_btn_arduino_prev_clicked);
+    if (btnArdNext)  connect(btnArdNext,  &QPushButton::clicked, this, &SmartMarket::on_revv_btn_arduino_next_clicked);
+
     ui->stackedWidgetMain->setCurrentIndex(0);
 }
 
@@ -585,15 +830,15 @@ bool SmartMarket::ensureConferenceTables(QSqlDatabase &db)
 bool SmartMarket::ensureParticipantUidColumn(QSqlDatabase &db)
 {
     QSqlQuery probe(db);
-    if (probe.exec("SELECT uid_rfid FROM OUSSAMA.participant WHERE 1=0"))
+    if (probe.exec("SELECT uid_rfid FROM ADAM.participant WHERE 1=0"))
         return true;
 
     QSqlQuery alter(db);
-    if (!alter.exec("ALTER TABLE OUSSAMA.participant ADD uid_rfid VARCHAR2(32)"))
+    if (!alter.exec("ALTER TABLE ADAM.participant ADD uid_rfid VARCHAR2(32)"))
         return false;
 
     QSqlQuery idx(db);
-    idx.exec("CREATE UNIQUE INDEX idx_participant_uid_rfid ON OUSSAMA.participant(uid_rfid)");
+    idx.exec("CREATE UNIQUE INDEX idx_participant_uid_rfid ON ADAM.participant(uid_rfid)");
     return true;
 }
 
@@ -703,8 +948,8 @@ void SmartMarket::handleArduinoUid(const QString &uid)
 
     QSqlQuery q(db);
     q.prepare("SELECT p.nom, p.idconference, NVL(c.lieu, '') "
-              "FROM OUSSAMA.participant p "
-              "LEFT JOIN OUSSAMA.conference c ON c.idconference = p.idconference "
+              "FROM ADAM.participant p "
+              "LEFT JOIN ADAM.conference c ON c.idconference = p.idconference "
               "WHERE UPPER(TRIM(p.uid_rfid)) = :uid");
     q.bindValue(":uid", uid.toUpper());
 
@@ -807,7 +1052,7 @@ void SmartMarket::refreshCharts()
         return;
 
     QSqlQuery qStat;
-    if (!qStat.exec("SELECT NVL(STATUT, 'Inconnu'), COUNT(*) FROM OUSSAMA.PUBLICATION GROUP BY NVL(STATUT, 'Inconnu')")) {
+    if (!qStat.exec("SELECT NVL(STATUT, 'Inconnu'), COUNT(*) FROM ADAM.PUBLICATION GROUP BY NVL(STATUT, 'Inconnu')")) {
         QMessageBox::warning(this, "Graphiques", "Impossible de charger les statuts : " + qStat.lastError().text());
         return;
     }
@@ -853,7 +1098,7 @@ void SmartMarket::refreshCharts()
     if (!qDom.exec(
         "SELECT CASE WHEN TRIM(NVL(DOMAINE,'') ) = '' THEN 'Inconnu' ELSE DOMAINE END AS DOMAINE, "
         "COUNT(*) AS CNT "
-        "FROM OUSSAMA.PUBLICATION "
+        "FROM ADAM.PUBLICATION "
         "GROUP BY CASE WHEN TRIM(NVL(DOMAINE,'')) = '' THEN 'Inconnu' ELSE DOMAINE END "
         "ORDER BY CNT DESC, DOMAINE"
     )) {
@@ -931,6 +1176,8 @@ void SmartMarket::on_pushButton_15_clicked()
         ui->stackedWidgetMain->setCurrentIndex(1);
         initPublicationTable();
         createCharts();
+        // Pre-load reviewer table in background so it's ready when user navigates
+        loadReviewerTable();
     }
     else
     {
@@ -971,7 +1218,7 @@ void SmartMarket::on_pushButton_19_clicked()
     }
 
     QSqlQuery seqQ;
-    seqQ.exec("SELECT NVL(MAX(IDPUBLICATION),0)+1 FROM OUSSAMA.PUBLICATION");
+    seqQ.exec("SELECT NVL(MAX(IDPUBLICATION),0)+1 FROM ADAM.PUBLICATION");
     int newId = 1;
     if (seqQ.next()) newId = seqQ.value(0).toInt();
 
@@ -1150,7 +1397,7 @@ void SmartMarket::exporterPDF(bool toutesPublications)
     QSqlQuery q;
     QString sql = "SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, "
                   "TO_CHAR(DATEPUBLICATION,'DD/MM/YYYY'), STATUT, CONTENU "
-                  "FROM OUSSAMA.PUBLICATION";
+                  "FROM ADAM.PUBLICATION";
 
     // Si on exporte seulement les publications filtrÃ©es
     if (!toutesPublications) {
@@ -1377,7 +1624,7 @@ void SmartMarket::exporterExcel(bool toutesPublications)
     QSqlQuery q;
     QString sql = "SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, "
                   "TO_CHAR(DATEPUBLICATION,'DD/MM/YYYY'), STATUT, CONTENU "
-                  "FROM OUSSAMA.PUBLICATION";
+                  "FROM ADAM.PUBLICATION";
 
     if (!toutesPublications) {
         if (!lastPubFilter.isEmpty())
@@ -1557,7 +1804,7 @@ void SmartMarket::on_pushButton_6_clicked()
     // RÃ©cupÃ©rer les deux publications
     QSqlQuery q;
     q.prepare("SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, CONTENU, STATUT "
-              "FROM OUSSAMA.PUBLICATION WHERE IDPUBLICATION IN (:a, :b)");
+              "FROM ADAM.PUBLICATION WHERE IDPUBLICATION IN (:a, :b)");
     q.bindValue(":a", id1.toInt());
     q.bindValue(":b", id2.toInt());
     q.exec();
@@ -1761,7 +2008,7 @@ void SmartMarket::on_pushButton_7_clicked()
     QSqlQuery q;
     q.prepare("SELECT TITRE, SOURCE, DOMAINE, "
               "TO_CHAR(DATEPUBLICATION,'DD/MM/YYYY'), STATUT, CONTENU "
-              "FROM OUSSAMA.PUBLICATION WHERE IDPUBLICATION=:id");
+              "FROM ADAM.PUBLICATION WHERE IDPUBLICATION=:id");
     q.bindValue(":id", idStr.toInt());
     q.exec();
 
@@ -1970,7 +2217,10 @@ void SmartMarket::on_pushButton_15_sidebar_clicked()
 { openConferenceModule(); }
 
 void SmartMarket::on_pushButton_16_clicked()
-{ QMessageBox::information(this, "Info", "Module Equipements a integrer."); }
+{
+    ui->stackedWidgetMain->setCurrentIndex(3); // Open page_2 (Reviewers page)
+    loadReviewerTable(); // Always load fresh data when opening reviewers page
+}
 
 void SmartMarket::openConferenceModule()
 {
@@ -2012,7 +2262,7 @@ void SmartMarket::on_conf_pushButton_26_clicked()
     }
 
     QSqlQuery q(db);
-    q.prepare("INSERT INTO OUSSAMA.conference (idconference, nom, lieu, datedebut, theme, nombreparticipants) "
+    q.prepare("INSERT INTO ADAM.conference (idconference, nom, lieu, datedebut, theme, nombreparticipants) "
               "VALUES (:id, :nom, :lieu, :date, :theme, 0)");
     q.bindValue(":id", id);
     q.bindValue(":nom", nom);
@@ -2080,7 +2330,7 @@ void SmartMarket::on_conf_pushButton_27_clicked()
     }
 
     QSqlQuery q(db);
-    q.prepare("UPDATE OUSSAMA.conference "
+    q.prepare("UPDATE ADAM.conference "
               "SET nom = :nom, lieu = :lieu, datedebut = :date, theme = :theme "
               "WHERE idconference = :id");
     q.bindValue(":nom", nom);
@@ -2156,7 +2406,7 @@ void SmartMarket::on_conf_pushButton_8_clicked()
     }
 
     QSqlQuery q(db);
-    q.prepare("DELETE FROM OUSSAMA.conference WHERE idconference = :id");
+    q.prepare("DELETE FROM ADAM.conference WHERE idconference = :id");
     q.bindValue(":id", id);
 
     if (!q.exec())
@@ -2292,7 +2542,6 @@ void SmartMarket::on_conf_pushButton_5_clicked()
         return;
     }
 
-    const double scale = 1.0;
     const int pageW = painter.device()->width();
     const int pageH = painter.device()->height();
     const int marginX = 15 * 3.78;
@@ -2372,6 +2621,7 @@ void SmartMarket::on_conf_pushButton_5_clicked()
     };
 
     auto renderChart = [&](QGraphicsView *view, const QString &title, int targetWidth, int targetHeight) -> QImage {
+        Q_UNUSED(title);
         QRectF sceneRect = view->scene()->itemsBoundingRect();
         if (sceneRect.isEmpty() || !sceneRect.isValid())
             sceneRect = view->scene()->sceneRect();
@@ -2543,8 +2793,8 @@ void SmartMarket::on_conf_pushButton_21_clicked()
 
     QSqlQuery query(db);
     QString sql = "SELECT c.idconference, c.nom, c.lieu, c.datedebut, c.theme, "
-                  "       (SELECT COUNT(*) FROM OUSSAMA.participant p WHERE p.idconference = c.idconference) AS nombreparticipants "
-                  "FROM OUSSAMA.conference c ";
+                  "       (SELECT COUNT(*) FROM ADAM.participant p WHERE p.idconference = c.idconference) AS nombreparticipants "
+                  "FROM ADAM.conference c ";
 
     const bool isDateFilter = ui->conf_radioButton_19 && ui->conf_radioButton_19->isChecked();
 
@@ -2625,5 +2875,1102 @@ void SmartMarket::filterParticipants()
     on_conf_pushButton_20_clicked();
 }
 
+void SmartMarket::on_conf_pushButton_14_clicked()
+{
+    // Open page_2 (Reviewers page) - index 3 in stackedWidgetMain
+    ui->stackedWidgetMain->setCurrentIndex(3);
+    loadReviewerTable();
+}
+
+// ================================================================
+// REVIEWERS PAGE (page_2) NAVIGATION
+// ================================================================
+void SmartMarket::on_revv_pushButton_22_clicked()
+{
+    // Navigate to Publications page (index 1)
+    ui->stackedWidgetMain->setCurrentIndex(1);
+}
+
+void SmartMarket::on_revv_pushButton_24_clicked()
+{
+    // Navigate to Conferences page (page2, index 2)
+    ui->stackedWidgetMain->setCurrentIndex(2);
+    loadConferenceTable();
+}
+
+// ================================================================
+// REVIEWERS CRUD - Ajouter reviewer
+// ================================================================
+void SmartMarket::on_rev_pushButton_12_clicked()
+{
+    // Get values from UI fields
+    QString idStr = ui->rev_lineEdit_18->text().trimmed();
+    QString nom = ui->rev_lineEdit_19->text().trimmed();
+    QString email = ui->rev_lineEdit_20->text().trimmed();
+    QString specialite = ui->lineEdit_3->text().trimmed();
+    QString affiliation = ui->lineEdit_2->text().trimmed();
+    QString nbEvalStr = ui->rev_lineEdit_25->text().trimmed();
+    QString scoreStr = ui->rev_lineEdit_26->text().trimmed();
+    QString idPubStr = ui->rev_lineEdit_27->text().trimmed();
+
+    // Validation
+    if (idStr.isEmpty() || nom.isEmpty() || email.isEmpty()) {
+        QMessageBox::warning(this, "Attention", 
+            "Remplissez obligatoirement : ID, Nom, Email.");
+        return;
+    }
+
+    bool idOk = false, nbOk = false, scoreOk = false, idPubOk = false;
+    int id = idStr.toInt(&idOk);
+    int nbEval = nbEvalStr.toInt(&nbOk);
+    double score = scoreStr.toDouble(&scoreOk);
+    int idPub = idPubStr.toInt(&idPubOk);
+
+    // ✅ CONTROLE DE SAISI ID REVIEWER
+    if (!idOk || id <= 0) {
+        QMessageBox::warning(this, "⚠️  ID invalide", "L'ID Reviewer doit etre un NUMERO entier positif !");
+        ui->rev_lineEdit_18->setStyleSheet("border: 2px solid red;");
+        return;
+    } else {
+        ui->rev_lineEdit_18->setStyleSheet("");
+    }
+
+    // ✅ CONTROLE DE SAISI EMAIL
+    if (!email.contains("@") || !email.contains(".") || email.length() < 5) {
+        QMessageBox::warning(this, "⚠️  Email invalide", "Veuillez entrer une adresse email valide (ex: nom@domaine.com)");
+        ui->rev_lineEdit_20->setStyleSheet("border: 2px solid red;");
+        return;
+    } else {
+        ui->rev_lineEdit_20->setStyleSheet("");
+    }
+
+    // ✅ CONTROLE DE SAISI SCORE FIABILITE (1-10)
+    if (scoreOk) {
+        if (score < 1 || score > 10) {
+            QMessageBox::warning(this, "⚠️  Score invalide", "Le Score Fiabilité doit etre un nombre **ENTRE 1 ET 10** !");
+            ui->rev_lineEdit_26->setStyleSheet("border: 2px solid red;");
+            return;
+        } else {
+            ui->rev_lineEdit_26->setStyleSheet("");
+        }
+    }
+
+    // Create reviewer object
+    Reviewer r(id, nom, email, specialite, affiliation, 
+               nbOk ? nbEval : 0, scoreOk ? score : 0.0, idPubOk ? idPub : 0);
+
+    if (r.ajouter()) {
+        QMessageBox::information(this, "Succes", 
+            QString("Reviewer ajoute ! ID : %1").arg(id));
+        // Clear fields
+        ui->rev_lineEdit_18->clear();
+        ui->rev_lineEdit_19->clear();
+        ui->rev_lineEdit_20->clear();
+        ui->lineEdit_3->clear();
+        ui->lineEdit_2->clear();
+        ui->rev_lineEdit_25->clear();
+        ui->rev_lineEdit_26->clear();
+        ui->rev_lineEdit_27->clear();
+        // Refresh table
+        loadReviewerTable();
+    } else {
+        QMessageBox::critical(this, "Erreur BDD", 
+            "Echec ajout reviewer.\n\n" + r.getLastError());
+    }
+}
+
+void SmartMarket::on_rev_pushButton_21_clicked()
+{
+    const QString idStr = ui->rev_lineEdit_18->text().trimmed();
+    bool idOk = false;
+    const int id = idStr.toInt(&idOk);
+
+    if (!idOk || id <= 0) {
+        QMessageBox::warning(this, "Attention", "Entrez un ID reviewer valide pour supprimer.");
+        return;
+    }
+
+    const QMessageBox::StandardButton confirm = QMessageBox::question(
+        this,
+        "Confirmation",
+        QString("Supprimer le reviewer ID %1 ?").arg(id),
+        QMessageBox::Yes | QMessageBox::No,
+        QMessageBox::No
+    );
+
+    if (confirm != QMessageBox::Yes)
+        return;
+
+    Reviewer r;
+    if (r.supprimer(id)) {
+        QMessageBox::information(this, "Succes", "Reviewer supprime.");
+        ui->rev_lineEdit_18->clear();
+        loadReviewerTable();
+    } else {
+        QMessageBox::critical(this, "Erreur BDD", "Echec suppression reviewer.\n\n" + r.getLastError());
+    }
+}
+
+void SmartMarket::on_rev_pushButton_10_clicked()
+{
+    QString idStr = ui->rev_lineEdit_18->text().trimmed();
+    QString nom = ui->rev_lineEdit_19->text().trimmed();
+    QString email = ui->rev_lineEdit_20->text().trimmed();
+    QString specialite = ui->lineEdit_3->text().trimmed();
+    QString affiliation = ui->lineEdit_2->text().trimmed();
+    QString nbEvalStr = ui->rev_lineEdit_25->text().trimmed();
+    QString scoreStr = ui->rev_lineEdit_26->text().trimmed();
+    QString idPubStr = ui->rev_lineEdit_27->text().trimmed();
+
+    bool idOk = false, nbOk = false, scoreOk = false, idPubOk = false;
+    int id = idStr.toInt(&idOk);
+    int nbEval = nbEvalStr.toInt(&nbOk);
+    double score = scoreStr.toDouble(&scoreOk);
+    int idPub = idPubStr.toInt(&idPubOk);
+
+    if (!idOk || id <= 0) {
+        QMessageBox::warning(this, "Attention", "Entrez un ID reviewer valide pour modifier.");
+        return;
+    }
+
+    if (nom.isEmpty() || email.isEmpty()) {
+        QMessageBox::warning(this, "Attention", "Remplissez au minimum Nom et Email pour la modification.");
+        return;
+    }
+
+    Reviewer r(id, nom, email, specialite, affiliation,
+               nbOk ? nbEval : 0, scoreOk ? score : 0.0, idPubOk ? idPub : 0);
+
+    if (r.modifier()) {
+        QMessageBox::information(this, "Succes", "Reviewer modifie.");
+        loadReviewerTable();
+    } else {
+        QMessageBox::critical(this, "Erreur BDD", "Echec modification reviewer.\n\n" + r.getLastError());
+    }
+}
+
+void SmartMarket::on_rev_pushButton_19_clicked()
+{
+    QTableWidget *table = ui->rev_tableWidget_3;
+    if (!table) {
+        QMessageBox::warning(this, "Export PDF", "Table reviewer introuvable.");
+        return;
+    }
+
+    if (table->rowCount() == 0) {
+        QMessageBox::information(this, "Export PDF", "Aucune donnee reviewer a exporter.");
+        return;
+    }
+
+    QString defaultPath = QDir::homePath() + "/reviewers_export_"
+            + QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss") + ".pdf";
+
+    QString filePath = QFileDialog::getSaveFileName(
+        this,
+        "Exporter reviewers en PDF",
+        defaultPath,
+        "PDF Files (*.pdf)"
+    );
+
+    if (filePath.isEmpty())
+        return;
+
+    if (!filePath.endsWith(".pdf", Qt::CaseInsensitive))
+        filePath += ".pdf";
+
+    QPrinter printer(QPrinter::HighResolution);
+    printer.setOutputFormat(QPrinter::PdfFormat);
+    printer.setOutputFileName(filePath);
+    printer.setPageOrientation(QPageLayout::Landscape);
+    printer.setPageMargins(QMarginsF(10, 10, 10, 10), QPageLayout::Millimeter);
+
+    QPainter painter;
+    if (!painter.begin(&printer)) {
+        QMessageBox::critical(this, "Export PDF", "Impossible de generer le PDF.");
+        return;
+    }
+
+    const QFont titleFont("Arial", 14, QFont::Bold);
+    const QFont headerFont("Arial", 9, QFont::Bold);
+    const QFont bodyFont("Arial", 8);
+
+    const QRect pageRect = printer.pageRect(QPrinter::DevicePixel).toRect();
+    const int left = pageRect.left() + 30;
+    const int right = pageRect.right() - 30;
+    int y = pageRect.top() + 30;
+
+    painter.setFont(titleFont);
+    painter.drawText(QRect(left, y, right - left, 28), Qt::AlignLeft | Qt::AlignVCenter,
+                     "Rapport Reviewers");
+    y += 28;
+
+    painter.setFont(bodyFont);
+    painter.drawText(QRect(left, y, right - left, 18), Qt::AlignLeft | Qt::AlignVCenter,
+                     "Genere le: " + QDateTime::currentDateTime().toString("dd/MM/yyyy HH:mm"));
+    y += 26;
+
+    const int columns = table->columnCount();
+    if (columns <= 0) {
+        painter.end();
+        QMessageBox::warning(this, "Export PDF", "Aucune colonne a exporter.");
+        return;
+    }
+
+    const int tableWidth = right - left;
+    const int colW = tableWidth / columns;
+    const int headerH = 24;
+    const int rowH = 20;
+
+    auto drawHeader = [&]() {
+        painter.setFont(headerFont);
+        for (int c = 0; c < columns; ++c) {
+            const int x = left + c * colW;
+            painter.fillRect(x, y, colW, headerH, QColor("#12304E"));
+            painter.setPen(Qt::white);
+            const QString text = table->horizontalHeaderItem(c)
+                    ? table->horizontalHeaderItem(c)->text()
+                    : QString("Col%1").arg(c + 1);
+            painter.drawText(QRect(x + 4, y, colW - 8, headerH), Qt::AlignVCenter | Qt::AlignLeft, text);
+            painter.setPen(Qt::black);
+            painter.drawRect(x, y, colW, headerH);
+        }
+        y += headerH;
+    };
+
+    drawHeader();
+
+    painter.setFont(bodyFont);
+    for (int r = 0; r < table->rowCount(); ++r) {
+        if (y + rowH > pageRect.bottom() - 20) {
+            printer.newPage();
+            y = pageRect.top() + 30;
+            drawHeader();
+            painter.setFont(bodyFont);
+        }
+
+        for (int c = 0; c < columns; ++c) {
+            const int x = left + c * colW;
+            const QString text = table->item(r, c) ? table->item(r, c)->text() : "";
+            const QString clipped = QFontMetrics(bodyFont).elidedText(text, Qt::ElideRight, colW - 8);
+            painter.drawRect(x, y, colW, rowH);
+            painter.drawText(QRect(x + 4, y, colW - 8, rowH), Qt::AlignVCenter | Qt::AlignLeft, clipped);
+        }
+        y += rowH;
+    }
+
+    painter.end();
+    QMessageBox::information(this, "Export PDF", "PDF genere: " + filePath);
+}
+
+// ================================================================
+// LOAD REVIEWER TABLE
+// ================================================================
+void SmartMarket::loadReviewerTable()
+{
+    QTableWidget *table = ui->rev_tableWidget_3;
+    if (!table) return;
+
+    Reviewer r;
+    QSqlQueryModel *model = r.afficher();
+
+    table->setSortingEnabled(false);
+    table->setRowCount(0);
+    table->setColumnCount(8);
+    table->setHorizontalHeaderLabels({
+        "ID", "Nom", "Email", "Specialite", 
+        "Affiliation", "Nb Evaluations", "Score Fiabilite", "ID Publication"
+    });
+
+    // Dark theme styling for better readability
+    table->setStyleSheet(R"(
+        QTableWidget {
+            background-color: #1e1e2e;
+            alternate-background-color: #2d2d44;
+            color: #ffffff;
+            gridline-color: #44475a;
+            selection-background-color: #6272a4;
+            selection-color: #ffffff;
+        }
+        QHeaderView::section {
+            background-color: #44475a;
+            color: #f8f8f2;
+            padding: 5px;
+            border: 1px solid #6272a4;
+            font-weight: bold;
+        }
+        QTableWidget::item {
+            padding: 4px;
+        }
+    )");
+    
+    table->setAlternatingRowColors(true);
+    table->horizontalHeader()->setStretchLastSection(true);
+
+    for (int i = 0; i < model->rowCount(); ++i) {
+        table->insertRow(i);
+        for (int j = 0; j < model->columnCount(); ++j) {
+            QTableWidgetItem *item = new QTableWidgetItem(model->index(i, j).data().toString());
+            item->setTextAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+            table->setItem(i, j, item);
+        }
+    }
+
+    table->setSortingEnabled(true);
+    applyReviewerSort();
+    refreshReviewerCharts();
+}
+
+void SmartMarket::applyReviewerSort()
+{
+    QTableWidget *table = ui->rev_tableWidget_3;
+    if (!table || table->rowCount() == 0)
+        return;
+
+    int column = reviewerSortColumn;
+
+    // Fallback: si la colonne score n'existe pas dans le tableau charge,
+    // on trie par Nb Evaluations.
+    if (column >= table->columnCount())
+        column = 5;
+
+    table->sortItems(column, reviewerSortOrder);
+}
+
+void SmartMarket::on_rev_comboBox_14_currentIndexChanged(int index)
+{
+    Q_UNUSED(index);
+    reviewerSortColumn = 5; // Nb Evaluations
+    reviewerSortOrder = (ui->rev_comboBox_14 && ui->rev_comboBox_14->currentIndex() == 0)
+            ? Qt::AscendingOrder
+            : Qt::DescendingOrder;
+    applyReviewerSort();
+}
+
+void SmartMarket::on_rev_comboBox_15_currentIndexChanged(int index)
+{
+    Q_UNUSED(index);
+    reviewerSortColumn = 6; // Score Fiabilite (si disponible)
+    reviewerSortOrder = (ui->rev_comboBox_15 && ui->rev_comboBox_15->currentIndex() == 0)
+            ? Qt::AscendingOrder
+            : Qt::DescendingOrder;
+    applyReviewerSort();
+}
+
+// ================================================================
+// REVIEWERS CHARTS AUTO-GENERATED
+// ================================================================
+void SmartMarket::on_rev_pushButton_8_clicked()
+{
+    QString idSearch = ui->rev_idsearch_3 ? ui->rev_idsearch_3->text().trimmed() : QString();
+    QString nomSearch = ui->rev_lineEdit_7 ? ui->rev_lineEdit_7->text().trimmed() : QString();
+    QString specialiteSearch = ui->lineEdit ? ui->lineEdit->text().trimmed() : QString();
+    
+    QTableWidget *table = ui->rev_tableWidget_3;
+    if (!table) return;
+
+    table->setSortingEnabled(false);
+    table->setRowCount(0);
+
+    Reviewer r;
+    QSqlQueryModel *model = nullptr;
+
+    if (idSearch.isEmpty() && nomSearch.isEmpty() && specialiteSearch.isEmpty()) {
+        // Si champ vide afficher tous les reviewers
+        model = r.afficher();
+    } else {
+        model = r.rechercher(idSearch, nomSearch, specialiteSearch);
+    }
+
+    if (!model) {
+        table->setSortingEnabled(true);
+        QMessageBox::critical(this, "Erreur BDD", "Echec recherche reviewer.\n\n" + r.getLastError());
+        return;
+    }
+
+    for (int i = 0; i < model->rowCount(); ++i) {
+        table->insertRow(i);
+        for (int j = 0; j < model->columnCount(); ++j) {
+            QTableWidgetItem *item = new QTableWidgetItem(model->index(i, j).data().toString());
+            item->setTextAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+            table->setItem(i, j, item);
+        }
+    }
+
+    table->setSortingEnabled(true);
+    applyReviewerSort();
+    refreshReviewerCharts();
+
+    if (model->rowCount() == 0) {
+        QMessageBox::information(this, "Recherche", "Aucun reviewer trouvé pour cette recherche.");
+    }
+}
+
+void SmartMarket::on_rev_pushButton_3_clicked()
+{
+    // Reset champs recherche
+    if (ui->rev_idsearch_3) {
+        ui->rev_idsearch_3->clear();
+    }
+    if (ui->rev_lineEdit_7) {
+        ui->rev_lineEdit_7->clear();
+    }
+    if (ui->lineEdit) {
+        ui->lineEdit->clear();
+    }
+    // Recharger tous les reviewers
+    loadReviewerTable();
+}
+
+void SmartMarket::refreshReviewerCharts()
+{
+    // Cleanup old charts
+    if (reviewerPieChartView && ui->rev_chartFramePie && ui->rev_chartFramePie->layout()) {
+        ui->rev_chartFramePie->layout()->removeWidget(reviewerPieChartView);
+        reviewerPieChartView->deleteLater();
+        reviewerPieChartView = nullptr;
+    }
+    if (reviewerBarChartView && ui->rev_chartFrameLine && ui->rev_chartFrameLine->layout()) {
+        ui->rev_chartFrameLine->layout()->removeWidget(reviewerBarChartView);
+        reviewerBarChartView->deleteLater();
+        reviewerBarChartView = nullptr;
+    }
+
+    // Ensure frames have layouts
+    if (ui->rev_chartFramePie && !ui->rev_chartFramePie->layout()) {
+        QVBoxLayout *l = new QVBoxLayout(ui->rev_chartFramePie);
+        l->setContentsMargins(0, 0, 0, 0);
+    }
+    if (ui->rev_chartFrameLine && !ui->rev_chartFrameLine->layout()) {
+        QVBoxLayout *l = new QVBoxLayout(ui->rev_chartFrameLine);
+        l->setContentsMargins(0, 0, 0, 0);
+    }
+
+    if (!ui->rev_chartFramePie || !ui->rev_chartFrameLine)
+        return;
+
+    QTableWidget *table = ui->rev_tableWidget_3;
+    if (!table || table->rowCount() == 0)
+        return;
+
+    // ✅ NOUVELLE VERSION: STATISTIQUES CALCULEES DIRECTEMENT DE LA TABLE AFFICHÉE (FILTRÉE)
+    // Les graphiques suivent EXACTEMENT ce qui est affiché après recherche / filtre
+    // ================== PIE CHART: Score Fiabilite Distribution ==================
+    int excellent = 0, bon = 0, moyen = 0, insuffisant = 0;
+    QBarSet *evalBarSet = new QBarSet("Nombre d'evaluations");
+    QStringList reviewerNames;
+
+    for (int i = 0; i < table->rowCount(); ++i) {
+        double score = table->item(i, 6) ? table->item(i, 6)->text().toDouble() : 0;
+        int nbEval = table->item(i, 5) ? table->item(i, 5)->text().toInt() : 0;
+        QString nom = table->item(i, 1) ? table->item(i, 1)->text() : "";
+
+        // Categorize score (NOUVELLE REPARTITION: 1-10 scale)
+        if (score >= 7) excellent++;
+        else if (score >= 4 && score <= 6) bon++;
+        else if (score < 4) insuffisant++;
+
+        // Add to bar chart
+        *evalBarSet << nbEval;
+        reviewerNames << nom.left(10); // Trim long names
+    }
+
+    // Create Pie Series
+    QPieSeries *pieSeries = new QPieSeries();
+    if (excellent > 0) pieSeries->append(QString("Excellent (%1)").arg(excellent), excellent);
+    if (bon > 0) pieSeries->append(QString("Bon (%1)").arg(bon), bon);
+    if (moyen > 0) pieSeries->append(QString("Moyen (%1)").arg(moyen), moyen);
+    if (insuffisant > 0) pieSeries->append(QString("Insuffisant (%1)").arg(insuffisant), insuffisant);
+
+    // Set colors
+    QList<QColor> pieColors = { QColor("#059669"), QColor("#10b981"), QColor("#f59e0b"), QColor("#dc2626") };
+    int colorIdx = 0;
+    for (QPieSlice *slice : pieSeries->slices()) {
+        slice->setColor(pieColors[colorIdx % pieColors.size()]);
+        slice->setLabelVisible(true);
+        slice->setLabelPosition(QPieSlice::LabelOutside);
+        colorIdx++;
+    }
+
+    // Create Pie Chart
+    QChart *pieChart = new QChart();
+    pieChart->addSeries(pieSeries);
+    pieChart->setTitle("Répartition des scores de fiabilité");
+    pieChart->legend()->setAlignment(Qt::AlignRight);
+    pieChart->setAnimationOptions(QChart::SeriesAnimations);
+    pieChart->setBackgroundVisible(false);
+
+    reviewerPieChartView = new QChartView(pieChart);
+    reviewerPieChartView->setRenderHint(QPainter::Antialiasing);
+    if (ui->rev_chartFramePie->layout())
+        ui->rev_chartFramePie->layout()->addWidget(reviewerPieChartView);
+
+    // ================== BAR CHART: Nombre Evaluations par Reviewer ==================
+    QBarSeries *barSeries = new QBarSeries();
+    barSeries->append(evalBarSet);
+    evalBarSet->setColor(QColor("#3b82f6"));
+    barSeries->setLabelsVisible(true);
+
+    // Create Bar Chart
+    QChart *barChart = new QChart();
+    barChart->addSeries(barSeries);
+    barChart->setTitle("Nombre d'évaluations par reviewer");
+    barChart->setAnimationOptions(QChart::SeriesAnimations);
+    barChart->setBackgroundVisible(false);
+
+    QBarCategoryAxis *axisX = new QBarCategoryAxis();
+    axisX->append(reviewerNames);
+    barChart->addAxis(axisX, Qt::AlignBottom);
+    barSeries->attachAxis(axisX);
+
+    QValueAxis *axisY = new QValueAxis();
+    axisY->setLabelFormat("%d");
+    barChart->addAxis(axisY, Qt::AlignLeft);
+    barSeries->attachAxis(axisY);
+
+    barChart->legend()->setVisible(false);
+
+    reviewerBarChartView = new QChartView(barChart);
+    reviewerBarChartView->setRenderHint(QPainter::Antialiasing);
+    if (ui->rev_chartFrameLine->layout())
+        ui->rev_chartFrameLine->layout()->addWidget(reviewerBarChartView);
+}
 
 
+
+// ================================================================
+// CHAT BOX REVIEWERS - IMPLEMENTATION COMPLETE
+// ================================================================
+void SmartMarket::setupReviewerChat()
+{
+    if (!ui->revv_tab_6) return;
+
+    // Bouton Toggle Chat PLACE SOUS LE BOUTON SUPPRIMER COMME DEMANDE
+    QPushButton *chatToggleBtn = new QPushButton("💬 Assistant Chat", ui->revv_tab_6);
+    chatToggleBtn->setGeometry(20, 420, 200, 40);
+    chatToggleBtn->setStyleSheet("QPushButton { background-color: #2563eb; color: white; border-radius: 6px; font-weight: bold; font-size: 13px; } QPushButton:hover { background-color: #1d4ed8; }");
+
+    // Panneau Chat Principal sur le cote droit
+    QWidget *chatPanel = new QWidget(ui->revv_tab_6);
+    chatPanel->setObjectName("chatPanelWidget");
+    chatPanel->setGeometry(740, 60, 320, 580);
+    chatPanel->setStyleSheet("QWidget { background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; }");
+    chatPanel->hide();
+
+    // Zone historique messages
+    QTextEdit *chatHistory = new QTextEdit(chatPanel);
+    chatHistory->setObjectName("chatHistory");
+    chatHistory->setGeometry(10, 10, 300, 490);
+    chatHistory->setReadOnly(true);
+    chatHistory->setStyleSheet("QTextEdit { border: none; background-color: white; }");
+    chatHistory->setFont(QFont("Segoe UI", 10));
+
+    // Champ texte message
+    QLineEdit *chatInput = new QLineEdit(chatPanel);
+    chatInput->setObjectName("chatInput");
+    chatInput->setGeometry(10, 510, 210, 32);
+    chatInput->setPlaceholderText("Posez votre question ici...");
+    chatInput->setStyleSheet("QLineEdit { border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px; }");
+
+    // Bouton Envoyer
+    QPushButton *sendBtn = new QPushButton("Envoyer", chatPanel);
+    sendBtn->setGeometry(230, 510, 80, 32);
+    sendBtn->setStyleSheet("QPushButton { background-color: #2563eb; color: white; border-radius: 4px; }");
+
+    // Connexions
+    connect(chatToggleBtn, &QPushButton::clicked, this, &SmartMarket::toggleChatPanel);
+    connect(sendBtn, &QPushButton::clicked, this, &SmartMarket::sendChatMessage);
+    connect(chatInput, &QLineEdit::returnPressed, this, &SmartMarket::sendChatMessage);
+
+    // Charger historique
+    loadChatHistory();
+
+    // Message de bienvenue
+    if (chatHistory->toPlainText().isEmpty()) {
+        appendChatMessage("👋 Bonjour! Je suis votre assistant Reviewer. Posez-moi n'importe quelle question sur l'ajout, modification, suppression, recherche des reviewers.", false);
+    }
+}
+
+void SmartMarket::toggleChatPanel()
+{
+    QWidget *chatPanel = ui->revv_tab_6->findChild<QWidget*>("chatPanelWidget");
+    if (chatPanel) {
+        chatPanel->setVisible(!chatPanel->isVisible());
+    }
+}
+
+void SmartMarket::sendChatMessage()
+{
+    QLineEdit *chatInput = ui->revv_tab_6->findChild<QLineEdit*>("chatInput");
+    QTextEdit *chatHistory = ui->revv_tab_6->findChild<QTextEdit*>("chatHistory");
+
+    if (!chatInput || !chatHistory) return;
+
+    QString question = chatInput->text().trimmed();
+    if (question.isEmpty()) return;
+
+    // Ajouter message utilisateur
+    appendChatMessage(question, true);
+    chatInput->clear();
+
+    // Reponse IA instantanée
+    QString response = localReviewerAssistantReply(question);
+
+    // Simuler "est en train d'écrire"
+    QTimer::singleShot(600, this, [this, response]() {
+        appendChatMessage(response, false);
+        saveChatHistory();
+    });
+}
+
+void SmartMarket::appendChatMessage(const QString &text, bool isUser)
+{
+    QTextEdit *chatHistory = ui->revv_tab_6->findChild<QTextEdit*>("chatHistory");
+    if (!chatHistory) return;
+
+    QString style = isUser
+        ? "margin-left: 60px; background-color: #dbeafe; color: #1e40af; padding: 8px 12px; border-radius: 12px 12px 2px 12px;"
+        : "margin-right: 60px; background-color: #f1f5f9; color: #1e293b; padding: 8px 12px; border-radius: 12px 12px 12px 2px;";
+
+    QString html = QString("<div style='%1'>%2</div><div style='height: 8px;'></div>").arg(style, text.toHtmlEscaped().replace("\n", "<br>"));
+
+    chatHistory->moveCursor(QTextCursor::End);
+    chatHistory->insertHtml(html);
+    chatHistory->verticalScrollBar()->setValue(chatHistory->verticalScrollBar()->maximum());
+}
+
+void SmartMarket::saveChatHistory()
+{
+    QTextEdit *chatHistory = ui->revv_tab_6->findChild<QTextEdit*>("chatHistory");
+    if (!chatHistory) return;
+
+    QFile file(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/chat_history_reviewer.txt");
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&file);
+        out << chatHistory->toHtml();
+    }
+}
+
+void SmartMarket::loadChatHistory()
+{
+    QTextEdit *chatHistory = ui->revv_tab_6->findChild<QTextEdit*>("chatHistory");
+    if (!chatHistory) return;
+
+    QFile file(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/chat_history_reviewer.txt");
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&file);
+        chatHistory->setHtml(in.readAll());
+    }
+}
+
+// ================================================================
+// RECOMMANDATION INTELLIGENTE REVIEWERS
+// ================================================================
+void SmartMarket::setupReviewerRecommendation()
+{
+    // Implementation will be added in next update
+}
+
+void SmartMarket::findBestReviewersForPublication()
+{
+    // Implementation will be added in next update
+}
+
+double SmartMarket::calculateMatchingScore(Reviewer &r, const QString &domainePublication)
+{
+    Q_UNUSED(r);
+    Q_UNUSED(domainePublication);
+    return 0.0;
+}
+
+void SmartMarket::assignReviewerToPublication()
+{
+    // Implementation will be added in next update
+}
+
+// ================================================================
+// METIER #4 : RAPPELS DEADLINES
+// ================================================================
+
+void SmartMarket::setupDeadlineTimer()
+{
+    // Assurer que la colonne existe dès le lancement
+    Reviewer::ensureDeadlineColumn();
+
+    deadlineTimer = new QTimer(this);
+    connect(deadlineTimer, &QTimer::timeout,
+            this, &SmartMarket::checkDeadlines);
+
+    // Vérification silencieuse toutes les 30 minutes
+    deadlineTimer->start(30 * 60 * 1000);
+
+    // Vérification immédiate 3 secondes après le lancement (laisse la BDD se connecter)
+    QTimer::singleShot(3000, this, &SmartMarket::checkDeadlines);
+}
+
+void SmartMarket::checkDeadlines()
+{
+    Reviewer rv;
+    QSqlQueryModel *retard  = rv.getReviewersEnRetard();
+    QSqlQueryModel *prochains = rv.getReviewersProchesDeadline(7);
+
+    int nbRetard  = retard  ? retard->rowCount()  : 0;
+    int nbProches = prochains ? prochains->rowCount() : 0;
+
+    // Notifications seulement si des alertes existent
+    if (nbRetard > 0 || nbProches > 0)
+    {
+        QString msg;
+        if (nbRetard > 0)
+            msg += QString("⚠️ %1 reviewer(s) EN RETARD d'évaluation !\n").arg(nbRetard);
+        if (nbProches > 0)
+            msg += QString("⏰ %1 reviewer(s) dont la deadline approche (≤7j).").arg(nbProches);
+
+        // Alerte dans la barre de statut (non-intrusive)
+        statusBar()->showMessage(msg, 15000);
+        statusBar()->setStyleSheet(
+            nbRetard > 0
+            ? "background-color: #dc2626; color: white; font-weight: bold; padding: 4px;"
+            : "background-color: #f59e0b; color: white; font-weight: bold; padding: 4px;"
+        );
+    }
+    else
+    {
+        statusBar()->clearMessage();
+        statusBar()->setStyleSheet("");
+    }
+
+    if (retard)   delete retard;
+    if (prochains) delete prochains;
+}
+
+void SmartMarket::showDeadlineDialog()
+{
+    qDebug() << "[Deadline] showDeadlineDialog() appelé.";
+
+    // ── Vérifier la connexion BDD avant tout ──────────────────────
+    QSqlDatabase db = QSqlDatabase::database();
+    if (!db.isOpen()) {
+        QMessageBox::warning(this, "⏰ Deadlines",
+            "La base de données n'est pas connectée.\n"
+            "Veuillez vous connecter d'abord via l'écran de connexion.");
+        return;
+    }
+
+    // ── Créer la colonne si absente (Oracle) ─────────────────────
+    Reviewer::ensureDeadlineColumn();
+
+    // ── Fenêtre principale ─────────────────────────────────────────
+    QDialog *dlg = new QDialog(this);
+    dlg->setWindowTitle("⏰ Deadlines Reviewers");
+    dlg->resize(920, 560);
+    dlg->setStyleSheet(
+        "QDialog { background-color: #0d1b2a; }"
+        "QLabel  { color: #e2e8f0; font-size: 13px; }"
+        "QGroupBox { color: #93c5fd; font-weight: bold; border: 1px solid #1e40af;"
+        "            border-radius: 8px; margin-top: 8px; padding: 8px; }"
+        "QTableWidget { background-color: #1e293b; color: #f1f5f9;"
+        "               gridline-color: #334155; border-radius: 6px;"
+        "               selection-background-color: #2563eb; }"
+        "QHeaderView::section { background-color: #1e3a5f; color: #93c5fd;"
+        "                       padding: 6px; border: none; font-weight: bold; }"
+    );
+
+    QVBoxLayout *mainLayout = new QVBoxLayout(dlg);
+    mainLayout->setSpacing(14);
+    mainLayout->setContentsMargins(16, 16, 16, 16);
+
+    // ── Titre ────────────────────────────────────────────────────
+    QLabel *title = new QLabel("⏰  Deadlines Reviewers — Suivi des échéances");
+    title->setStyleSheet("font-size: 18px; font-weight: bold; color: #60a5fa; padding-bottom: 4px;");
+    mainLayout->addWidget(title);
+
+    // ── Tableau principal ─────────────────────────────────────────
+    QGroupBox *gbTable = new QGroupBox("📊 État de toutes les deadlines");
+    QVBoxLayout *gbLayout = new QVBoxLayout(gbTable);
+
+    QTableWidget *table = new QTableWidget();
+    table->setObjectName("deadlineTable");
+    table->setColumnCount(6);
+    table->setHorizontalHeaderLabels({"ID", "Nom", "Spécialité", "ID Pub", "Deadline", "État"});
+    table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    table->setSelectionBehavior(QAbstractItemView::SelectRows);
+    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    table->setAlternatingRowColors(true);
+    table->setStyleSheet("QTableWidget { alternate-background-color: #1a2942; }");
+
+    // ── Charger les reviewers ayant une deadline ──────────────────
+    QSqlQuery q(db);
+    bool queryOk = q.exec(
+        "SELECT IDREVIEWER, NOM, SPECIALITE, IDPUBLICATION, DEADLINE_EVALUATION "
+        "FROM ADAM.REVIEWER "
+        "WHERE DEADLINE_EVALUATION IS NOT NULL "
+        "ORDER BY DEADLINE_EVALUATION ASC"
+    );
+
+    int row = 0;
+    if (!queryOk) {
+        qDebug() << "[Deadline] Erreur SQL SELECT:" << q.lastError().text();
+        QLabel *errLbl = new QLabel("⚠️ Erreur SQL: " + q.lastError().text());
+        errLbl->setStyleSheet("color: #f87171; font-size: 12px;");
+        gbLayout->addWidget(errLbl);
+    } else {
+        QDate today = QDate::currentDate();
+        while (q.next()) {
+            table->insertRow(row);
+            table->setItem(row, 0, new QTableWidgetItem(q.value(0).toString()));
+            table->setItem(row, 1, new QTableWidgetItem(q.value(1).toString()));
+            table->setItem(row, 2, new QTableWidgetItem(q.value(2).toString()));
+            table->setItem(row, 3, new QTableWidgetItem(q.value(3).toString()));
+
+            QDate deadline = q.value(4).toDate();
+            table->setItem(row, 4, new QTableWidgetItem(deadline.toString("dd/MM/yyyy")));
+
+            QString etat;
+            QColor  bg;
+            int diff = today.daysTo(deadline);
+            if      (diff < 0)  { etat = QString("🔴 EN RETARD (%1j)").arg(-diff);       bg = QColor("#7f1d1d"); }
+            else if (diff <= 3) { etat = QString("🟠 URGENT (%1j restants)").arg(diff);   bg = QColor("#78350f"); }
+            else if (diff <= 7) { etat = QString("🟡 BIENTÔT (%1j restants)").arg(diff);  bg = QColor("#713f12"); }
+            else                { etat = QString("🟢 OK (%1j restants)").arg(diff);        bg = QColor("#14532d"); }
+
+            QTableWidgetItem *etatItem = new QTableWidgetItem(etat);
+            etatItem->setBackground(bg);
+            etatItem->setForeground(Qt::white);
+            table->setItem(row, 5, etatItem);
+
+            if (diff < 0) {
+                for (int c = 0; c < 5; ++c)
+                    if (table->item(row, c))
+                        table->item(row, c)->setBackground(QColor("#450a0a"));
+            }
+            ++row;
+        }
+    }
+
+    if (row == 0) {
+        QLabel *noDataLbl = new QLabel("ℹ️  Aucune deadline assignée pour le moment.");
+        noDataLbl->setAlignment(Qt::AlignCenter);
+        noDataLbl->setStyleSheet("color: #94a3b8; font-size: 13px; padding: 20px;");
+        gbLayout->addWidget(noDataLbl);
+    }
+    gbLayout->addWidget(table);
+    mainLayout->addWidget(gbTable);
+
+    // ── Boutons bas ───────────────────────────────────────────────
+    QHBoxLayout *bottomLayout = new QHBoxLayout();
+
+    QPushButton *btnAdd     = new QPushButton("➕  Assigner Deadline");
+    QPushButton *btnDelete  = new QPushButton("🗑  Supprimer deadline");
+    QPushButton *btnRefresh = new QPushButton("🔄 Rafraîchir");
+    QPushButton *btnClose   = new QPushButton("❌ Fermer");
+
+    btnAdd->setStyleSheet(
+        "background-color: #059669; color: white; border-radius: 8px; padding: 8px 18px; font-weight: bold;");
+    btnDelete->setStyleSheet(
+        "background-color: #dc2626; color: white; border-radius: 8px; padding: 8px 18px; font-weight: bold;");
+    btnRefresh->setStyleSheet(
+        "background-color: #2563eb; color: white; border-radius: 8px; padding: 8px 18px; font-weight: bold;");
+    btnClose->setStyleSheet(
+        "background-color: #374151; color: white; border-radius: 8px; padding: 8px 18px; font-weight: bold;");
+
+    bottomLayout->addWidget(btnAdd);
+    bottomLayout->addSpacing(8);
+    bottomLayout->addWidget(btnDelete);
+    bottomLayout->addSpacing(12);
+    bottomLayout->addWidget(btnRefresh);
+    bottomLayout->addStretch();
+    bottomLayout->addWidget(btnClose);
+    mainLayout->addLayout(bottomLayout);
+
+    // ── Connexions ────────────────────────────────────────────────
+
+    // Assigner une nouvelle deadline
+    connect(btnAdd, &QPushButton::clicked, dlg, [=]() {
+        QDialog *dlgAdd = new QDialog(dlg);
+        dlgAdd->setWindowTitle("➕ Nouvelle Deadline");
+        dlgAdd->resize(400, 250);
+        dlgAdd->setStyleSheet(dlg->styleSheet()); // Même style sombre
+
+        QVBoxLayout *l = new QVBoxLayout(dlgAdd);
+        l->setSpacing(15);
+
+        l->addWidget(new QLabel("Sélectionner un Reviewer :"));
+        QComboBox *cbRev = new QComboBox();
+        cbRev->setStyleSheet("QComboBox { background-color: #1e293b; color: white; padding: 5px; border-radius: 4px; }");
+        
+        // Charger les reviewers sans deadline
+        QSqlQuery qRev(db);
+        qRev.exec("SELECT IDREVIEWER, NOM FROM ADAM.REVIEWER WHERE DEADLINE_EVALUATION IS NULL ORDER BY NOM");
+        while (qRev.next()) {
+            cbRev->addItem(QString("%1 (ID: %2)").arg(qRev.value(1).toString(), qRev.value(0).toString()), qRev.value(0));
+        }
+        l->addWidget(cbRev);
+
+        l->addWidget(new QLabel("Date d'échéance :"));
+        QDateEdit *de = new QDateEdit(QDate::currentDate().addDays(7));
+        de->setCalendarPopup(true);
+        de->setStyleSheet("QDateEdit { background-color: #1e293b; color: white; padding: 5px; border-radius: 4px; }");
+        l->addWidget(de);
+
+        QHBoxLayout *bl = new QHBoxLayout();
+        QPushButton *bOk = new QPushButton("Assigner");
+        QPushButton *bCan = new QPushButton("Annuler");
+        bOk->setStyleSheet("background-color: #059669; color: white; border-radius: 6px; padding: 6px; font-weight: bold;");
+        bCan->setStyleSheet("background-color: #374151; color: white; border-radius: 6px; padding: 6px;");
+        bl->addWidget(bOk);
+        bl->addWidget(bCan);
+        l->addLayout(bl);
+
+        connect(bCan, &QPushButton::clicked, dlgAdd, &QDialog::reject);
+        connect(bOk, &QPushButton::clicked, dlgAdd, [=]() {
+            int id = cbRev->currentData().toInt();
+            if (id <= 0) {
+                QMessageBox::warning(dlgAdd, "Erreur", "Veuillez sélectionner un reviewer.");
+                return;
+            }
+            Reviewer rv;
+            if (rv.setDeadline(id, de->date())) {
+                QMessageBox::information(dlgAdd, "Succès", "Deadline assignée avec succès.");
+                dlgAdd->accept();
+                // Rafraîchir le dialogue parent
+                btnRefresh->click();
+            } else {
+                QMessageBox::critical(dlgAdd, "Erreur", rv.getLastError());
+            }
+        });
+
+        dlgAdd->exec();
+    });
+
+    // Supprimer la deadline du reviewer sélectionné dans le tableau
+    connect(btnDelete, &QPushButton::clicked, dlg, [=]() {
+        int selRow = table->currentRow();
+        if (selRow < 0) {
+            QMessageBox::information(dlg, "Sélection requise",
+                "Veuillez d'abord sélectionner un reviewer dans le tableau.");
+            return;
+        }
+        QString idStr  = table->item(selRow, 0) ? table->item(selRow, 0)->text() : "";
+        QString nomStr = table->item(selRow, 1) ? table->item(selRow, 1)->text() : "";
+        if (idStr.isEmpty()) return;
+
+        if (QMessageBox::question(dlg, "Confirmer la suppression",
+                QString("Supprimer la deadline du reviewer #%1 (%2) ?")
+                    .arg(idStr, nomStr))
+            == QMessageBox::Yes)
+        {
+            Reviewer rv;
+            if (rv.supprimerDeadline(idStr.toInt())) {
+                table->removeRow(selRow);
+                checkDeadlines();
+                QMessageBox::information(dlg, "✔ Supprimé",
+                    QString("Deadline du reviewer #%1 supprimée.").arg(idStr));
+            } else {
+                QMessageBox::critical(dlg, "Erreur", rv.getLastError());
+            }
+        }
+    });
+
+    // Rafraîchir : fermer + rouvrir
+    connect(btnRefresh, &QPushButton::clicked, dlg, [=]() {
+        checkDeadlines();
+        dlg->accept();
+        QTimer::singleShot(0, this, &SmartMarket::showDeadlineDialog);
+    });
+
+    connect(btnClose, &QPushButton::clicked, dlg, &QDialog::accept);
+
+    dlg->exec();
+    delete dlg;
+}
+
+// ================================================================
+// ARDUINO LCD DEADLINE NAVIGATION
+// ================================================================
+
+void SmartMarket::on_revv_btn_arduino_start_clicked()
+{
+    qDebug() << "[ArduinoLCD] Tentative de démarrage...";
+
+    // 🔍 AUTO DETECTION AUTOMATIQUE - SCANNE TOUS LES PORTS
+    statusBar()->showMessage("🔍 Recherche Arduino sur TOUS les ports...");
+    
+    // ESSAYE TOUS LES PORTS DISPONIBLES AUTOMATIQUEMENT
+    QString portTrouve = arduinoLcd->autoConnect();
+    
+    if (portTrouve.isEmpty()) {
+        QStringList tousLesPorts = Arduino2::availablePorts();
+        QString msg;
+        
+        if (tousLesPorts.isEmpty()) {
+            msg = "❌ AUCUN port série détecté.\n\nVérifiez que l'Arduino est bien branché en USB.";
+        } else {
+            msg = "❌ Aucun Arduino n'a répondu.\n\n✅ Ports testés: " + tousLesPorts.join(" | ");
+        }
+        
+        QMessageBox::warning(this, "Arduino LCD", msg);
+        return;
+    }
+    
+    // ✅ ARDUINO TROUVE !
+    QMessageBox::information(this, "Arduino LCD", 
+        "✅ SUCCES ! Arduino connecté automatiquement sur le port: " + portTrouve);
+
+    // 2. Charger les deadlines depuis la base de données
+    m_arduinoDeadlines.clear();
+    QSqlQuery q("SELECT NOM, DEADLINE_EVALUATION FROM ADAM.REVIEWER "
+                "WHERE DEADLINE_EVALUATION IS NOT NULL "
+                "ORDER BY DEADLINE_EVALUATION ASC");
+    
+    while (q.next()) {
+        DeadlineInfo info;
+        info.nom = q.value(0).toString();
+        info.date = q.value(1).toDate();
+        m_arduinoDeadlines.append(info);
+    }
+
+    if (m_arduinoDeadlines.isEmpty()) {
+        QMessageBox::information(this, "Arduino LCD", "Aucune deadline trouvée dans la base.");
+        arduinoLcd->clearDisplay();
+        return;
+    }
+
+    // 3. Afficher la plus récente (index 0)
+    m_currentArduinoIndex = 0;
+    updateArduinoDisplay();
+    
+    statusBar()->showMessage("Arduino LCD : Navigation démarrée (1/" + QString::number(m_arduinoDeadlines.size()) + ")", 5000);
+}
+
+void SmartMarket::on_revv_btn_arduino_prev_clicked()
+{
+    if (m_arduinoDeadlines.isEmpty()) return;
+    
+    m_currentArduinoIndex--;
+    if (m_currentArduinoIndex < 0) 
+        m_currentArduinoIndex = m_arduinoDeadlines.size() - 1; // Boucle à la fin
+
+    updateArduinoDisplay();
+}
+
+void SmartMarket::on_revv_btn_arduino_next_clicked()
+{
+    if (m_arduinoDeadlines.isEmpty()) return;
+    
+    m_currentArduinoIndex++;
+    if (m_currentArduinoIndex >= m_arduinoDeadlines.size()) 
+        m_currentArduinoIndex = 0; // Boucle au début
+
+    updateArduinoDisplay();
+}
+
+void SmartMarket::updateArduinoDisplay()
+{
+    if (m_currentArduinoIndex < 0 || m_currentArduinoIndex >= m_arduinoDeadlines.size())
+        return;
+
+    const DeadlineInfo &info = m_arduinoDeadlines.at(m_currentArduinoIndex);
+    arduinoLcd->displayDeadline(info.nom, info.date);
+    
+    qDebug() << "[ArduinoLCD] Affichage :" << info.nom << info.date.toString();
+}

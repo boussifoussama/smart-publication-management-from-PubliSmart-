@@ -6,9 +6,18 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QStringList>
+#include <QTimer>
 #include "publication.h"
 #include "conference.h"
 #include "participant.h"
+#include "reviewer.h"
+#include "arduino2.h"
+
+// Structure simple pour le cache Arduino
+struct DeadlineInfo {
+    QString nom;
+    QDate date;
+};
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class SmartMarket; }
@@ -69,10 +78,29 @@ private slots:
     void on_conf_pushButton_10_clicked();
     void on_conf_pushButton_26_clicked();
     void on_conf_pushButton_27_clicked();
+    void on_conf_pushButton_14_clicked();
+
+    // Reviewers page (page_2) UI slots
+    void on_revv_pushButton_22_clicked();
+    void on_revv_pushButton_24_clicked();
+    void on_rev_pushButton_12_clicked();
+    void on_rev_pushButton_21_clicked();
+    void on_rev_pushButton_10_clicked();
+    void on_rev_pushButton_19_clicked();
+    void on_rev_pushButton_8_clicked();
+    void on_rev_pushButton_3_clicked();
+    void on_rev_comboBox_14_currentIndexChanged(int index);
+    void on_rev_comboBox_15_currentIndexChanged(int index);
 
     // Publication sorting
     void on_btnSortPubAsc_clicked();
     void on_btnSortPubDesc_clicked();
+
+    // Arduino LCD Deadline Navigation
+    void on_revv_btn_arduino_start_clicked();
+    void on_revv_btn_arduino_prev_clicked();
+    void on_revv_btn_arduino_next_clicked();
+    void updateArduinoDisplay();
 
 private:
     Ui::SmartMarket *ui;
@@ -80,6 +108,8 @@ private:
     QString         lastPubFilter;
     QChartView      *pieChartView;
     QChartView      *barChartView;
+    QChartView      *reviewerPieChartView;
+    QChartView      *reviewerBarChartView;
     QNetworkAccessManager *networkManager;
 
     // Données contextuelles pour les callbacks IA
@@ -129,6 +159,9 @@ private:
     int applyConferenceFilterToTable();
     void filterConferences();
     void filterParticipants();
+    void loadReviewerTable();
+    void applyReviewerSort();
+    void refreshReviewerCharts();
 
     // IA helpers
     void callAnthropicSimilarite(const QString &titre1, const QString &contenu1,
@@ -141,6 +174,36 @@ private:
     // Export PDF helper
     void exporterPDF(bool toutesPublications);
     void exporterExcel(bool toutesPublications);
+
+    int reviewerSortColumn = 5; // 5: Nb Evaluations, 6: Score Fiabilite
+    Qt::SortOrder reviewerSortOrder = Qt::AscendingOrder;
+
+    // CHAT BOX REVIEWERS
+    void setupReviewerChat();
+    void sendChatMessage();
+    void appendChatMessage(const QString &text, bool isUser);
+    void saveChatHistory();
+    void loadChatHistory();
+    void toggleChatPanel();
+
+    // RECOMMANDATION INTELLIGENTE REVIEWERS
+    void setupReviewerRecommendation();
+    void findBestReviewersForPublication();
+    double calculateMatchingScore(Reviewer &r, const QString &domainePublication);
+    void assignReviewerToPublication();
+
+    QStringList chatHistory;
+
+    // ── Métier #4 : Rappels Deadlines ──────────────────────────────
+    QTimer *deadlineTimer;               // Timer périodique de vérification
+    void setupDeadlineTimer();           // Démarre le timer (appelé dans le constructeur)
+    void checkDeadlines();               // Vérification silencieuse (appelée par le timer)
+    void showDeadlineDialog();           // Fenêtre complète : retards + assignation deadline
+
+    // Arduino LCD
+    Arduino2 *arduinoLcd;
+    QList<DeadlineInfo> m_arduinoDeadlines;
+    int m_currentArduinoIndex;
 };
 
 #endif // SMARTMARKET_H

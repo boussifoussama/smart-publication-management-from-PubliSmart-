@@ -1,4 +1,4 @@
-﻿#include "participant.h"
+#include "participant.h"
 #include <QSqlError>
 
 Participant::Participant()
@@ -20,7 +20,7 @@ Participant::Participant(int id, QString nom, int idConference, QString uidRfid)
 bool Participant::ajouter()
 {
     QSqlQuery query;
-    query.prepare("INSERT INTO OUSSAMA.participant (id, nom, idconference, uid_rfid) "
+    query.prepare("INSERT INTO ADAM.participant (id, nom, idconference, uid_rfid) "
                   "VALUES (:id, :nom, :idconference, :uid)");
     query.bindValue(":id", id);
     query.bindValue(":nom", nom);
@@ -33,7 +33,7 @@ bool Participant::ajouter()
 QSqlQueryModel* Participant::afficher()
 {
     QSqlQueryModel *model = new QSqlQueryModel();
-    model->setQuery("SELECT id, nom, idconference, uid_rfid FROM OUSSAMA.participant ORDER BY id");
+    model->setQuery("SELECT id, nom, idconference, uid_rfid FROM ADAM.participant ORDER BY id");
     
     model->setHeaderData(0, Qt::Horizontal, "ID");
     model->setHeaderData(1, Qt::Horizontal, "Nom");
@@ -46,7 +46,7 @@ QSqlQueryModel* Participant::afficher()
 bool Participant::supprimer(int id)
 {
     QSqlQuery query;
-    query.prepare("DELETE FROM OUSSAMA.participant WHERE id = :id");
+    query.prepare("DELETE FROM ADAM.participant WHERE id = :id");
     query.bindValue(":id", id);
     return query.exec();
 }
@@ -54,7 +54,7 @@ bool Participant::supprimer(int id)
 bool Participant::modifier()
 {
     QSqlQuery query;
-    query.prepare("UPDATE OUSSAMA.participant SET nom=:nom, idconference=:idconf, uid_rfid=:uid WHERE id=:id");
+    query.prepare("UPDATE ADAM.participant SET nom=:nom, idconference=:idconf, uid_rfid=:uid WHERE id=:id");
     query.bindValue(":id", id);
     query.bindValue(":nom", nom);
     query.bindValue(":idconf", idConference);
@@ -66,7 +66,7 @@ bool Participant::modifier()
 QSqlQueryModel* Participant::rechercher(QString filter)
 {
     QSqlQueryModel *model = new QSqlQueryModel();
-    QString sql = "SELECT id, nom, idconference, uid_rfid FROM OUSSAMA.participant WHERE 1=1";
+    QString sql = "SELECT id, nom, idconference, uid_rfid FROM ADAM.participant WHERE 1=1";
     if (!filter.isEmpty()) {
         sql += " AND (LOWER(nom) LIKE '%" + filter.toLower() + "%' OR LOWER(uid_rfid) LIKE '%" + filter.toLower() + "%')";
     }
