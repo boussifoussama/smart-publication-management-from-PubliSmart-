@@ -1,0 +1,59 @@
+================================================================================
+FICHIER 1: SmartMarket.pro
+================================================================================
+
+QT       += core gui charts
+
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+
+CONFIG += c++17
+
+SOURCES += \
+    main.cpp \
+    smartmarket.cpp
+
+HEADERS += \
+    smartmarket.h
+
+FORMS += \
+    smartmarket.ui
+
+RESOURCES += \
+    resources.qrc
+
+qnx: target.path = /tmp/$${TARGET}/bin
+else: unix:!android: target.path = /opt/$${TARGET}/bin
+!isEmpty(target.path): INSTALLS += target
+
+
+================================================================================
+FICHIER 2: main.cpp
+================================================================================
+
+#include "smartmarket.h"
+#include <QApplication>
+
+int main(int argc, char *argv[])
+{
+    QApplication a(argc, argv);
+    SmartMarket w;
+    w.show();
+    return a.exec();
+}
+
+
+================================================================================
+FICHIER 3: resources.qrc
+================================================================================
+
+<RCC>
+    <qresource prefix="/new/prefix1">
+        <file>images/imagetouse.png-removebg-preview.png</file>
+        <file>images/menuimage.png</file>
+        <file>images/publication_icon.png</file>
+        <file>images/reviewer_icon.png</file>
+        <file>images/conference_icon.png</file>
+        <file>images/equipement_icon.png</file>
+    </qresource>
+</RCC>
+

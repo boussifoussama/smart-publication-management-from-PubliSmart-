@@ -1,0 +1,52 @@
+OUI, voici la bonne methode.
+
+Ce que tu as dans STACKED_WIDGET_PAGE_CODE.txt est un bloc UI de la page "page" du QStackedWidget. Ce bloc ne fait rien tout seul. Il faut le coller au bon endroit dans le bon fichier.
+
+1) Dans smartmarket.ui
+- Ouvre smartmarket.ui
+- Trouve le widget QStackedWidget name="stackedWidgetMain"
+- Remplace uniquement le bloc:
+  <widget class="QWidget" name="page"> ... </widget>
+- Par le contenu de STACKED_WIDGET_PAGE_CODE.txt
+- Important: ne colle pas ce bloc dans un chat ou dans un fichier .cpp
+
+2) Dans smartmarket.h
+Il faut que ces declarations existent:
+
+    void setupConferencePage();
+    void showConferencePage();
+    void openConferenceModule();
+
+    int conferencePageIndex;
+
+3) Dans smartmarket.cpp
+Il faut que ces fonctions existent et que les connexions correspondent aux noms des boutons du .ui:
+
+    void SmartMarket::setupConferencePage()
+    {
+        conferencePageIndex = 2;
+        connect(ui->pushButton_17, &QPushButton::clicked, this, &SmartMarket::openConferenceModule);
+        connect(ui->conf_pushButton_13, &QPushButton::clicked, this, [this]() {
+            ui->stackedWidgetMain->setCurrentIndex(1);
+        });
+        loadConferenceTable();
+    }
+
+    void SmartMarket::openConferenceModule()
+    {
+        ui->stackedWidgetMain->setCurrentIndex(2);
+        loadConferenceTable();
+    }
+
+4) Pourquoi "rien ne se passe" si on colle seulement le texte
+- Parce que le fichier .txt n'est pas compilé
+- Parce que le code UI doit etre dans smartmarket.ui
+- Parce que les slots C++ doivent etre dans smartmarket.cpp
+- Parce que les declarations doivent etre dans smartmarket.h
+
+5) Si tu veux juste une version propre a coller
+- colle le bloc UI dans smartmarket.ui
+- garde le code C++ dans smartmarket.cpp et smartmarket.h
+- ne colle pas le fichier .txt lui-meme dans le projet
+
+Si tu veux, je peux maintenant te donner la version complete en 3 blocs propres, prets a copier-coller: .ui, .h et .cpp.
