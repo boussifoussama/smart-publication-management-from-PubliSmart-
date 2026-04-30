@@ -48,6 +48,7 @@
 #include <QSerialPortInfo>
 #include <QTimer>
 #include <QScrollBar>
+#include <QEventLoop>
 
 // PDF export via Qt
 #include <QPrinter>
@@ -126,6 +127,10 @@ static QString localReviewerAssistantReply(const QString &question)
         // Chercher tous les reviewers dans la base
         Reviewer r;
         QSqlQueryModel *model = r.afficher();
+        if (!model) {
+            return "Impossible de charger les reviewers pour le moment.\n"
+                   "Verifiez la connexion base de donnees puis reessayez.";
+        }
 
         struct ReviewerScore {
             int id;
@@ -830,15 +835,15 @@ bool SmartMarket::ensureConferenceTables(QSqlDatabase &db)
 bool SmartMarket::ensureParticipantUidColumn(QSqlDatabase &db)
 {
     QSqlQuery probe(db);
-    if (probe.exec("SELECT uid_rfid FROM ADAM.participant WHERE 1=0"))
+    if (probe.exec("SELECT uid_rfid FROM OUSSAMA.participant WHERE 1=0"))
         return true;
 
     QSqlQuery alter(db);
-    if (!alter.exec("ALTER TABLE ADAM.participant ADD uid_rfid VARCHAR2(32)"))
+    if (!alter.exec("ALTER TABLE OUSSAMA.participant ADD uid_rfid VARCHAR2(32)"))
         return false;
 
     QSqlQuery idx(db);
-    idx.exec("CREATE UNIQUE INDEX idx_participant_uid_rfid ON ADAM.participant(uid_rfid)");
+    idx.exec("CREATE UNIQUE INDEX idx_participant_uid_rfid ON OUSSAMA.participant(uid_rfid)");
     return true;
 }
 
@@ -867,15 +872,17 @@ void SmartMarket::initializeArduinoAccess()
     if (baudOk && forcedBaud > 0) {
         baudCandidates << forcedBaud;
     } else {
-        baudCandidates << 9600 << 115200;
+        // RFID firmware in this project uses 9600; probing 115200 doubles startup delays.
+        baudCandidates << 9600;
     }
 
     QStringList portCandidates;
+    QStringList preferredPorts;
     if (!forcedPort.isEmpty()) {
         portCandidates << forcedPort;
+        preferredPorts << forcedPort;
     } else {
         const QList<QSerialPortInfo> ports = QSerialPortInfo::availablePorts();
-        QStringList preferredPorts;
         QStringList fallbackPorts;
         QStringList bluetoothPorts;
 
@@ -897,14 +904,23 @@ void SmartMarket::initializeArduinoAccess()
             }
         }
 
-        portCandidates << preferredPorts << fallbackPorts << bluetoothPorts;
+        // Keep probing focused on likely Arduino USB serial adapters first.
+        if (!preferredPorts.isEmpty()) {
+            portCandidates << preferredPorts;
+        } else {
+            // As a last resort, try a very small subset of fallback ports.
+            for (int i = 0; i < fallbackPorts.size() && i < 2; ++i)
+                portCandidates << fallbackPorts.at(i);
+        }
+
+        Q_UNUSED(bluetoothPorts);
     }
 
     bool connected = false;
     QString lastAttempt;
     for (const QString &portName : portCandidates) {
         for (qint32 baudRate : baudCandidates) {
-            if (arduinoBridge->connectPort(portName, baudRate)) {
+            if (arduinoBridge->connectPort(portName, baudRate, true)) {
                 connected = true;
                 qInfo() << "Arduino connecte sur" << portName << "@" << baudRate;
                 if (statusBar())
@@ -922,6 +938,27 @@ void SmartMarket::initializeArduinoAccess()
             break;
     }
 
+    // Fallback: some firmwares don't reply to PING/ACK but still publish UID lines.
+    // In that case, connect without strict handshake on likely Arduino ports.
+    if (!connected) {
+        const QStringList relaxedPorts = !preferredPorts.isEmpty() ? preferredPorts : portCandidates;
+        for (const QString &portName : relaxedPorts) {
+            if (arduinoBridge->connectPort(portName, 9600, false)) {
+                connected = true;
+                qWarning() << "Arduino connecte sans handshake strict sur" << portName << "@ 9600";
+                if (statusBar()) {
+                    statusBar()->showMessage(
+                        QString("Arduino connecte (mode compatibilite): %1 @ 9600").arg(portName), 7000);
+                }
+                break;
+            }
+            lastAttempt = QString("%1 @ %2 -> %3")
+                              .arg(portName)
+                              .arg(9600)
+                              .arg(arduinoBridge->lastError());
+        }
+    }
+
     if (!connected) {
         qWarning() << "Arduino non connecte. Derniere tentative:" << lastAttempt;
         if (statusBar()) {
@@ -933,6 +970,8 @@ void SmartMarket::initializeArduinoAccess()
 
 void SmartMarket::handleArduinoUid(const QString &uid)
 {
+    lastScannedUid = uid.trimmed().toUpper();
+
     QSqlDatabase db = QSqlDatabase::database();
     if ((!db.isValid() || !db.isOpen()) && !db.open()) {
         if (arduinoBridge)
@@ -948,8 +987,8 @@ void SmartMarket::handleArduinoUid(const QString &uid)
 
     QSqlQuery q(db);
     q.prepare("SELECT p.nom, p.idconference, NVL(c.lieu, '') "
-              "FROM ADAM.participant p "
-              "LEFT JOIN ADAM.conference c ON c.idconference = p.idconference "
+              "FROM OUSSAMA.participant p "
+              "LEFT JOIN OUSSAMA.conference c ON c.idconference = p.idconference "
               "WHERE UPPER(TRIM(p.uid_rfid)) = :uid");
     q.bindValue(":uid", uid.toUpper());
 
@@ -969,6 +1008,7 @@ void SmartMarket::handleArduinoUid(const QString &uid)
         const QString accessMsg = QString("Acces autorise: %1 | Conference: %2 | Lieu: %3")
                                       .arg(nom, confId, lieu.isEmpty() ? "N/A" : lieu);
         qInfo() << accessMsg;
+        qInfo() << "[Arduino] Command envoyee:" << (arduinoBridge ? arduinoBridge->lastSentCommand() : QString());
         if (statusBar())
             statusBar()->showMessage(accessMsg, 6000);
     } else {
@@ -977,6 +1017,35 @@ void SmartMarket::handleArduinoUid(const QString &uid)
         if (statusBar())
             statusBar()->showMessage("Badge inconnu - acces refuse", 6000);
     }
+}
+
+QString SmartMarket::waitForUidScan(int timeoutMs)
+{
+    if (!arduinoBridge || !arduinoBridge->isConnected())
+        return QString();
+
+    QString scannedUid;
+    QEventLoop loop;
+    QTimer timer;
+    timer.setSingleShot(true);
+
+    QMetaObject::Connection uidConn = connect(arduinoBridge, &ArduinoBridge::uidScanned,
+                                              this, [&](const QString &uid) {
+        scannedUid = uid.trimmed().toUpper();
+        loop.quit();
+    });
+    QMetaObject::Connection timerConn = connect(&timer, &QTimer::timeout, &loop, &QEventLoop::quit);
+
+    timer.start(timeoutMs);
+    loop.exec();
+
+    disconnect(uidConn);
+    disconnect(timerConn);
+
+    if (!scannedUid.isEmpty())
+        lastScannedUid = scannedUid;
+
+    return scannedUid;
 }
 
 // ================================================================
@@ -1052,7 +1121,7 @@ void SmartMarket::refreshCharts()
         return;
 
     QSqlQuery qStat;
-    if (!qStat.exec("SELECT NVL(STATUT, 'Inconnu'), COUNT(*) FROM ADAM.PUBLICATION GROUP BY NVL(STATUT, 'Inconnu')")) {
+    if (!qStat.exec("SELECT NVL(STATUT, 'Inconnu'), COUNT(*) FROM OUSSAMA.PUBLICATION GROUP BY NVL(STATUT, 'Inconnu')")) {
         QMessageBox::warning(this, "Graphiques", "Impossible de charger les statuts : " + qStat.lastError().text());
         return;
     }
@@ -1098,7 +1167,7 @@ void SmartMarket::refreshCharts()
     if (!qDom.exec(
         "SELECT CASE WHEN TRIM(NVL(DOMAINE,'') ) = '' THEN 'Inconnu' ELSE DOMAINE END AS DOMAINE, "
         "COUNT(*) AS CNT "
-        "FROM ADAM.PUBLICATION "
+        "FROM OUSSAMA.PUBLICATION "
         "GROUP BY CASE WHEN TRIM(NVL(DOMAINE,'')) = '' THEN 'Inconnu' ELSE DOMAINE END "
         "ORDER BY CNT DESC, DOMAINE"
     )) {
@@ -1176,8 +1245,6 @@ void SmartMarket::on_pushButton_15_clicked()
         ui->stackedWidgetMain->setCurrentIndex(1);
         initPublicationTable();
         createCharts();
-        // Pre-load reviewer table in background so it's ready when user navigates
-        loadReviewerTable();
     }
     else
     {
@@ -1218,7 +1285,7 @@ void SmartMarket::on_pushButton_19_clicked()
     }
 
     QSqlQuery seqQ;
-    seqQ.exec("SELECT NVL(MAX(IDPUBLICATION),0)+1 FROM ADAM.PUBLICATION");
+    seqQ.exec("SELECT NVL(MAX(IDPUBLICATION),0)+1 FROM OUSSAMA.PUBLICATION");
     int newId = 1;
     if (seqQ.next()) newId = seqQ.value(0).toInt();
 
@@ -1397,7 +1464,7 @@ void SmartMarket::exporterPDF(bool toutesPublications)
     QSqlQuery q;
     QString sql = "SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, "
                   "TO_CHAR(DATEPUBLICATION,'DD/MM/YYYY'), STATUT, CONTENU "
-                  "FROM ADAM.PUBLICATION";
+                  "FROM OUSSAMA.PUBLICATION";
 
     // Si on exporte seulement les publications filtrÃ©es
     if (!toutesPublications) {
@@ -1624,7 +1691,7 @@ void SmartMarket::exporterExcel(bool toutesPublications)
     QSqlQuery q;
     QString sql = "SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, "
                   "TO_CHAR(DATEPUBLICATION,'DD/MM/YYYY'), STATUT, CONTENU "
-                  "FROM ADAM.PUBLICATION";
+                  "FROM OUSSAMA.PUBLICATION";
 
     if (!toutesPublications) {
         if (!lastPubFilter.isEmpty())
@@ -1804,7 +1871,7 @@ void SmartMarket::on_pushButton_6_clicked()
     // RÃ©cupÃ©rer les deux publications
     QSqlQuery q;
     q.prepare("SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, CONTENU, STATUT "
-              "FROM ADAM.PUBLICATION WHERE IDPUBLICATION IN (:a, :b)");
+              "FROM OUSSAMA.PUBLICATION WHERE IDPUBLICATION IN (:a, :b)");
     q.bindValue(":a", id1.toInt());
     q.bindValue(":b", id2.toInt());
     q.exec();
@@ -2008,7 +2075,7 @@ void SmartMarket::on_pushButton_7_clicked()
     QSqlQuery q;
     q.prepare("SELECT TITRE, SOURCE, DOMAINE, "
               "TO_CHAR(DATEPUBLICATION,'DD/MM/YYYY'), STATUT, CONTENU "
-              "FROM ADAM.PUBLICATION WHERE IDPUBLICATION=:id");
+              "FROM OUSSAMA.PUBLICATION WHERE IDPUBLICATION=:id");
     q.bindValue(":id", idStr.toInt());
     q.exec();
 
@@ -2218,13 +2285,13 @@ void SmartMarket::on_pushButton_15_sidebar_clicked()
 
 void SmartMarket::on_pushButton_16_clicked()
 {
-    ui->stackedWidgetMain->setCurrentIndex(3); // Open page_2 (Reviewers page)
-    loadReviewerTable(); // Always load fresh data when opening reviewers page
+    ui->stackedWidgetMain->setCurrentWidget(ui->page_2); // Open Reviewers page reliably
+    QTimer::singleShot(0, this, [this]() { loadReviewerTable(); });
 }
 
 void SmartMarket::openConferenceModule()
 {
-    ui->stackedWidgetMain->setCurrentIndex(2); // page2 is index 2
+    ui->stackedWidgetMain->setCurrentWidget(ui->page2);
     loadConferenceTable();
 }
 
@@ -2262,7 +2329,7 @@ void SmartMarket::on_conf_pushButton_26_clicked()
     }
 
     QSqlQuery q(db);
-    q.prepare("INSERT INTO ADAM.conference (idconference, nom, lieu, datedebut, theme, nombreparticipants) "
+    q.prepare("INSERT INTO OUSSAMA.conference (idconference, nom, lieu, datedebut, theme, nombreparticipants) "
               "VALUES (:id, :nom, :lieu, :date, :theme, 0)");
     q.bindValue(":id", id);
     q.bindValue(":nom", nom);
@@ -2330,7 +2397,7 @@ void SmartMarket::on_conf_pushButton_27_clicked()
     }
 
     QSqlQuery q(db);
-    q.prepare("UPDATE ADAM.conference "
+    q.prepare("UPDATE OUSSAMA.conference "
               "SET nom = :nom, lieu = :lieu, datedebut = :date, theme = :theme "
               "WHERE idconference = :id");
     q.bindValue(":nom", nom);
@@ -2406,7 +2473,7 @@ void SmartMarket::on_conf_pushButton_8_clicked()
     }
 
     QSqlQuery q(db);
-    q.prepare("DELETE FROM ADAM.conference WHERE idconference = :id");
+    q.prepare("DELETE FROM OUSSAMA.conference WHERE idconference = :id");
     q.bindValue(":id", id);
 
     if (!q.exec())
@@ -2431,22 +2498,89 @@ void SmartMarket::on_conf_pushButton_8_clicked()
 
 void SmartMarket::on_conf_pushButton_19_clicked()
 {
+    // === ETAPE 1: Demander l'UID (scan ou saisie manuelle) ===
+    QString uid = lastScannedUid.trimmed().toUpper();
+    if (uid.isEmpty()) {
+        if (arduinoBridge && arduinoBridge->isConnected()) {
+            if (statusBar())
+                statusBar()->showMessage("Scannez une carte RFID (ou appuyez sur Echap)...", 5000);
+            uid = waitForUidScan(5000);
+        }
+
+        if (uid.isEmpty()) {
+            QInputDialog uidDialog(this);
+            uidDialog.setWindowTitle("UID RFID - Saisie Manuelle");
+            uidDialog.setLabelText("Scannez la carte RFID ou saisissez l'UID manuellement :");
+            uidDialog.setTextValue("");
+            if (uidDialog.exec() == QDialog::Accepted)
+                uid = uidDialog.textValue().trimmed().toUpper();
+        }
+    }
+
+    if (uid.isEmpty()) {
+        QMessageBox::warning(this, "UID RFID", "Aucun UID RFID fourni. Ajout annulé.");
+        return;
+    }
+
+    // === ETAPE 2: Verifier que cet UID n'existe pas deja ===
+    QSqlDatabase db = QSqlDatabase::database();
+    if ((!db.isValid() || !db.isOpen()) && !db.open()) {
+        QMessageBox::critical(this, "Erreur BD", "Impossible de se connecter à la base de données.");
+        return;
+    }
+
+    QSqlQuery checkQuery(db);
+    checkQuery.prepare("SELECT 1 FROM OUSSAMA.participant WHERE UPPER(TRIM(uid_rfid)) = :uid");
+    checkQuery.bindValue(":uid", uid);
+    if (!checkQuery.exec()) {
+        QMessageBox::critical(this, "Erreur BD", "Verification UID échouée.");
+        return;
+    }
+
+    if (checkQuery.next()) {
+        // UID existe deja
+        QMessageBox::StandardButton reply = QMessageBox::question(this, "UID Existe",
+            "Cet UID RFID existe deja dans la base.\n\n"
+            "Voulez-vous:\n"
+            "- OK: Essayer un autre UID\n"
+            "- Annuler: Abandonner",
+            QMessageBox::Ok | QMessageBox::Cancel);
+        if (reply == QMessageBox::Ok) {
+            lastScannedUid.clear();
+            on_conf_pushButton_19_clicked();  // Relancer pour scanner un autre UID
+        }
+        return;
+    }
+
+    // === ETAPE 3: Demander les informations du formulaire (maintenant qu'on sait que l'UID est OK) ===
     const int id = ui->conf_lineEdit_21 ? ui->conf_lineEdit_21->text().toInt() : 0;
     const QString nom = ui->conf_lineEdit_20 ? ui->conf_lineEdit_20->text().trimmed() : QString();
     const int confId = ui->conf_lineEdit_22 ? ui->conf_lineEdit_22->text().toInt() : 0;
 
-    Participant p(id, nom, confId, "");
-    
-    QInputDialog uidDialog(this);
-    if (uidDialog.exec() == QDialog::Accepted) {
-        p.setUidRfid(uidDialog.textValue().trimmed().toUpper());
-        if (p.ajouter()) {
-            QMessageBox::information(this, "SuccÃ¨s", "Participant ajoutÃ©.");
-            loadParticipantTable();
-            loadConferenceTable();
-        } else {
-             QMessageBox::critical(this, "Erreur", "Echec ajout participant.");
-        }
+    if (nom.isEmpty()) {
+        QMessageBox::warning(this, "Informations", "Remplissez au moins le champ Nom.");
+        return;
+    }
+
+    if (confId <= 0) {
+        QMessageBox::warning(this, "Conference", "Selectionnez une conference valide.");
+        return;
+    }
+
+    // === ETAPE 4: Ajouter le participant ===
+    Participant p(id, nom, confId, uid);
+    if (p.ajouter()) {
+        QMessageBox::information(this, "Succès", 
+            QString("Participant ajouté avec succes.\nUID: %1").arg(uid));
+        lastScannedUid.clear();
+        ui->conf_lineEdit_20->clear();
+        ui->conf_lineEdit_21->clear();
+        ui->conf_lineEdit_22->clear();
+        loadParticipantTable();
+        loadConferenceTable();
+    } else {
+        QMessageBox::critical(this, "Erreur",
+                              "Echec ajout participant.\n\n" + p.getLastError());
     }
 }
 
@@ -2461,18 +2595,37 @@ void SmartMarket::on_conf_pushButton_10_clicked()
     const QString nom = ui->conf_lineEdit_15 ? ui->conf_lineEdit_15->text().trimmed() : QString();
     const int confId = ui->conf_lineEdit_14 ? ui->conf_lineEdit_14->text().toInt() : 0;
 
-    Participant p(id, nom, confId, "");
-    
-    QInputDialog uidDialog(this);
-    if (uidDialog.exec() == QDialog::Accepted) {
-        p.setUidRfid(uidDialog.textValue().trimmed().toUpper());
-        if (p.modifier()) {
-            QMessageBox::information(this, "SuccÃ¨s", "Participant modifiÃ©.");
-            loadParticipantTable();
-            loadConferenceTable();
-        } else {
-             QMessageBox::critical(this, "Erreur", "Echec modification participant.");
+    QString uid = lastScannedUid.trimmed().toUpper();
+    if (uid.isEmpty()) {
+        if (arduinoBridge && arduinoBridge->isConnected()) {
+            if (statusBar())
+                statusBar()->showMessage("Scannez une carte RFID...", 3000);
+            uid = waitForUidScan(3000);
         }
+
+        QInputDialog uidDialog(this);
+        if (uid.isEmpty()) {
+            uidDialog.setWindowTitle("UID RFID");
+            uidDialog.setLabelText("Scan non detecte. Saisissez l'UID RFID :");
+            if (uidDialog.exec() == QDialog::Accepted)
+                uid = uidDialog.textValue().trimmed().toUpper();
+        }
+    }
+
+    if (uid.isEmpty()) {
+        QMessageBox::warning(this, "UID RFID", "Aucun UID RFID disponible. Scannez une carte avant de modifier.");
+        return;
+    }
+
+    Participant p(id, nom, confId, uid);
+    if (p.modifier()) {
+        QMessageBox::information(this, "Succès", "Participant modifié.");
+        lastScannedUid.clear();
+        loadParticipantTable();
+        loadConferenceTable();
+    } else {
+         QMessageBox::critical(this, "Erreur",
+                               "Echec modification participant.\n\n" + p.getLastError());
     }
 }
 
@@ -2793,8 +2946,8 @@ void SmartMarket::on_conf_pushButton_21_clicked()
 
     QSqlQuery query(db);
     QString sql = "SELECT c.idconference, c.nom, c.lieu, c.datedebut, c.theme, "
-                  "       (SELECT COUNT(*) FROM ADAM.participant p WHERE p.idconference = c.idconference) AS nombreparticipants "
-                  "FROM ADAM.conference c ";
+                  "       (SELECT COUNT(*) FROM OUSSAMA.participant p WHERE p.idconference = c.idconference) AS nombreparticipants "
+                  "FROM OUSSAMA.conference c ";
 
     const bool isDateFilter = ui->conf_radioButton_19 && ui->conf_radioButton_19->isChecked();
 
@@ -2877,9 +3030,9 @@ void SmartMarket::filterParticipants()
 
 void SmartMarket::on_conf_pushButton_14_clicked()
 {
-    // Open page_2 (Reviewers page) - index 3 in stackedWidgetMain
-    ui->stackedWidgetMain->setCurrentIndex(3);
-    loadReviewerTable();
+    // Open page_2 (Reviewers page)
+    ui->stackedWidgetMain->setCurrentWidget(ui->page_2);
+    QTimer::singleShot(0, this, [this]() { loadReviewerTable(); });
 }
 
 // ================================================================
@@ -2893,8 +3046,8 @@ void SmartMarket::on_revv_pushButton_22_clicked()
 
 void SmartMarket::on_revv_pushButton_24_clicked()
 {
-    // Navigate to Conferences page (page2, index 2)
-    ui->stackedWidgetMain->setCurrentIndex(2);
+    // Navigate to Conferences page (page2)
+    ui->stackedWidgetMain->setCurrentWidget(ui->page2);
     loadConferenceTable();
 }
 
@@ -2944,10 +3097,10 @@ void SmartMarket::on_rev_pushButton_12_clicked()
         ui->rev_lineEdit_20->setStyleSheet("");
     }
 
-    // ✅ CONTROLE DE SAISI SCORE FIABILITE (1-10)
+    // ✅ CONTROLE DE SAISI SCORE FIABILITE (compatible NUMBER(3,2): max 9.99)
     if (scoreOk) {
-        if (score < 1 || score > 10) {
-            QMessageBox::warning(this, "⚠️  Score invalide", "Le Score Fiabilité doit etre un nombre **ENTRE 1 ET 10** !");
+        if (score < 0 || score > 9.99) {
+            QMessageBox::warning(this, "⚠️  Score invalide", "Le Score Fiabilité doit etre un nombre entre 0 et 9.99.");
             ui->rev_lineEdit_26->setStyleSheet("border: 2px solid red;");
             return;
         } else {
@@ -3035,6 +3188,11 @@ void SmartMarket::on_rev_pushButton_10_clicked()
 
     if (nom.isEmpty() || email.isEmpty()) {
         QMessageBox::warning(this, "Attention", "Remplissez au minimum Nom et Email pour la modification.");
+        return;
+    }
+
+    if (scoreOk && (score < 0 || score > 9.99)) {
+        QMessageBox::warning(this, "Attention", "Le score doit etre entre 0 et 9.99.");
         return;
     }
 
@@ -3172,6 +3330,13 @@ void SmartMarket::loadReviewerTable()
 
     Reviewer r;
     QSqlQueryModel *model = r.afficher();
+
+    if (!model) {
+        table->setRowCount(0);
+        QMessageBox::critical(this, "Erreur BDD",
+                              "Impossible de charger les reviewers.\n\n" + r.getLastError());
+        return;
+    }
 
     table->setSortingEnabled(false);
     table->setRowCount(0);
@@ -3593,7 +3758,22 @@ void SmartMarket::assignReviewerToPublication()
 
 void SmartMarket::setupDeadlineTimer()
 {
-    // Assurer que la colonne existe dès le lancement
+    QSqlDatabase db = QSqlDatabase::database();
+    if (!db.isOpen() && !db.open()) {
+        qWarning() << "[Deadline] Timer desactive: connexion BDD indisponible.";
+        return;
+    }
+
+    QSqlQuery probe(db);
+    const bool reviewerReachable = probe.exec("SELECT 1 FROM OUSSAMA.REVIEWER WHERE 1=0")
+                                   || probe.exec("SELECT 1 FROM REVIEWER WHERE 1=0")
+                                   || probe.exec("SELECT 1 FROM ADAM.REVIEWER WHERE 1=0");
+    if (!reviewerReachable) {
+        qWarning() << "[Deadline] Timer desactive: table REVIEWER inaccessible.";
+        return;
+    }
+
+    // Assurer que la colonne existe uniquement si la table est accessible.
     Reviewer::ensureDeadlineColumn();
 
     deadlineTimer = new QTimer(this);
@@ -3602,13 +3782,21 @@ void SmartMarket::setupDeadlineTimer()
 
     // Vérification silencieuse toutes les 30 minutes
     deadlineTimer->start(30 * 60 * 1000);
-
-    // Vérification immédiate 3 secondes après le lancement (laisse la BDD se connecter)
-    QTimer::singleShot(3000, this, &SmartMarket::checkDeadlines);
 }
 
 void SmartMarket::checkDeadlines()
 {
+    static bool inProgress = false;
+    if (inProgress)
+        return;
+    inProgress = true;
+
+    QStatusBar *sb = statusBar();
+    if (!sb) {
+        inProgress = false;
+        return;
+    }
+
     Reviewer rv;
     QSqlQueryModel *retard  = rv.getReviewersEnRetard();
     QSqlQueryModel *prochains = rv.getReviewersProchesDeadline(7);
@@ -3626,8 +3814,8 @@ void SmartMarket::checkDeadlines()
             msg += QString("⏰ %1 reviewer(s) dont la deadline approche (≤7j).").arg(nbProches);
 
         // Alerte dans la barre de statut (non-intrusive)
-        statusBar()->showMessage(msg, 15000);
-        statusBar()->setStyleSheet(
+        sb->showMessage(msg, 15000);
+        sb->setStyleSheet(
             nbRetard > 0
             ? "background-color: #dc2626; color: white; font-weight: bold; padding: 4px;"
             : "background-color: #f59e0b; color: white; font-weight: bold; padding: 4px;"
@@ -3635,12 +3823,13 @@ void SmartMarket::checkDeadlines()
     }
     else
     {
-        statusBar()->clearMessage();
-        statusBar()->setStyleSheet("");
+        sb->clearMessage();
+        sb->setStyleSheet("");
     }
 
     if (retard)   delete retard;
     if (prochains) delete prochains;
+    inProgress = false;
 }
 
 void SmartMarket::showDeadlineDialog()
@@ -3702,7 +3891,7 @@ void SmartMarket::showDeadlineDialog()
     QSqlQuery q(db);
     bool queryOk = q.exec(
         "SELECT IDREVIEWER, NOM, SPECIALITE, IDPUBLICATION, DEADLINE_EVALUATION "
-        "FROM ADAM.REVIEWER "
+        "FROM OUSSAMA.REVIEWER "
         "WHERE DEADLINE_EVALUATION IS NOT NULL "
         "ORDER BY DEADLINE_EVALUATION ASC"
     );
@@ -3800,7 +3989,7 @@ void SmartMarket::showDeadlineDialog()
         
         // Charger les reviewers sans deadline
         QSqlQuery qRev(db);
-        qRev.exec("SELECT IDREVIEWER, NOM FROM ADAM.REVIEWER WHERE DEADLINE_EVALUATION IS NULL ORDER BY NOM");
+        qRev.exec("SELECT IDREVIEWER, NOM FROM OUSSAMA.REVIEWER WHERE DEADLINE_EVALUATION IS NULL ORDER BY NOM");
         while (qRev.next()) {
             cbRev->addItem(QString("%1 (ID: %2)").arg(qRev.value(1).toString(), qRev.value(0).toString()), qRev.value(0));
         }
@@ -3918,7 +4107,7 @@ void SmartMarket::on_revv_btn_arduino_start_clicked()
 
     // 2. Charger les deadlines depuis la base de données
     m_arduinoDeadlines.clear();
-    QSqlQuery q("SELECT NOM, DEADLINE_EVALUATION FROM ADAM.REVIEWER "
+    QSqlQuery q("SELECT NOM, DEADLINE_EVALUATION FROM OUSSAMA.REVIEWER "
                 "WHERE DEADLINE_EVALUATION IS NOT NULL "
                 "ORDER BY DEADLINE_EVALUATION ASC");
     

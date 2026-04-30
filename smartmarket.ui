@@ -58,7 +58,7 @@ QStatusBar { background-color: #071526; color: #CBD5E1; }
      </rect>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="pageLogin">
      <widget class="QGroupBox" name="groupBox_11_login">
@@ -260,7 +260,7 @@ image: url(:/menuimage.png);</string>
        <rect>
         <x>10</x>
         <y>-40</y>
-        <width>201</width>
+        <width>251</width>
         <height>771</height>
        </rect>
       </property>
@@ -270,7 +270,7 @@ image: url(:/menuimage.png);</string>
       <widget class="QPushButton" name="pushButton_14">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>50</x>
          <y>330</y>
          <width>161</width>
          <height>51</height>
@@ -283,7 +283,7 @@ image: url(:/menuimage.png);</string>
       <widget class="QPushButton" name="pushButton_16">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>50</x>
          <y>450</y>
          <width>161</width>
          <height>51</height>
@@ -296,7 +296,7 @@ image: url(:/menuimage.png);</string>
       <widget class="QPushButton" name="pushButton_17">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>50</x>
          <y>580</y>
          <width>161</width>
          <height>51</height>
@@ -309,7 +309,7 @@ image: url(:/menuimage.png);</string>
       <widget class="QPushButton" name="pushButton_18">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>50</x>
          <y>700</y>
          <width>161</width>
          <height>51</height>
@@ -322,15 +322,15 @@ image: url(:/menuimage.png);</string>
       <widget class="QLabel" name="label_30">
        <property name="geometry">
         <rect>
-         <x>-50</x>
-         <y>40</y>
+         <x>-10</x>
+         <y>60</y>
          <width>291</width>
          <height>171</height>
         </rect>
        </property>
        <property name="styleSheet">
         <string notr="true">
-image: url(:/imagetouse.png-removebg-preview.png);</string>
+image: url(:/ressouces/imagetouse.png-removebg-preview (1).png)</string>
        </property>
        <property name="text">
         <string/>
@@ -339,15 +339,15 @@ image: url(:/imagetouse.png-removebg-preview.png);</string>
       <widget class="QLabel" name="label_31">
        <property name="geometry">
         <rect>
-         <x>50</x>
-         <y>270</y>
+         <x>90</x>
+         <y>250</y>
          <width>91</width>
          <height>71</height>
         </rect>
        </property>
        <property name="styleSheet">
         <string notr="true">
-image: url(:/publication icon.png);</string>
+image: url(:/ressouces/publication icon.png)</string>
        </property>
        <property name="text">
         <string/>
@@ -356,15 +356,15 @@ image: url(:/publication icon.png);</string>
       <widget class="QLabel" name="label_32">
        <property name="geometry">
         <rect>
-         <x>50</x>
+         <x>90</x>
          <y>370</y>
          <width>101</width>
          <height>91</height>
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">
-image: url(:/reviewer icon.png);</string>
+        <string notr="true">image:
+ url(:/ressouces/reviewer icon.png)</string>
        </property>
        <property name="text">
         <string/>
@@ -373,15 +373,14 @@ image: url(:/reviewer icon.png);</string>
       <widget class="QLabel" name="label_33">
        <property name="geometry">
         <rect>
-         <x>20</x>
-         <y>500</y>
+         <x>60</x>
+         <y>490</y>
          <width>151</width>
          <height>101</height>
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">
-image: url(:/conference icon.png);</string>
+        <string notr="true">image: url(:/ressouces/conference icon.png)</string>
        </property>
        <property name="text">
         <string/>
@@ -390,16 +389,15 @@ image: url(:/conference icon.png);</string>
       <widget class="QLabel" name="label_34">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>60</x>
          <y>620</y>
          <width>151</width>
          <height>101</height>
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">
-
-image: url(:/equipement icon.png);</string>
+        <string notr="true">image:
+ url(:/ressouces/equipement icon.png)</string>
        </property>
        <property name="text">
         <string/>
@@ -409,8 +407,8 @@ image: url(:/equipement icon.png);</string>
      <widget class="QTabWidget" name="tabWidget">
       <property name="geometry">
        <rect>
-        <x>210</x>
-        <y>10</y>
+        <x>260</x>
+        <y>0</y>
         <width>1091</width>
         <height>711</height>
        </rect>
@@ -613,7 +611,7 @@ QStatusBar {
 </string>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab_5">
        <attribute name="title">
@@ -2054,8 +2052,8 @@ QStatusBar {
      <widget class="QTabWidget" name="conf_tabWidget">
       <property name="geometry">
        <rect>
-        <x>200</x>
-        <y>-20</y>
+        <x>260</x>
+        <y>0</y>
         <width>1091</width>
         <height>721</height>
        </rect>
@@ -2258,7 +2256,7 @@ QStatusBar {
 </string>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="elideMode">
        <enum>Qt::TextElideMode::ElideNone</enum>
@@ -3130,7 +3128,7 @@ QStatusBar {
        <rect>
         <x>10</x>
         <y>-30</y>
-        <width>201</width>
+        <width>251</width>
         <height>771</height>
        </rect>
       </property>
@@ -3140,7 +3138,7 @@ QStatusBar {
       <widget class="QPushButton" name="conf_pushButton_13">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>60</x>
          <y>330</y>
          <width>161</width>
          <height>51</height>
@@ -3153,7 +3151,7 @@ QStatusBar {
       <widget class="QPushButton" name="conf_pushButton_14">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>60</x>
          <y>450</y>
          <width>161</width>
          <height>51</height>
@@ -3166,7 +3164,7 @@ QStatusBar {
       <widget class="QPushButton" name="conf_pushButton_15">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>60</x>
          <y>580</y>
          <width>161</width>
          <height>51</height>
@@ -3179,7 +3177,7 @@ QStatusBar {
       <widget class="QPushButton" name="conf_pushButton_16">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>60</x>
          <y>700</y>
          <width>161</width>
          <height>51</height>
@@ -3192,8 +3190,8 @@ QStatusBar {
       <widget class="QLabel" name="conf_label_30">
        <property name="geometry">
         <rect>
-         <x>50</x>
-         <y>270</y>
+         <x>90</x>
+         <y>250</y>
          <width>91</width>
          <height>71</height>
         </rect>
@@ -3208,7 +3206,7 @@ QStatusBar {
       <widget class="QLabel" name="conf_label_31">
        <property name="geometry">
         <rect>
-         <x>50</x>
+         <x>90</x>
          <y>370</y>
          <width>101</width>
          <height>91</height>
@@ -3225,7 +3223,7 @@ QStatusBar {
       <widget class="QLabel" name="conf_label_32">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>60</x>
          <y>500</y>
          <width>151</width>
          <height>101</height>
@@ -3241,7 +3239,7 @@ QStatusBar {
       <widget class="QLabel" name="conf_label_33">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>60</x>
          <y>620</y>
          <width>151</width>
          <height>101</height>
@@ -3258,7 +3256,7 @@ QStatusBar {
       <widget class="QLabel" name="conf_label_4">
        <property name="geometry">
         <rect>
-         <x>-30</x>
+         <x>10</x>
          <y>30</y>
          <width>251</width>
          <height>171</height>
@@ -4067,7 +4065,7 @@ QPushButton:hover {
       <widget class="QPushButton" name="revv_pushButton_22">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>30</x>
          <y>330</y>
          <width>161</width>
          <height>51</height>
@@ -4080,7 +4078,7 @@ QPushButton:hover {
       <widget class="QPushButton" name="revv_pushButton_23">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>30</x>
          <y>450</y>
          <width>161</width>
          <height>51</height>
@@ -4093,7 +4091,7 @@ QPushButton:hover {
       <widget class="QPushButton" name="revv_pushButton_24">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>30</x>
          <y>580</y>
          <width>161</width>
          <height>51</height>
@@ -4106,8 +4104,8 @@ QPushButton:hover {
       <widget class="QPushButton" name="revv_pushButton_25">
        <property name="geometry">
         <rect>
-         <x>20</x>
-         <y>700</y>
+         <x>30</x>
+         <y>690</y>
          <width>161</width>
          <height>51</height>
         </rect>
@@ -4119,14 +4117,14 @@ QPushButton:hover {
       <widget class="QLabel" name="revv_label_34">
        <property name="geometry">
         <rect>
-         <x>50</x>
-         <y>270</y>
+         <x>60</x>
+         <y>260</y>
          <width>91</width>
          <height>71</height>
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">image: url(:/new/prefix1/Downloads/publication icon.png);</string>
+        <string notr="true">image: url(:/ressouces/publication icon.png)</string>
        </property>
        <property name="text">
         <string/>
@@ -4135,14 +4133,15 @@ QPushButton:hover {
       <widget class="QLabel" name="revv_label_35">
        <property name="geometry">
         <rect>
-         <x>50</x>
+         <x>60</x>
          <y>370</y>
          <width>101</width>
          <height>91</height>
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">image: url(:/new/prefix1/Downloads/reviewer icon.png);</string>
+        <string notr="true">image:
+ url(:/ressouces/reviewer icon.png)</string>
        </property>
        <property name="text">
         <string/>
@@ -4151,14 +4150,15 @@ QPushButton:hover {
       <widget class="QLabel" name="revv_label_37">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>30</x>
          <y>620</y>
          <width>151</width>
          <height>101</height>
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">image: url(:/new/prefix1/Downloads/equipement icon.png);</string>
+        <string notr="true">image:
+ url(:/ressouces/equipement icon.png)</string>
        </property>
        <property name="text">
         <string/>
@@ -4167,14 +4167,14 @@ QPushButton:hover {
       <widget class="QLabel" name="revv_label_7">
        <property name="geometry">
         <rect>
-         <x>0</x>
-         <y>30</y>
+         <x>-20</x>
+         <y>40</y>
          <width>251</width>
          <height>171</height>
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">image: url(:/new/prefix1/Downloads/imagetouse.png-removebg-preview.png);</string>
+        <string notr="true">image: url(:/ressouces/imagetouse.png-removebg-preview (1).png)</string>
        </property>
        <property name="text">
         <string/>
@@ -4183,14 +4183,14 @@ QPushButton:hover {
       <widget class="QLabel" name="revv_label_36">
        <property name="geometry">
         <rect>
-         <x>20</x>
+         <x>30</x>
          <y>490</y>
          <width>151</width>
          <height>101</height>
         </rect>
        </property>
        <property name="styleSheet">
-        <string notr="true">image: url(:/new/prefix1/Downloads/conference icon.png);</string>
+        <string notr="true">image: url(:/ressouces/conference icon.png)</string>
        </property>
        <property name="text">
         <string/>

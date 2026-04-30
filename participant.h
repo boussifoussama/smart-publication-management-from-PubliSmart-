@@ -11,6 +11,7 @@ class Participant
     QString nom;
     int idConference;
     QString uidRfid;
+    QString lastError;
 
 public:
     Participant();
@@ -34,6 +35,7 @@ public:
     bool supprimer(int);
     bool modifier();
     QSqlQueryModel* rechercher(QString);
+    QString getLastError() const { return lastError; }
 };
 
 #endif // PARTICIPANT_H

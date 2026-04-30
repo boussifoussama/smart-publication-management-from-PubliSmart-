@@ -4,6 +4,53 @@
 #include <QSqlError>
 #include <QDebug>
 
+namespace {
+
+QString detectFirstWorkingTable(QSqlDatabase &db, const QStringList &candidates)
+{
+    QSqlQuery q(db);
+    for (const QString &tableRef : candidates) {
+        if (q.exec("SELECT 1 FROM " + tableRef + " WHERE 1=0"))
+            return tableRef;
+    }
+    return QString();
+}
+
+bool columnExists(QSqlDatabase &db, const QString &tableRef, const QString &columnName)
+{
+    QSqlQuery q(db);
+    return q.exec("SELECT " + columnName + " FROM " + tableRef + " WHERE 1=0");
+}
+
+QString resolveReviewerTable(QSqlDatabase &db)
+{
+    return detectFirstWorkingTable(db, {
+        "OUSSAMA.REVIEWER",
+        "REVIEWER",
+        "ADAM.REVIEWER"
+    });
+}
+
+QString resolvePublicationTable(QSqlDatabase &db)
+{
+    return detectFirstWorkingTable(db, {
+        "OUSSAMA.PUBLICATION",
+        "PUBLICATION",
+        "ADAM.PUBLICATION"
+    });
+}
+
+QString resolveFirstExistingColumn(QSqlDatabase &db, const QString &tableRef, const QStringList &candidates)
+{
+    for (const QString &col : candidates) {
+        if (columnExists(db, tableRef, col))
+            return col;
+    }
+    return QString();
+}
+
+}
+
 Reviewer::Reviewer()
     : m_id(0), m_nom(""), m_email(""), m_specialite(""), 
     m_affiliation(""), m_nbEvaluations(0), 
@@ -50,11 +97,23 @@ bool Reviewer::ajouter()
         return false;
     }
 
+    const QString reviewerTable = resolveReviewerTable(db);
+    if (reviewerTable.isEmpty()) {
+        m_lastError = "Table REVIEWER introuvable (schema OUSSAMA/ADAM ou schema courant).";
+        return false;
+    }
+
+    const QString publicationTable = resolvePublicationTable(db);
+    const QString scoreColumn = resolveFirstExistingColumn(db, reviewerTable,
+                                                           {"SCOREFIABILITE", "SCORE_FIABILITE", "SCOREFIABILITE1"});
+    const QString idPublicationColumn = resolveFirstExistingColumn(db, reviewerTable,
+                                                                   {"IDPUBLICATION", "ID_PUBLICATION"});
+
     QSqlQuery q(db);
     // Validate that ID PUBLICATION exists in PUBLICATION table if provided
-    if (m_idPublication > 0) {
+    if (m_idPublication > 0 && !publicationTable.isEmpty() && !idPublicationColumn.isEmpty()) {
         QSqlQuery checkPub(db);
-        checkPub.prepare("SELECT COUNT(*) FROM ADAM.PUBLICATION WHERE IDPUBLICATION = :idPub");
+        checkPub.prepare("SELECT COUNT(*) FROM " + publicationTable + " WHERE IDPUBLICATION = :idPub");
         checkPub.bindValue(":idPub", m_idPublication);
         if (!checkPub.exec() || !checkPub.next() || checkPub.value(0).toInt() == 0) {
             m_lastError = "ID Publication invalide ! Cet ID n'existe pas dans la table PUBLICATION.";
@@ -62,11 +121,20 @@ bool Reviewer::ajouter()
         }
     }
 
-    q.prepare("INSERT INTO ADAM.REVIEWER "
-              "(IDREVIEWER, NOM, MAIL, SPECIALITE, AFFILIATION, "
-              "NBEVALUATION, SCOREFIABILITE, IDPUBLICATION) "
-              "VALUES (:id, :nom, :mail, :specialite, :affiliation, "
-              ":nbEval, :score, :idPub)");
+    QStringList columns = {"IDREVIEWER", "NOM", "MAIL", "SPECIALITE", "AFFILIATION", "NBEVALUATION"};
+    QStringList values = {":id", ":nom", ":mail", ":specialite", ":affiliation", ":nbEval"};
+
+    if (!scoreColumn.isEmpty()) {
+        columns << scoreColumn;
+        values << ":score";
+    }
+    if (!idPublicationColumn.isEmpty()) {
+        columns << idPublicationColumn;
+        values << ":idPub";
+    }
+
+    q.prepare("INSERT INTO " + reviewerTable + " (" + columns.join(", ") + ") "
+              "VALUES (" + values.join(", ") + ")");
     
     q.bindValue(":id", m_id);
     q.bindValue(":nom", m_nom);
@@ -74,8 +142,10 @@ bool Reviewer::ajouter()
     q.bindValue(":specialite", m_specialite);
     q.bindValue(":affiliation", m_affiliation);
     q.bindValue(":nbEval", m_nbEvaluations);
-    q.bindValue(":score", m_scoreFiabilite);
-    q.bindValue(":idPub", m_idPublication > 0 ? QVariant(m_idPublication) : QVariant());
+    if (!scoreColumn.isEmpty())
+        q.bindValue(":score", m_scoreFiabilite);
+    if (!idPublicationColumn.isEmpty())
+        q.bindValue(":idPub", m_idPublication > 0 ? QVariant(m_idPublication) : QVariant());
 
     if (!q.exec())
     {
@@ -94,11 +164,23 @@ bool Reviewer::modifier()
         return false;
     }
 
+    const QString reviewerTable = resolveReviewerTable(db);
+    if (reviewerTable.isEmpty()) {
+        m_lastError = "Table REVIEWER introuvable (schema OUSSAMA/ADAM ou schema courant).";
+        return false;
+    }
+
+    const QString publicationTable = resolvePublicationTable(db);
+    const QString scoreColumn = resolveFirstExistingColumn(db, reviewerTable,
+                                                           {"SCOREFIABILITE", "SCORE_FIABILITE", "SCOREFIABILITE1"});
+    const QString idPublicationColumn = resolveFirstExistingColumn(db, reviewerTable,
+                                                                   {"IDPUBLICATION", "ID_PUBLICATION"});
+
     QSqlQuery q(db);
     // Validate that ID PUBLICATION exists in PUBLICATION table if provided
-    if (m_idPublication > 0) {
+    if (m_idPublication > 0 && !publicationTable.isEmpty() && !idPublicationColumn.isEmpty()) {
         QSqlQuery checkPub(db);
-        checkPub.prepare("SELECT COUNT(*) FROM ADAM.PUBLICATION WHERE IDPUBLICATION = :idPub");
+        checkPub.prepare("SELECT COUNT(*) FROM " + publicationTable + " WHERE IDPUBLICATION = :idPub");
         checkPub.bindValue(":idPub", m_idPublication);
         if (!checkPub.exec() || !checkPub.next() || checkPub.value(0).toInt() == 0) {
             m_lastError = "ID Publication invalide ! Cet ID n'existe pas dans la table PUBLICATION.";
@@ -106,11 +188,19 @@ bool Reviewer::modifier()
         }
     }
 
-    q.prepare("UPDATE ADAM.REVIEWER SET "
-              "NOM = :nom, MAIL = :mail, SPECIALITE = :specialite, "
-              "AFFILIATION = :affiliation, NBEVALUATION = :nbEval, "
-              "SCOREFIABILITE = :score, IDPUBLICATION = :idPub "
-              "WHERE IDREVIEWER = :id");
+    QStringList setClauses = {
+        "NOM = :nom",
+        "MAIL = :mail",
+        "SPECIALITE = :specialite",
+        "AFFILIATION = :affiliation",
+        "NBEVALUATION = :nbEval"
+    };
+    if (!scoreColumn.isEmpty())
+        setClauses << (scoreColumn + " = :score");
+    if (!idPublicationColumn.isEmpty())
+        setClauses << (idPublicationColumn + " = :idPub");
+
+    q.prepare("UPDATE " + reviewerTable + " SET " + setClauses.join(", ") + " WHERE IDREVIEWER = :id");
     
     q.bindValue(":id", m_id);
     q.bindValue(":nom", m_nom);
@@ -118,8 +208,10 @@ bool Reviewer::modifier()
     q.bindValue(":specialite", m_specialite);
     q.bindValue(":affiliation", m_affiliation);
     q.bindValue(":nbEval", m_nbEvaluations);
-    q.bindValue(":score", m_scoreFiabilite);
-    q.bindValue(":idPub", m_idPublication > 0 ? QVariant(m_idPublication) : QVariant());
+    if (!scoreColumn.isEmpty())
+        q.bindValue(":score", m_scoreFiabilite);
+    if (!idPublicationColumn.isEmpty())
+        q.bindValue(":idPub", m_idPublication > 0 ? QVariant(m_idPublication) : QVariant());
 
     if (!q.exec())
     {
@@ -138,8 +230,14 @@ bool Reviewer::supprimer(int id)
         return false;
     }
 
+    const QString reviewerTable = resolveReviewerTable(db);
+    if (reviewerTable.isEmpty()) {
+        m_lastError = "Table REVIEWER introuvable (schema OUSSAMA/ADAM ou schema courant).";
+        return false;
+    }
+
     QSqlQuery q(db);
-    q.prepare("DELETE FROM ADAM.REVIEWER WHERE IDREVIEWER = :id");
+    q.prepare("DELETE FROM " + reviewerTable + " WHERE IDREVIEWER = :id");
     q.bindValue(":id", id);
     if (!q.exec())
     {
@@ -152,12 +250,37 @@ bool Reviewer::supprimer(int id)
 QSqlQueryModel* Reviewer::afficher()
 {
     QSqlDatabase db = QSqlDatabase::database();
-    if (!db.isOpen() && !db.open())
+    if (!db.isOpen() && !db.open()) {
+        m_lastError = "Connexion a la base de donnees echouee: " + db.lastError().text();
         return nullptr;
+    }
+
+    const QString reviewerTable = resolveReviewerTable(db);
+    if (reviewerTable.isEmpty()) {
+        m_lastError = "Table REVIEWER introuvable (schema OUSSAMA/ADAM ou schema courant).";
+        return nullptr;
+    }
+
+    const QString scoreColumn = resolveFirstExistingColumn(db, reviewerTable,
+                                                           {"SCOREFIABILITE", "SCORE_FIABILITE", "SCOREFIABILITE1"});
+    const QString idPublicationColumn = resolveFirstExistingColumn(db, reviewerTable,
+                                                                   {"IDPUBLICATION", "ID_PUBLICATION"});
+
+    const QString scoreExpr = scoreColumn.isEmpty() ? "0 AS SCOREFIABILITE"
+                                                     : scoreColumn + " AS SCOREFIABILITE";
+    const QString idPubExpr = idPublicationColumn.isEmpty() ? "NULL AS IDPUBLICATION"
+                                                             : idPublicationColumn + " AS IDPUBLICATION";
 
     QSqlQueryModel *model = new QSqlQueryModel();
     model->setQuery("SELECT IDREVIEWER, NOM, MAIL, SPECIALITE, AFFILIATION, "
-                    "NBEVALUATION, SCOREFIABILITE, IDPUBLICATION FROM ADAM.REVIEWER", db);
+                    "NBEVALUATION, " + scoreExpr + ", " + idPubExpr + " FROM " + reviewerTable, db);
+
+    if (model->lastError().isValid()) {
+        m_lastError = "Erreur SELECT: " + model->lastError().text();
+        delete model;
+        return nullptr;
+    }
+
     return model;
 }
 
@@ -177,14 +300,30 @@ QSqlQueryModel* Reviewer::rechercher(const QString &idFilter,
         return nullptr;
     }
 
+    const QString reviewerTable = resolveReviewerTable(db);
+    if (reviewerTable.isEmpty()) {
+        m_lastError = "Table REVIEWER introuvable (schema OUSSAMA/ADAM ou schema courant).";
+        return nullptr;
+    }
+
+    const QString scoreColumn = resolveFirstExistingColumn(db, reviewerTable,
+                                                           {"SCOREFIABILITE", "SCORE_FIABILITE", "SCOREFIABILITE1"});
+    const QString idPublicationColumn = resolveFirstExistingColumn(db, reviewerTable,
+                                                                   {"IDPUBLICATION", "ID_PUBLICATION"});
+
+    const QString scoreExpr = scoreColumn.isEmpty() ? "0 AS SCOREFIABILITE"
+                                                     : scoreColumn + " AS SCOREFIABILITE";
+    const QString idPubExpr = idPublicationColumn.isEmpty() ? "NULL AS IDPUBLICATION"
+                                                             : idPublicationColumn + " AS IDPUBLICATION";
+
     const QString idSearch = idFilter.trimmed();
     const QString nomSearch = nomFilter.trimmed();
     const QString specialiteSearch = specialiteFilter.trimmed();
 
     QSqlQuery q(db);
     QString sql = "SELECT IDREVIEWER, NOM, MAIL, SPECIALITE, AFFILIATION, "
-                  "NBEVALUATION, SCOREFIABILITE, IDPUBLICATION "
-                  "FROM ADAM.REVIEWER WHERE 1=1";
+                  "NBEVALUATION, " + scoreExpr + ", " + idPubExpr + " "
+                  "FROM " + reviewerTable + " WHERE 1=1";
 
     if (!idSearch.isEmpty())
         sql += " AND TO_CHAR(IDREVIEWER) LIKE :idFilter";
@@ -245,7 +384,7 @@ bool Reviewer::ensureDeadlineColumn()
     {
         // La colonne n'existe pas → on la crée
         QSqlQuery alter(db);
-        if (!alter.exec("ALTER TABLE ADAM.REVIEWER ADD DEADLINE_EVALUATION DATE"))
+        if (!alter.exec("ALTER TABLE OUSSAMA.REVIEWER ADD DEADLINE_EVALUATION DATE"))
         {
             qDebug() << "[Deadline] Impossible d'ajouter la colonne:"
                      << alter.lastError().text();
@@ -273,7 +412,7 @@ QSqlQueryModel* Reviewer::getReviewersEnRetard()
         "SELECT IDREVIEWER, NOM, MAIL, SPECIALITE, "
         "       IDPUBLICATION, DEADLINE_EVALUATION, "
         "       (SYSDATE - DEADLINE_EVALUATION) AS JOURS_RETARD "
-        "FROM ADAM.REVIEWER "
+        "FROM OUSSAMA.REVIEWER "
         "WHERE DEADLINE_EVALUATION IS NOT NULL "
         "  AND DEADLINE_EVALUATION < SYSDATE "
         "  AND IDPUBLICATION IS NOT NULL "
@@ -300,7 +439,7 @@ QSqlQueryModel* Reviewer::getReviewersProchesDeadline(int joursAvant)
         "SELECT IDREVIEWER, NOM, MAIL, SPECIALITE, "
         "       IDPUBLICATION, DEADLINE_EVALUATION, "
         "       (DEADLINE_EVALUATION - SYSDATE) AS JOURS_RESTANTS "
-        "FROM ADAM.REVIEWER "
+        "FROM OUSSAMA.REVIEWER "
         "WHERE DEADLINE_EVALUATION IS NOT NULL "
         "  AND DEADLINE_EVALUATION >= SYSDATE "
         "  AND DEADLINE_EVALUATION <= SYSDATE + :jours "
@@ -328,7 +467,7 @@ bool Reviewer::setDeadline(int idReviewer, const QDate &deadline)
     ensureDeadlineColumn();
 
     QSqlQuery q(db);
-    q.prepare("UPDATE ADAM.REVIEWER SET DEADLINE_EVALUATION = :dl "
+    q.prepare("UPDATE OUSSAMA.REVIEWER SET DEADLINE_EVALUATION = :dl "
               "WHERE IDREVIEWER = :id");
     q.bindValue(":dl", deadline);
     q.bindValue(":id", idReviewer);
@@ -352,7 +491,7 @@ bool Reviewer::supprimerDeadline(int idReviewer)
     }
 
     QSqlQuery q(db);
-    q.prepare("UPDATE ADAM.REVIEWER SET DEADLINE_EVALUATION = NULL "
+    q.prepare("UPDATE OUSSAMA.REVIEWER SET DEADLINE_EVALUATION = NULL "
               "WHERE IDREVIEWER = :id");
     q.bindValue(":id", idReviewer);
 

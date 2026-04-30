@@ -1,5 +1,6 @@
 #include "arduino.h"
 #include <QRegularExpression>
+#include <QElapsedTimer>
 
 ArduinoBridge::ArduinoBridge(QObject *parent)
     : QObject(parent)
@@ -7,7 +8,7 @@ ArduinoBridge::ArduinoBridge(QObject *parent)
     connect(&serial, &QSerialPort::readyRead, this, &ArduinoBridge::onReadyRead);
 }
 
-bool ArduinoBridge::connectPort(const QString &portName, qint32 baudRate)
+bool ArduinoBridge::connectPort(const QString &portName, qint32 baudRate, bool requireHandshake)
 {
     if (serial.isOpen())
         serial.close();
@@ -24,8 +25,62 @@ bool ArduinoBridge::connectPort(const QString &portName, qint32 baudRate)
         return false;
     }
 
+    if (requireHandshake && !performHandshake()) {
+        const QString err = QString("Echec handshake RFID sur %1 @ %2").arg(portName).arg(baudRate);
+        serial.close();
+        emit errorOccurred(err);
+        return false;
+    }
+
     emit statusChanged(QString("Port %1 connecte").arg(portName));
     return true;
+}
+
+bool ArduinoBridge::performHandshake()
+{
+    if (!serial.isOpen())
+        return false;
+
+    serial.clear(QSerialPort::AllDirections);
+
+    // Some boards reset on open and may need extra time before replying.
+    QByteArray probe;
+    bool sawBoot = false;
+    bool sawUid = false;
+    QElapsedTimer bootTimer;
+    bootTimer.start();
+    while (bootTimer.elapsed() < 2500) {
+        if (serial.waitForReadyRead(120)) {
+            probe.append(serial.readAll());
+            sawBoot = sawBoot || probe.contains("BOOT=RFID_READY");
+            sawUid = sawUid || probe.contains("UID=");
+            if (probe.contains("ACK=PONG"))
+                return true;
+        }
+    }
+
+    for (int attempt = 0; attempt < 3; ++attempt) {
+        const QByteArray ping("PING\n");
+        if (serial.write(ping) != ping.size())
+            return false;
+        if (!serial.waitForBytesWritten(400))
+            return false;
+
+        QElapsedTimer pongTimer;
+        pongTimer.start();
+        while (pongTimer.elapsed() < 1500) {
+            if (serial.waitForReadyRead(120)) {
+                probe.append(serial.readAll());
+                sawBoot = sawBoot || probe.contains("BOOT=RFID_READY");
+                sawUid = sawUid || probe.contains("UID=");
+                if (probe.contains("ACK=PONG"))
+                    return true;
+            }
+        }
+    }
+
+    // Backward-compatible fallback: accept firmware that emits BOOT/UID but has no PING handler.
+    return sawBoot || sawUid;
 }
 
 void ArduinoBridge::disconnectPort()
@@ -53,12 +108,21 @@ bool ArduinoBridge::sendCommand(const QString &command)
     if (!serial.isOpen())
         return false;
 
+    lastCommand = command.trimmed().toUpper();
     QByteArray payload = command.toUtf8();
     if (!payload.endsWith('\n'))
         payload.append('\n');
 
     const qint64 written = serial.write(payload);
-    return written == payload.size();
+    if (written != payload.size())
+        return false;
+
+    return serial.waitForBytesWritten(500);
+}
+
+QString ArduinoBridge::lastSentCommand() const
+{
+    return lastCommand;
 }
 
 QString ArduinoBridge::normalizeUid(const QString &uid) const

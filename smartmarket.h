@@ -115,6 +115,7 @@ private:
     // Données contextuelles pour les callbacks IA
     QString simId1, simId2, simTitre1, simTitre2, simContenu1, simContenu2;
     QString compIdStr, compTitre;
+    QString lastScannedUid;
 
     // Conferences
     QWidget *conferenceWidget;
@@ -141,6 +142,7 @@ private:
     bool tableExists(QSqlDatabase &db, const QString &tableName);
     void initializeArduinoAccess();
     void handleArduinoUid(const QString &uid);
+    QString waitForUidScan(int timeoutMs = 3000);
     void showConferencePage();
     void refreshAll();
     void createCharts();

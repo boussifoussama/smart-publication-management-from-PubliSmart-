@@ -27,7 +27,7 @@ Publication::Publication(int id, QString titre, QString source, QString domaine,
 bool Publication::ajouter()
 {
     QSqlQuery query;
-    query.prepare("INSERT INTO ADAM.PUBLICATION (IDPUBLICATION, TITRE, SOURCE, DOMAINE, DATEPUBLICATION, STATUT, CONTENU) "
+    query.prepare("INSERT INTO OUSSAMA.PUBLICATION (IDPUBLICATION, TITRE, SOURCE, DOMAINE, DATEPUBLICATION, STATUT, CONTENU) "
                   "VALUES (:id, :titre, :source, :domaine, :date, :statut, :contenu)");
     query.bindValue(":id", id);
     query.bindValue(":titre", titre);
@@ -43,7 +43,7 @@ bool Publication::ajouter()
 QSqlQueryModel* Publication::afficher()
 {
     QSqlQueryModel *model = new QSqlQueryModel();
-    model->setQuery("SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, DATEPUBLICATION, STATUT, CONTENU FROM ADAM.PUBLICATION ORDER BY IDPUBLICATION");
+    model->setQuery("SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, DATEPUBLICATION, STATUT, CONTENU FROM OUSSAMA.PUBLICATION ORDER BY IDPUBLICATION");
     
     model->setHeaderData(0, Qt::Horizontal, "ID");
     model->setHeaderData(1, Qt::Horizontal, "Titre");
@@ -59,7 +59,7 @@ QSqlQueryModel* Publication::afficher()
 bool Publication::supprimer(int id)
 {
     QSqlQuery query;
-    query.prepare("DELETE FROM ADAM.PUBLICATION WHERE IDPUBLICATION = :id");
+    query.prepare("DELETE FROM OUSSAMA.PUBLICATION WHERE IDPUBLICATION = :id");
     query.bindValue(":id", id);
     return query.exec();
 }
@@ -67,7 +67,7 @@ bool Publication::supprimer(int id)
 bool Publication::modifier()
 {
     QSqlQuery query;
-    query.prepare("UPDATE ADAM.PUBLICATION SET TITRE=:titre, SOURCE=:source, DOMAINE=:domaine, DATEPUBLICATION=:date, STATUT=:statut, CONTENU=:contenu "
+    query.prepare("UPDATE OUSSAMA.PUBLICATION SET TITRE=:titre, SOURCE=:source, DOMAINE=:domaine, DATEPUBLICATION=:date, STATUT=:statut, CONTENU=:contenu "
                   "WHERE IDPUBLICATION=:id");
     query.bindValue(":id", id);
     query.bindValue(":titre", titre);
@@ -83,7 +83,7 @@ bool Publication::modifier()
 QSqlQueryModel* Publication::trier(QString critere, QString ordre)
 {
     QSqlQueryModel *model = new QSqlQueryModel();
-    QString queryStr = "SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, DATEPUBLICATION, STATUT, CONTENU FROM ADAM.PUBLICATION ORDER BY " + critere + " " + ordre;
+    QString queryStr = "SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, DATEPUBLICATION, STATUT, CONTENU FROM OUSSAMA.PUBLICATION ORDER BY " + critere + " " + ordre;
     model->setQuery(queryStr);
     
     model->setHeaderData(0, Qt::Horizontal, "ID");
@@ -100,7 +100,7 @@ QSqlQueryModel* Publication::trier(QString critere, QString ordre)
 QSqlQueryModel* Publication::rechercher(QString titre, QString source, QString domaine, QString statut)
 {
     QSqlQueryModel *model = new QSqlQueryModel();
-    QString sql = "SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, DATEPUBLICATION, STATUT, CONTENU FROM ADAM.PUBLICATION WHERE 1=1";
+    QString sql = "SELECT IDPUBLICATION, TITRE, SOURCE, DOMAINE, DATEPUBLICATION, STATUT, CONTENU FROM OUSSAMA.PUBLICATION WHERE 1=1";
     
     if (!titre.isEmpty())
         sql += " AND UPPER(TITRE) LIKE UPPER('%" + titre + "%')";

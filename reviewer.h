@@ -53,7 +53,7 @@ public:
     bool setDeadline(int idReviewer, const QDate& deadline);
     // Supprime la deadline d'un reviewer (le libère)
     bool supprimerDeadline(int idReviewer);
-    // Vérifie si la colonne DEADLINE_EVALUATION existe dans ADAM.REVIEWER
+    // Vérifie si la colonne DEADLINE_EVALUATION existe dans OUSSAMA.REVIEWER
     static bool ensureDeadlineColumn();
 
 private:

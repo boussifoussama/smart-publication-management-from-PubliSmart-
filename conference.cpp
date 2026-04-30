@@ -22,7 +22,7 @@ Conference::Conference(int id, QString nom, QString lieu, QDate dateDebut, QStri
 bool Conference::ajouter()
 {
     QSqlQuery query;
-    query.prepare("INSERT INTO ADAM.conference (idconference, nom, lieu, datedebut, theme) "
+    query.prepare("INSERT INTO OUSSAMA.conference (idconference, nom, lieu, datedebut, theme) "
                   "VALUES (:id, :nom, :lieu, :date, :theme)");
     query.bindValue(":id", id);
     query.bindValue(":nom", nom);
@@ -37,8 +37,8 @@ QSqlQueryModel* Conference::afficher()
 {
     QSqlQueryModel *model = new QSqlQueryModel();
     QString sql = "SELECT c.idconference, c.nom, c.lieu, c.datedebut, c.theme, "
-                  "(SELECT COUNT(*) FROM ADAM.participant p WHERE p.idconference = c.idconference) AS nombreparticipants "
-                  "FROM ADAM.conference c ORDER BY c.idconference";
+                  "(SELECT COUNT(*) FROM OUSSAMA.participant p WHERE p.idconference = c.idconference) AS nombreparticipants "
+                  "FROM OUSSAMA.conference c ORDER BY c.idconference";
     model->setQuery(sql);
     
     model->setHeaderData(0, Qt::Horizontal, "ID");
@@ -56,7 +56,7 @@ bool Conference::supprimer(int id)
     QSqlQuery query;
     // Note: participant deletion is handled in SmartMarket or can be moved here
     // To match the original code logic, we handle FK in SmartMarket or CASCADE if defined
-    query.prepare("DELETE FROM ADAM.conference WHERE idconference = :id");
+    query.prepare("DELETE FROM OUSSAMA.conference WHERE idconference = :id");
     query.bindValue(":id", id);
     return query.exec();
 }
@@ -64,7 +64,7 @@ bool Conference::supprimer(int id)
 bool Conference::modifier()
 {
     QSqlQuery query;
-    query.prepare("UPDATE ADAM.conference "
+    query.prepare("UPDATE OUSSAMA.conference "
                   "SET nom = :nom, lieu = :lieu, datedebut = :date, theme = :theme "
                   "WHERE idconference = :id");
     query.bindValue(":nom", nom);
@@ -80,8 +80,8 @@ QSqlQueryModel* Conference::trier(QString critere, QString ordre)
 {
     QSqlQueryModel *model = new QSqlQueryModel();
     QString sql = "SELECT c.idconference, c.nom, c.lieu, c.datedebut, c.theme, "
-                  "(SELECT COUNT(*) FROM ADAM.participant p WHERE p.idconference = c.idconference) AS nombreparticipants "
-                  "FROM ADAM.conference c ORDER BY " + critere + " " + ordre;
+                  "(SELECT COUNT(*) FROM OUSSAMA.participant p WHERE p.idconference = c.idconference) AS nombreparticipants "
+                  "FROM OUSSAMA.conference c ORDER BY " + critere + " " + ordre;
     model->setQuery(sql);
     
     model->setHeaderData(0, Qt::Horizontal, "ID");
@@ -98,8 +98,8 @@ QSqlQueryModel* Conference::rechercher(QString filter)
 {
     QSqlQueryModel *model = new QSqlQueryModel();
     QString sql = "SELECT c.idconference, c.nom, c.lieu, c.datedebut, c.theme, "
-                  "(SELECT COUNT(*) FROM ADAM.participant p WHERE p.idconference = c.idconference) AS nombreparticipants "
-                  "FROM ADAM.conference c";
+                  "(SELECT COUNT(*) FROM OUSSAMA.participant p WHERE p.idconference = c.idconference) AS nombreparticipants "
+                  "FROM OUSSAMA.conference c";
     if (!filter.isEmpty()) {
         sql += " WHERE LOWER(c.nom) LIKE '%" + filter.toLower() + "%' OR LOWER(c.lieu) LIKE '%" + filter.toLower() + "%' OR LOWER(c.theme) LIKE '%" + filter.toLower() + "%'";
     }
